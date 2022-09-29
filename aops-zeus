@@ -1,0 +1,17 @@
+#!/bin/bash
+. /usr/bin/aops-culcanus
+
+MANAGER_CONSTANT="aops-zeus"
+MANAGER_CONFIG_FILE=$SYS_PATH/zeus.ini
+
+function main() {
+  if [ "${OPERATION}" = "start" ]; then
+    create_config_file "${MANAGER_CONFIG_FILE}" "zeus" "aops"
+    check_mysql_installed "${MANAGER_CONFIG_FILE}"
+    check_es_installed "${MANAGER_CONFIG_FILE}"
+  fi
+  start_or_stop_service "${MANAGER_CONSTANT}"
+  exit $?
+}
+
+main
