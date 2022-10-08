@@ -19,10 +19,10 @@ import uuid
 import threading
 from flask import jsonify
 
-from culcanus.log.log import LOGGER
-from culcanus.restful.status import SUCCEED, PARAM_ERROR, TASK_EXECUTION_FAIL
-from culcanus.restful.response import BaseResponse
-from culcanus.database.helper import operate
+from vulcanus.log.log import LOGGER
+from vulcanus.restful.status import SUCCEED, PARAM_ERROR, TASK_EXECUTION_FAIL
+from vulcanus.restful.response import BaseResponse
+from vulcanus.database.helper import operate
 from zeus.conf import configuration
 from zeus.deploy_manager.run_task import TaskRunner
 from zeus.account_manager.key import HostKey
@@ -143,9 +143,9 @@ class ExecuteTask(BaseResponse):
                 return PARAM_ERROR
             for host in task_info['host_list']:
                 LOGGER.info("Move inventory files from :%s, host name is: %s",
-                            configuration.manager.get('HOST_VARS'),
+                            configuration.zeus.get('HOST_VARS'),
                             host['host_name'])
-                inventory.move_host_vars_to_inventory(configuration.manager.get('HOST_VARS'),
+                inventory.move_host_vars_to_inventory(configuration.zeus.get('HOST_VARS'),
                                                       host['host_name'])
             task_thread = threading.Thread(target=ExecuteTask.task_with_remove,
                                            args=(task_id, inventory))

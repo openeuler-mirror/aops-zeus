@@ -25,7 +25,7 @@ import yaml
 
 from zeus.account_manager.cache import UserCache
 from zeus.conf.constant import ROUTE_AGENT_COLLECT_FILE
-from culcanus.database.table import Host
+from vulcanus.database.table import Host
 from zeus.function.verify.config import CollectConfigSchema
 from zeus.deploy_manager.ansible_runner.inventory_builder import InventoryBuilder
 from zeus.deploy_manager.run_task import TaskRunner
@@ -33,9 +33,9 @@ from zeus.account_manager.key import HostKey
 from zeus.conf import configuration
 from zeus.database.proxy.host import HostProxy
 from zeus.database import SESSION
-from culcanus.log.log import LOGGER
-from culcanus.restful.status import StatusCode, SUCCEED, DATABASE_CONNECT_ERROR, TOKEN_ERROR, HTTP_CONNECT_ERROR
-from culcanus.restful.response import BaseResponse
+from vulcanus.log.log import LOGGER
+from vulcanus.restful.status import StatusCode, SUCCEED, DATABASE_CONNECT_ERROR, TOKEN_ERROR, HTTP_CONNECT_ERROR
+from vulcanus.restful.response import BaseResponse
 
 
 def traversal_ansible_output(status, **kwargs):
@@ -157,7 +157,7 @@ def generate_ansible_input_json(host_infos, inventory, params):
     ansible_input_json = {'read_config_hosts': {}}
     for info in host_infos:
         # move host dir to vars
-        inventory.move_host_vars_to_inventory(configuration.manager.get('HOST_VARS'),
+        inventory.move_host_vars_to_inventory(configuration.zeus.get('HOST_VARS'),
                                               str(info['host_name']))
 
         # read_config.json generate

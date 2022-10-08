@@ -32,11 +32,11 @@ from zeus.conf.constant import (
     CHECK_IDENTIFY_SCENE
 )
 from zeus.conf import configuration
-from culcanus.database.helper import operate, judge_return_code
-from culcanus.database.table import Host
-from culcanus.log.log import LOGGER
-from culcanus.restful.response import BaseResponse
-from culcanus.restful.status import (
+from vulcanus.database.helper import operate, judge_return_code
+from vulcanus.database.table import Host
+from vulcanus.log.log import LOGGER
+from vulcanus.restful.response import BaseResponse
+from vulcanus.restful.status import (
     make_response,
     TOKEN_ERROR,
     SUCCEED,

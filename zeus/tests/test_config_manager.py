@@ -25,7 +25,7 @@ import responses
 
 import zeus
 from zeus.account_manager.cache import UserCache, UserInfo
-from culcanus.restful.status import SUCCEED, PARAM_ERROR
+from vulcanus.restful.status import SUCCEED, PARAM_ERROR
 
 header = {
     "Content-Type": "application/json; charset=UTF-8"
@@ -70,16 +70,16 @@ class TestConfigManage(unittest.TestCase):
                       )
 
         resp = self.client.post('/manage/config/collect', data=json.dumps(req_data), headers=header)
-        self.assertEqual(SUCCEED, resp.json.get('code'), resp.text)
+        self.assertEqual(SUCCEED, resp.json.get('code'), resp)
 
     def test_collect_config_should_return_param_error_when_input_incorrect_data(self):
         req_data = {"infos": [{"host_id": 2333, "config_list": ["test_config_path"]}]}
         resp = self.client.post('/manage/config/collect', data=json.dumps(req_data), headers=header)
-        self.assertEqual(PARAM_ERROR, json.loads(resp.text).get('code'), resp.text)
+        self.assertEqual(PARAM_ERROR, resp.json.get('code'), resp)
 
     def test_collect_config_should_return_400_when_no_input(self):
         resp = self.client.post('/manage/config/collect', headers=header)
-        self.assertEqual(400, resp.status_code, resp.text)
+        self.assertEqual(400, resp.status_code, resp)
 
     @mock.patch.object(UserCache, 'get')
     @mock.patch('zeus.config_manager.view.get_host_infos')
@@ -91,7 +91,7 @@ class TestConfigManage(unittest.TestCase):
         mock_host_infos.return_value = SUCCEED, {}
         mock_user.return_value = UserInfo('admin', '123', '123456')
         resp = self.client.post('/manage/config/collect', data=json.dumps(req_data), headers=header)
-        self.assertEqual(["test_config_path"], json.loads(resp.text).get('resp')[0].get('fail_files'), resp.text)
+        self.assertEqual(["test_config_path"], resp.json.get('resp')[0].get('fail_files'), resp)
 
     @mock.patch.object(UserCache, 'get')
     @mock.patch('zeus.config_manager.view.requests.post')
@@ -105,7 +105,7 @@ class TestConfigManage(unittest.TestCase):
         mock_requests_post.side_effect = requests.exceptions.ConnectionError()
         mock_user.return_value = UserInfo('admin', '123', '123456')
         resp = self.client.post('/manage/config/collect', data=json.dumps(req_data), headers=header)
-        self.assertEqual(["test_config_path"], json.loads(resp.text).get('resp')[0].get('fail_files'), resp.text)
+        self.assertEqual(["test_config_path"], resp.json.get('resp')[0].get('fail_files'), resp)
 
     @responses.activate
     @mock.patch.object(UserCache, 'get')
@@ -146,4 +146,4 @@ class TestConfigManage(unittest.TestCase):
                       content_type='application/json'
                       )
         resp = self.client.post('/manage/config/collect', data=json.dumps(req_data), headers=header)
-        self.assertEqual(expected_result, json.loads(resp.text).get('resp'), resp.text)
+        self.assertEqual(expected_result, resp.json.get('resp'), resp)

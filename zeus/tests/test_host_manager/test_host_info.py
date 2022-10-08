@@ -21,7 +21,7 @@ import unittest
 from zeus.database.proxy.host import HostInfoProxy
 from zeus.conf.constant import HOST_INFO_INDEX
 from zeus.conf import configuration
-from culcanus.restful.status import SUCCEED
+from vulcanus.restful.status import SUCCEED
 
 
 class TestHostInfoDatabase(unittest.TestCase):

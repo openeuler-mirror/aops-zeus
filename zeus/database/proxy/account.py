@@ -19,11 +19,11 @@ import secrets
 import sqlalchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from culcanus.log.log import LOGGER
-from culcanus.restful.status import DATABASE_INSERT_ERROR, DATABASE_QUERY_ERROR, \
+from vulcanus.log.log import LOGGER
+from vulcanus.restful.status import DATABASE_INSERT_ERROR, DATABASE_QUERY_ERROR, \
     LOGIN_ERROR, REPEAT_PASSWORD, SUCCEED
-from culcanus.database.proxy import MysqlProxy
-from culcanus.database.table import User
+from vulcanus.database.proxy import MysqlProxy
+from vulcanus.database.table import User
 
 
 class UserProxy(MysqlProxy):

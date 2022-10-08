@@ -18,8 +18,8 @@ Description:
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.scoping import scoped_session
 
-from culcanus.database.helper import make_mysql_engine_url
-from culcanus.database.helper import create_database_engine
+from vulcanus.database.helper import make_mysql_engine_url
+from vulcanus.database.helper import create_database_engine
 from zeus.conf import configuration
 
 

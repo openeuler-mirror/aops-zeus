@@ -18,7 +18,7 @@ import responses
 
 from zeus import BLUE_POINT
 from zeus.database.proxy.host import HostProxy
-from culcanus.restful.status import SUCCEED, TOKEN_ERROR, DATABASE_CONNECT_ERROR
+from vulcanus.restful.status import SUCCEED, TOKEN_ERROR, DATABASE_CONNECT_ERROR
 
 app = Flask("check")
 for blue, api in BLUE_POINT:

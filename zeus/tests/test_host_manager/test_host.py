@@ -20,10 +20,10 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.scoping import scoped_session
 from werkzeug.security import generate_password_hash
 
-from culcanus.database.table import Host, User, Base, create_utils_tables
-from culcanus.database.helper import drop_tables, create_database_engine
-from culcanus.restful.status import DATA_EXIST, PARTIAL_SUCCEED, SUCCEED, DATA_DEPENDENCY_ERROR, DATABASE_INSERT_ERROR, NO_DATA
-from culcanus.compare import compare_two_object
+from vulcanus.database.table import Host, User, Base, create_utils_tables
+from vulcanus.database.helper import drop_tables, create_database_engine
+from vulcanus.restful.status import DATA_EXIST, PARTIAL_SUCCEED, SUCCEED, DATA_DEPENDENCY_ERROR, DATABASE_INSERT_ERROR, NO_DATA
+from vulcanus.compare import compare_two_object
 from zeus.database.proxy.host import HostProxy
 
 
@@ -486,7 +486,7 @@ class TestHostDatabase(unittest.TestCase):
         }
         res = self.proxy.delete_host(args)
         self.assertEqual(res[0], PARTIAL_SUCCEED)
-        self.assertEqual(res[1]["fail_list"][0], "id9")
+        self.assertEqual(list(res[1]["fail_list"].keys()), ["id9"])
         self.assertEqual(res[1]['succeed_list'][0], "id1")
 
         args = {

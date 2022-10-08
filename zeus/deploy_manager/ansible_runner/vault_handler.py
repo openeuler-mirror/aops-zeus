@@ -19,7 +19,7 @@ from ansible.constants import DEFAULT_VAULT_ID_MATCH
 from ansible.parsing.vault import VaultLib
 from ansible.parsing.vault import VaultSecret
 from ansible.parsing.vault import PromptVaultSecret
-from culcanus.log.log import LOGGER
+from vulcanus.log.log import LOGGER
 
 
 class VaultHandler:

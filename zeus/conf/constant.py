@@ -16,7 +16,7 @@ Author:
 Description: manager constant
 """
 import os
-from culcanus.conf.constant import BASE_CONFIG_PATH
+from vulcanus.conf.constant import BASE_CONFIG_PATH
 
 # path of manager configuration
 MANAGER_CONFIG_PATH = os.path.join(BASE_CONFIG_PATH, 'zeus.ini')

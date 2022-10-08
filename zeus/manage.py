@@ -18,12 +18,12 @@ Description: Manager that start aops-zeus
 import os
 import sqlalchemy
 
-from culcanus.database.table import User, Base, create_utils_tables
-from culcanus.conf.constant import BASE_CONFIG_PATH
-from culcanus.log.log import LOGGER
-from culcanus.restful.status import SUCCEED
-from culcanus.manage import init_app
-from culcanus.readconfig import read_json_config_file
+from vulcanus.database.table import User, Base, create_utils_tables
+from vulcanus.conf.constant import BASE_CONFIG_PATH
+from vulcanus.log.log import LOGGER
+from vulcanus.restful.status import SUCCEED
+from vulcanus.manage import init_app
+from vulcanus.readconfig import read_json_config_file
 from zeus.conf import configuration
 from zeus.database import SESSION, ENGINE
 from zeus.database.factory.mapping import MAPPINGS
