@@ -22,8 +22,8 @@ from zeus.database.proxy.deploy import DeployProxy
 from zeus.conf.constant import TEMPLATE_INDEX, TASK_INDEX
 from zeus.conf import configuration
 from zeus.database.factory.mapping import MAPPINGS
-from culcanus.restful.status import SUCCEED, DATA_EXIST
-from culcanus.compare import compare_two_object
+from vulcanus.restful.status import SUCCEED, DATA_EXIST
+from vulcanus.compare import compare_two_object
 
 
 class TestDeployDatabase(unittest.TestCase):

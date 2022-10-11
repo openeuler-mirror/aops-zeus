@@ -15,7 +15,7 @@ Time:
 Author:
 Description: manager configuration
 """
-from culcanus.conf import Config
+from vulcanus.conf import Config
 from zeus.conf import default_config
 from zeus.conf.constant import MANAGER_CONFIG_PATH
 

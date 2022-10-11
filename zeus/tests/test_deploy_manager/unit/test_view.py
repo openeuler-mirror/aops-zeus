@@ -20,11 +20,11 @@ from unittest import mock
 from flask import Flask
 
 import zeus
-from culcanus.restful.status import StatusCode, PARAM_ERROR, SUCCEED
-from culcanus.conf.constant import GENERATE_TASK, DELETE_TASK, GET_TASK, IMPORT_TEMPLATE, \
+from vulcanus.restful.status import StatusCode, PARAM_ERROR, SUCCEED
+from vulcanus.conf.constant import GENERATE_TASK, DELETE_TASK, GET_TASK, IMPORT_TEMPLATE, \
     DELETE_TEMPLATE, GET_TEMPLATE
-from culcanus.compare import compare_two_object
-from culcanus.restful.response import BaseResponse
+from vulcanus.compare import compare_two_object
+from vulcanus.restful.response import BaseResponse
 
 app = Flask("manager")
 for blue, api in zeus.BLUE_POINT:
@@ -52,7 +52,7 @@ class TestDeployManage(unittest.TestCase):
             "description": "xx",
             "template_name": ["t1", "t2"]
         }
-        with mock.patch("culcanus.restful.response.operate") as mock_operate:
+        with mock.patch("vulcanus.restful.response.operate") as mock_operate:
             expected_res = 200
             mock_operate.return_value = expected_res
             response = client.post(GENERATE_TASK, json=args, headers=header).json
@@ -75,7 +75,7 @@ class TestDeployManage(unittest.TestCase):
         args = {
             "task_list": ["name1", "name2"]
         }
-        with mock.patch("culcanus.restful.response.operate") as mock_operate:
+        with mock.patch("vulcanus.restful.response.operate") as mock_operate:
             expected_res = 200
             mock_operate.return_value = expected_res
             client.delete(DELETE_TASK, json=args, headers=header)
@@ -97,7 +97,7 @@ class TestDeployManage(unittest.TestCase):
         args = {
             "task_list": ["name1", "name2"]
         }
-        with mock.patch("culcanus.restful.response.operate") as mock_operate:
+        with mock.patch("vulcanus.restful.response.operate") as mock_operate:
             expected_res = 200
             mock_operate.return_value = expected_res
             client.post(GET_TASK, json=args, headers=header)
@@ -125,7 +125,7 @@ class TestDeployManage(unittest.TestCase):
             "template_content": {},
             "description": "xx"
         }
-        with mock.patch("culcanus.restful.response.operate") as mock_operate:
+        with mock.patch("vulcanus.restful.response.operate") as mock_operate:
             expected_res = 200
             mock_operate.return_value = expected_res
             client.post(IMPORT_TEMPLATE, json=args, headers=header)
@@ -146,7 +146,7 @@ class TestDeployManage(unittest.TestCase):
         args = {
             "template_list": ["xx"]
         }
-        with mock.patch("culcanus.restful.response.operate") as mock_operate:
+        with mock.patch("vulcanus.restful.response.operate") as mock_operate:
             expected_res = 200
 
             mock_operate.return_value = expected_res
@@ -170,7 +170,7 @@ class TestDeployManage(unittest.TestCase):
         args = {
             "template_list": ["x"]
         }
-        with mock.patch("culcanus.restful.response.operate") as mock_operate:
+        with mock.patch("vulcanus.restful.response.operate") as mock_operate:
             expected_res = 200
             mock_operate.return_value = expected_res
             client.delete(DELETE_TEMPLATE, json=args, headers=header)

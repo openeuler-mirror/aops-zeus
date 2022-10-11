@@ -19,10 +19,10 @@ import secrets
 from typing import Dict
 from flask import jsonify
 
-from culcanus.restful.response import BaseResponse
-from culcanus.restful.status import SUCCEED, CHANGE_PASSWORD, DATABASE_CONNECT_ERROR
-from culcanus.database.helper import operate
-from culcanus.database.table import User
+from vulcanus.restful.response import BaseResponse
+from vulcanus.restful.status import SUCCEED, CHANGE_PASSWORD, DATABASE_CONNECT_ERROR
+from vulcanus.database.helper import operate
+from vulcanus.database.table import User
 from zeus.account_manager.cache import UserCache
 from zeus.account_manager.key import HostKey
 from zeus.database import SESSION

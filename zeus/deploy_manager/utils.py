@@ -16,7 +16,7 @@ Description: General functions
 import os
 import shutil
 import yaml
-from culcanus.log.log import LOGGER
+from vulcanus.log.log import LOGGER
 
 CURRENT_PATH = os.path.dirname(os.path.abspath(__file__))
 

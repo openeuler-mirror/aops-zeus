@@ -19,7 +19,7 @@ from marshmallow import Schema
 from marshmallow import fields
 from marshmallow import validate
 
-from culcanus.conf import constant
+from vulcanus.conf import constant
 
 
 class HostSchema(Schema):

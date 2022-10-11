@@ -19,8 +19,8 @@ import threading
 from typing import NoReturn
 from dataclasses import dataclass
 
-from culcanus.database.table import User
-from culcanus.log.log import LOGGER
+from vulcanus.database.table import User
+from vulcanus.log.log import LOGGER
 from zeus.database.proxy.account import UserProxy
 from zeus.database import SESSION
 

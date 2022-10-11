@@ -30,7 +30,7 @@ from ansible.plugins.callback import CallbackBase
 from ansible.module_utils.common.collections import ImmutableDict
 from ansible.utils.color import colorize, hostcolor
 from zeus.deploy_manager.ansible_runner.vault_handler import VaultHandler
-from culcanus.log.log import LOGGER
+from vulcanus.log.log import LOGGER
 
 
 class AnsibleRunner:

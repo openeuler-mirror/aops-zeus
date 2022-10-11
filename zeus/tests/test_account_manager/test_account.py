@@ -19,9 +19,9 @@ import unittest
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.scoping import scoped_session
 
-from culcanus.database.table import User, Base, create_utils_tables
-from culcanus.database.helper import drop_tables, create_database_engine
-from culcanus.restful.status import LOGIN_ERROR, REPEAT_PASSWORD, SUCCEED
+from vulcanus.database.table import User, Base, create_utils_tables
+from vulcanus.database.helper import drop_tables, create_database_engine
+from vulcanus.restful.status import LOGIN_ERROR, REPEAT_PASSWORD, SUCCEED
 from zeus.database.proxy.account import UserProxy
 
 

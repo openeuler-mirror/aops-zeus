@@ -20,7 +20,7 @@ from zeus.host_manager import view as host_view
 from zeus.deploy_manager import view as deploy_view
 from zeus.config_manager import view as config_view
 from zeus.account_manager import view as account_view
-from culcanus.conf.constant import (
+from vulcanus.conf.constant import (
     ADD_HOST,
     DELETE_HOST,
     GET_HOST_COUNT,

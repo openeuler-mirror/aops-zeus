@@ -17,9 +17,9 @@ Description:
 """
 import json
 
-from culcanus.database.proxy import ElasticsearchProxy
-from culcanus.log.log import LOGGER
-from culcanus.restful.status import DATABASE_DELETE_ERROR, DATABASE_INSERT_ERROR,\
+from vulcanus.database.proxy import ElasticsearchProxy
+from vulcanus.log.log import LOGGER
+from vulcanus.restful.status import DATABASE_DELETE_ERROR, DATABASE_INSERT_ERROR,\
     DATABASE_QUERY_ERROR, DATA_EXIST, SUCCEED
 from zeus.conf.constant import TEMPLATE_INDEX, TASK_INDEX
 

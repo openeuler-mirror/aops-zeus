@@ -22,17 +22,17 @@ import requests
 from flask import jsonify, request
 
 from zeus.conf.constant import ROUTE_AGENT_HOST_INFO, CHECK_WORKFLOW_HOST_EXIST
-from culcanus.restful.status import (
+from vulcanus.restful.status import (
     SUCCEED,
     DATABASE_CONNECT_ERROR,
     NO_DATA,
     TOKEN_ERROR,
     DATABASE_DELETE_ERROR
 )
-from culcanus.restful.response import BaseResponse
-from culcanus.database.helper import operate
-from culcanus.database.table import User, Host
-from culcanus.log.log import LOGGER
+from vulcanus.restful.response import BaseResponse
+from vulcanus.database.helper import operate
+from vulcanus.database.table import User, Host
+from vulcanus.log.log import LOGGER
 from zeus.database.proxy.host import HostProxy
 from zeus.deploy_manager.ansible_runner.inventory_builder import InventoryBuilder
 from zeus.conf import configuration
@@ -121,7 +121,7 @@ class DeleteHost(BaseResponse):
             host_name_list.append(host_info[host_id])
         inventory = InventoryBuilder()
         inventory.remove_specified_host_vars(
-            host_name_list, configuration.manager['HOST_VAULT_DIR'])
+            host_name_list, configuration.zeus['HOST_VAULT_DIR'])
 
     def _handle(self, args):
         """

@@ -20,7 +20,7 @@ import argparse
 import json
 from zeus.deploy_manager.ansible_runner.inventory_builder import InventoryBuilder
 from zeus.deploy_manager.config import HOST_VARS_DIR
-from culcanus.log.log import LOGGER
+from vulcanus.log.log import LOGGER
 
 CURRENT_PATH = os.path.dirname(os.path.abspath(__file__))
 HOST_LIST_DIR = "host_list"

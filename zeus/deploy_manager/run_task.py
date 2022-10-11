@@ -20,7 +20,7 @@ import yaml
 from ansible.errors import AnsibleError
 from zeus.deploy_manager.ansible_runner.ansible_runner import AnsibleRunner
 from zeus.deploy_manager.config import TASKS_PATH, PLAYBOOK_PATH, INVENTORY_PATH
-from culcanus.log.log import LOGGER
+from vulcanus.log.log import LOGGER
 
 
 class TaskRunner:

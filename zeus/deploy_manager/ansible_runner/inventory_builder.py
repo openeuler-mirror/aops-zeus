@@ -22,7 +22,7 @@ from zeus.deploy_manager.ansible_runner.vault_handler import VaultHandler
 from zeus.deploy_manager.config import INVENTORY_PATH, HOST_VARS_DIR, \
     HOST_VARS_PATH, VAULT_VARS, PLAYBOOK_VARS_PATH
 from zeus.deploy_manager.utils import build_yaml, make_dir, move_file, copy_dirs
-from culcanus.log.log import LOGGER
+from vulcanus.log.log import LOGGER
 
 
 class InventoryBuilder:
