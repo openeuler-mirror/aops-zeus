@@ -15,7 +15,7 @@ Time:
 Author:
 Description: default config of manager
 """
-manager = {
+zeus = {
     "IP": "127.0.0.1",
     "PORT": 11111,
     "HOST_VAULT_DIR": "/opt/aops"

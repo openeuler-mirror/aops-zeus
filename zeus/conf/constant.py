@@ -25,15 +25,14 @@ TEMPLATE_INDEX = "ansible_templates"
 TASK_INDEX = "ansible_task"
 HOST_INFO_INDEX = 'host_information'
 
-ROUTE_AGENT_PLUGIN_INFO = '/v1/agent/plugin/info'
-ROUTE_AGENT_HOST_INFO = '/v1/agent/host/info'
-
-# agent
-AGENT_PLUGIN_START = "/v1/agent/plugin/start"
-AGENT_PLUGIN_STOP = "/v1/agent/plugin/stop"
-AGENT_COLLECT_ITEMS_CHANGE = "/v1/agent/collect/items/change"
-AGENT_APPLICATION_INFO = "/v1/agent/application/info"
-ROUTE_AGENT_COLLECT_FILE = '/v1/agent/file/collect'
+# ceres
+CERES_PLUGIN_START = "/v1/ceres/plugin/start"
+CERES_PLUGIN_STOP = "/v1/ceres/plugin/stop"
+CERES_COLLECT_ITEMS_CHANGE = "/v1/ceres/collect/items/change"
+CERES_APPLICATION_INFO = "/v1/ceres/application/info"
+CERES_COLLECT_FILE = '/v1/ceres/file/collect'
+CERES_HOST_INFO = '/v1/ceres/host/info'
+CERES_PLUGIN_INFO = '/v1/ceres/plugin/info'
 
 # check
 CHECK_IDENTIFY_SCENE = "/check/scene/identify"
