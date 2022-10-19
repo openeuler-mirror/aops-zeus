@@ -21,7 +21,7 @@ from typing import Dict, Tuple
 import requests
 from flask import jsonify, request
 
-from zeus.conf.constant import ROUTE_AGENT_HOST_INFO, CHECK_WORKFLOW_HOST_EXIST
+from zeus.conf.constant import CERES_HOST_INFO, CHECK_WORKFLOW_HOST_EXIST
 from vulcanus.restful.status import (
     SUCCEED,
     DATABASE_CONNECT_ERROR,
@@ -349,7 +349,7 @@ class GetHostInfo(BaseResponse):
             for query in query_list:
                 host_info = {'host_id': query.host_id}
                 incorrect_host_list.remove(query.host_id)
-                url = f"http://{query.public_ip}:{query.agent_port}{ROUTE_AGENT_HOST_INFO}"
+                url = f"http://{query.public_ip}:{query.agent_port}{CERES_HOST_INFO}"
                 ret = requests.post(url,
                                     json.dumps(["cpu", "os", "memory"]),
                                     headers=headers,

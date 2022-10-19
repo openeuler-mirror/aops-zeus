@@ -24,11 +24,11 @@ from zeus.function.verify.agent import (
     SetAgentMetricStatusSchema,
 )
 from zeus.conf.constant import (
-    ROUTE_AGENT_PLUGIN_INFO,
-    AGENT_PLUGIN_START,
-    AGENT_PLUGIN_STOP,
-    AGENT_APPLICATION_INFO,
-    AGENT_COLLECT_ITEMS_CHANGE,
+    CERES_PLUGIN_INFO,
+    CERES_PLUGIN_START,
+    CERES_PLUGIN_STOP,
+    CERES_APPLICATION_INFO,
+    CERES_COLLECT_ITEMS_CHANGE,
     CHECK_IDENTIFY_SCENE
 )
 from zeus.conf import configuration
@@ -204,9 +204,8 @@ class AgentPluginInfo(BaseResponse):
             LOGGER.error("Get Agent data failed.")
             return status, {}
         agent_header = {'access_token': data.get('host_token')}
-        status, ret = AgentUtil.make_agent_request(AgentUtil.make_agent_url(data.get('host_ip_with_port'),
-                                                                            ROUTE_AGENT_PLUGIN_INFO),
-                                                   "get", header=agent_header)
+        status, ret = AgentUtil.make_agent_request(AgentUtil.make_agent_url(
+            data.get('host_ip_with_port'), CERES_PLUGIN_INFO), "get", header=agent_header)
 
         ret["info"] = ret.pop("resp", [])
         return status, ret
@@ -265,7 +264,7 @@ class GetHostScene(BaseResponse):
 
         # Get applications form agent
         status, data = AgentUtil.make_agent_request(AgentUtil.make_agent_url(host_ip_port,
-                                                                             AGENT_APPLICATION_INFO),
+                                                                             CERES_APPLICATION_INFO),
                                                     "get", header)
         if status != SUCCEED:
             LOGGER.error("Get agent application of host %s failed.", host_ip_port)
@@ -274,7 +273,7 @@ class GetHostScene(BaseResponse):
 
         # Get collect items form agent
         status, data = AgentUtil.make_agent_request(AgentUtil.make_agent_url(host_ip_port,
-                                                                             ROUTE_AGENT_PLUGIN_INFO),
+                                                                             CERES_PLUGIN_INFO),
                                                     "get", header)
         if status != SUCCEED:
             LOGGER.error("Get agent collect items of host %s failed.", host_ip_port)
@@ -347,8 +346,8 @@ class SetAgentPluginStatus(BaseResponse):
     Restful API: POST
     """
     status_url_map = {
-        "active": AGENT_PLUGIN_START,
-        "inactive": AGENT_PLUGIN_STOP
+        "active": CERES_PLUGIN_START,
+        "inactive": CERES_PLUGIN_STOP
     }
 
     @staticmethod
@@ -429,7 +428,7 @@ class SetAgentMetricStatus(BaseResponse):
 
         operate_response = AgentUtil.make_agent_request(
             AgentUtil.make_agent_url(host_ip_port,
-                                     AGENT_COLLECT_ITEMS_CHANGE),
+                                     CERES_COLLECT_ITEMS_CHANGE),
             "post", header, data=body)
         return operate_response
 
