@@ -8,9 +8,9 @@ Source0:	%{name}-%{version}.tar.gz
 
 
 BuildRequires:  python3-setuptools
-Requires:   aops-vulcanus = %{version}-%{release} ansible >= 2.9.0
-Requires:   python3-pyyaml python3-marshmallow >= 3.13.0 python3-flask python3-flask-restful
-Requires:   python3-requests sshpass python3-uWSGI python3-sqlalchemy python3-werkzeug python3-PyMySQL
+Requires:   aops-vulcanus = %{version}-%{release}
+Requires:   python3-marshmallow >= 3.13.0 python3-flask python3-flask-restful
+Requires:   python3-requests python3-uWSGI python3-sqlalchemy python3-werkzeug python3-PyMySQL
 Provides:   aops-zeus
 Conflicts:  aops-manager
 
@@ -34,7 +34,6 @@ A host and user manager service which is the foundation of aops.
 %files
 %doc README.*
 %attr(0644,root,root) %{_sysconfdir}/aops/zeus.ini
-%attr(0644,root,root) %{_sysconfdir}/aops/default.json
 %attr(0755,root,root) %{_bindir}/aops-zeus
 %attr(0755,root,root) %{_unitdir}/aops-zeus.service
 %{python3_sitelib}/aops_zeus*.egg-info

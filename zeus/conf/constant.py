@@ -21,10 +21,6 @@ from vulcanus.conf.constant import BASE_CONFIG_PATH
 # path of manager configuration
 MANAGER_CONFIG_PATH = os.path.join(BASE_CONFIG_PATH, 'zeus.ini')
 
-TEMPLATE_INDEX = "ansible_templates"
-TASK_INDEX = "ansible_task"
-HOST_INFO_INDEX = 'host_information'
-
 # ceres
 CERES_PLUGIN_START = "/v1/ceres/plugin/start"
 CERES_PLUGIN_STOP = "/v1/ceres/plugin/stop"
