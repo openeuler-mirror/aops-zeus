@@ -17,8 +17,7 @@ Description: default config of manager
 """
 zeus = {
     "IP": "127.0.0.1",
-    "PORT": 11111,
-    "HOST_VAULT_DIR": "/opt/aops"
+    "PORT": 11111
 }
 
 mysql = {
@@ -28,12 +27,6 @@ mysql = {
     "ENGINE_FORMAT": "mysql+pymysql://@%s:%s/%s",
     "POOL_SIZE": 10000,
     "POOL_RECYCLE": 7200
-}
-
-elasticsearch = {
-    "IP": "127.0.0.1",
-    "PORT": 9200,
-    "MAX_ES_QUERY_NUM": 10000000
 }
 
 aops_check = {

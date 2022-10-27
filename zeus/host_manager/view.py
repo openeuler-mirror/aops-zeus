@@ -34,7 +34,6 @@ from vulcanus.database.helper import operate
 from vulcanus.database.table import User, Host
 from vulcanus.log.log import LOGGER
 from zeus.database.proxy.host import HostProxy
-from zeus.deploy_manager.ansible_runner.inventory_builder import InventoryBuilder
 from zeus.conf import configuration
 from zeus.database import SESSION
 from zeus.account_manager.cache import UserCache
@@ -106,23 +105,6 @@ class DeleteHost(BaseResponse):
     Restful API: DELETE
     """
 
-    @staticmethod
-    def _delete_host_vars(host_list, result):
-        """
-        Since the hosts have been deleted, the related host vars are need deleted too.
-
-        Args:
-            host_list (list): list of host which has been deleted successfully
-            result (dict): response body from database proxy
-        """
-        host_name_list = []
-        host_info = result.pop('host_info')
-        for host_id in host_list:
-            host_name_list.append(host_info[host_id])
-        inventory = InventoryBuilder()
-        inventory.remove_specified_host_vars(
-            host_name_list, configuration.zeus['HOST_VAULT_DIR'])
-
     def _handle(self, args):
         """
         Handle function
@@ -143,7 +125,8 @@ class DeleteHost(BaseResponse):
             'POST',
             f'http://{configuration.aops_check["IP"]}:{configuration.aops_check["PORT"]}{CHECK_WORKFLOW_HOST_EXIST}',
             args,
-            {'content-type': 'application/json', 'access_token': request.headers.get('access_token')}
+            {'content-type': 'application/json',
+             'access_token': request.headers.get('access_token')}
         )
 
         res = {
@@ -155,7 +138,7 @@ class DeleteHost(BaseResponse):
             LOGGER.error('No valid information can be obtained when query'
                          'whether the host is running in the workflow')
             res['fail_list'].update(zip(args['host_list'],
-                                        len(args['host_list'])*("query workflow fail",)))
+                                        len(args['host_list']) * ("query workflow fail",)))
             return DATABASE_DELETE_ERROR, res
 
         host_id_in_workflow = []
@@ -357,7 +340,8 @@ class GetHostInfo(BaseResponse):
 
                 host_info['host_info'] = ret.json().get('resp', {})
                 host_infos.append(host_info)
-            host_infos.extend({"host_id": host_id, "host_info": {}} for host_id in incorrect_host_list)
+            host_infos.extend(
+                {"host_id": host_id, "host_info": {}} for host_id in incorrect_host_list)
             res = {"host_infos": host_infos}
             return SUCCEED, res
         return operate(HostProxy(), args, 'get_host_info', SESSION)

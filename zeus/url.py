@@ -17,7 +17,6 @@ Description: url set
 """
 from zeus.agent_manager import view as agent_view
 from zeus.host_manager import view as host_view
-from zeus.deploy_manager import view as deploy_view
 from zeus.config_manager import view as config_view
 from zeus.account_manager import view as account_view
 from vulcanus.conf.constant import (
@@ -29,13 +28,6 @@ from vulcanus.conf.constant import (
     ADD_GROUP,
     DELETE_GROUP,
     GET_GROUP,
-    GENERATE_TASK,
-    DELETE_TASK,
-    EXECUTE_TASK,
-    GET_TASK,
-    IMPORT_TEMPLATE,
-    DELETE_TEMPLATE,
-    GET_TEMPLATE,
     COLLECT_CONFIG,
     USER_LOGIN,
     USER_CERTIFICATE,
@@ -67,17 +59,6 @@ SPECIFIC_URLS = {
         (host_view.AddHostGroup, ADD_GROUP),
         (host_view.DeleteHostGroup, DELETE_GROUP),
         (host_view.GetHostGroup, GET_GROUP)
-    ],
-    "TEMPLATE_URLS": [
-        (deploy_view.ImportTemplate, IMPORT_TEMPLATE),
-        (deploy_view.DeleteTemplate, DELETE_TEMPLATE),
-        (deploy_view.GetTemplate, GET_TEMPLATE)
-    ],
-    "TASK_URLS": [
-        (deploy_view.GenerateTask, GENERATE_TASK),
-        (deploy_view.DeleteTask, DELETE_TASK),
-        (deploy_view.ExecuteTask, EXECUTE_TASK),
-        (deploy_view.GetTask, GET_TASK),
     ],
     "CONFIG_URLS": [
         (config_view.CollectConfig, COLLECT_CONFIG)

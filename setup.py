@@ -11,8 +11,6 @@ setup(
     version='2.0.0',
     packages=find_packages(),
     install_requires=[
-        'ansible>=2.9.0',
-        'PyYAML',
         'marshmallow>=3.13.0',
         'Flask',
         'Flask-RESTful',
@@ -22,7 +20,7 @@ setup(
         ],
     author='cmd-lsw-yyy-zyc',
     data_files=[
-        ('/etc/aops', ['conf/zeus.ini', 'conf/default.json']),
+        ('/etc/aops', ['conf/zeus.ini']),
         ('/usr/lib/systemd/system', ['aops-zeus.service']),
     ],
     scripts=['aops-zeus'],

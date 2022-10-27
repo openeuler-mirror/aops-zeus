@@ -23,11 +23,10 @@ from sqlalchemy import func
 
 from vulcanus.log.log import LOGGER
 from vulcanus.database.helper import judge_return_code, sort_and_page
-from vulcanus.database.proxy import MysqlProxy, ElasticsearchProxy
+from vulcanus.database.proxy import MysqlProxy
 from vulcanus.database.table import Host, HostGroup, User
-from vulcanus.restful.status import DATABASE_DELETE_ERROR, DATABASE_INSERT_ERROR,\
+from vulcanus.restful.status import DATABASE_DELETE_ERROR, DATABASE_INSERT_ERROR, \
     DATABASE_QUERY_ERROR, DATA_DEPENDENCY_ERROR, DATA_EXIST, SUCCEED, NO_DATA
-from zeus.conf.constant import HOST_INFO_INDEX
 
 
 class HostProxy(MysqlProxy):
@@ -619,90 +618,3 @@ class HostProxy(MysqlProxy):
             LOGGER.error("Save host %s scene fail.", host_id)
             self.session.rollback()
             return DATABASE_INSERT_ERROR
-
-
-class HostInfoProxy(ElasticsearchProxy):
-    """
-    Host info related operation
-    """
-
-    def save_host_info(self, data):
-        """
-        Save host info
-
-        Args:
-            data(dict): parameter, e.g.
-                {
-                    "host_infos: [...]
-                }
-
-        Returns:
-            int
-        """
-        host_infos = data.get('host_infos')
-        res = self.insert_bulk(HOST_INFO_INDEX, host_infos)
-        if res:
-            LOGGER.info("save host info succeed")
-            return SUCCEED
-        LOGGER.error("save host info fail")
-        return DATABASE_INSERT_ERROR
-
-    def delete_host_info(self, data):
-        """
-        Delete host info
-
-        Args:
-            data(dict): parameter, e.g.
-                {
-                    "host_list": ["id1"]
-                }
-
-        Returns:
-            int
-        """
-        host_list = data.get('host_list')
-        body = {
-            "query": {
-                "terms": {
-                    "host_id": host_list
-                }
-            }
-        }
-        res = self.delete(HOST_INFO_INDEX, body)
-        if res:
-            LOGGER.info("delete host info of %s succeed", host_list)
-            return SUCCEED
-        LOGGER.error("delete host info of %s fail", host_list)
-        return DATABASE_DELETE_ERROR
-
-    def get_host_info(self, data):
-        """
-        Get host info
-
-        Args:
-            data(dict): parameter, e.g.
-                {
-                    "host_list": ["id1"]
-                }
-
-        Returns:
-            int: status code
-            dict
-        """
-        host_list = data.get('host_list')
-        body = {
-            "query": {
-                "terms": {
-                    "host_id": host_list
-                }
-            }
-        }
-        result = {}
-        result['host_infos'] = []
-        res = self.scan(HOST_INFO_INDEX, body)
-        if res[0]:
-            LOGGER.debug("query host %s info succeed", host_list)
-            result['host_infos'] = res[1]
-            return SUCCEED, result
-        LOGGER.error("query host %s info fail", host_list)
-        return DATABASE_QUERY_ERROR, result
