@@ -16,7 +16,7 @@ Author:
 Description: Host table operation
 """
 import math
-from typing import Dict
+from typing import Dict, List, Tuple
 import sqlalchemy
 from sqlalchemy.sql.expression import desc, asc
 from sqlalchemy import func
@@ -618,3 +618,26 @@ class HostProxy(MysqlProxy):
             LOGGER.error("Save host %s scene fail.", host_id)
             self.session.rollback()
             return DATABASE_INSERT_ERROR
+
+    def get_host_address(self, host_id_list: List[str]) -> Tuple[int, dict]:
+        """
+            get host ip and agent port from database
+        Args:
+            host_id_list( List[str] ) : [host_id1, host_id2, ...]
+        Returns:
+            tuple:
+                status_code, {host_id : ip_with_port}
+
+        """
+        result = {}
+        try:
+            query_list = self.session.query(
+                Host).filter(Host.host_id.in_(host_id_list)).all()
+            self.session.commit()
+
+            for host_info in query_list:
+                result[host_info.host_id] = f'{host_info.public_ip}:{host_info.agent_port}'
+            return SUCCEED, result
+        except sqlalchemy.exc.SQLAlchemyError as error:
+            LOGGER.error(error)
+            return DATABASE_QUERY_ERROR, result

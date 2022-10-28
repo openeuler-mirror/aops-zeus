@@ -16,11 +16,12 @@ Author:
 Description: Restful APIs for host
 """
 import json
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List, Iterable
 
 import requests
 from flask import jsonify, request
 
+from vulcanus.multi_thread_handler import MultiThreadHandler
 from zeus.conf.constant import CERES_HOST_INFO, CHECK_WORKFLOW_HOST_EXIST
 from vulcanus.restful.status import (
     SUCCEED,
@@ -309,42 +310,170 @@ class GetHostInfo(BaseResponse):
             tuple: (status code, result)
         """
         basic = args.get('basic')
-        if not basic:
-            user = UserCache.get(args.get('username'))
-            if user is None:
-                return TOKEN_ERROR, {}
+        if basic:
+            return operate(HostProxy(), args, 'get_host_info', SESSION)
+        user = UserCache.get(args.get('username'))
+        error_host_infos = self.generate_fail_data(args.get('host_list'))
+        if user is None:
+            return TOKEN_ERROR, {"host_infos": error_host_infos}
 
-            proxy = HostProxy()
-            if proxy.connect(SESSION):
-                query_list = proxy.session.query(
-                    Host).filter(Host.host_id.in_(args.get('host_list'))).all()
-                proxy.close()
-            else:
-                LOGGER.error("connect to database error")
-                return DATABASE_CONNECT_ERROR, {}
-            if len(query_list) == 0:
-                LOGGER.error("no such host_id, please check.")
-                return NO_DATA, {}
+        # query host address from database
+        proxy = HostProxy()
+        if proxy.connect(SESSION) is None:
+            LOGGER.error("connect to database error")
+            return DATABASE_CONNECT_ERROR, {"host_infos": error_host_infos}
 
-            headers = {'content-type': 'application/json', 'access_token': user.token}
-            incorrect_host_list = set(args.get('host_list'))
-            host_infos = []
-            for query in query_list:
-                host_info = {'host_id': query.host_id}
-                incorrect_host_list.remove(query.host_id)
-                url = f"http://{query.public_ip}:{query.agent_port}{CERES_HOST_INFO}"
-                ret = requests.post(url,
-                                    json.dumps(["cpu", "os", "memory"]),
-                                    headers=headers,
-                                    timeout=10)
+        status, host_address_list = proxy.get_host_address(args.get('host_list'))
+        if len(host_address_list) == 0:
+            LOGGER.warning("database has no such host id.")
+            return NO_DATA, {"host_infos": error_host_infos}
 
-                host_info['host_info'] = ret.json().get('resp', {})
-                host_infos.append(host_info)
-            host_infos.extend(
-                {"host_id": host_id, "host_info": {}} for host_id in incorrect_host_list)
-            res = {"host_infos": host_infos}
-            return SUCCEED, res
-        return operate(HostProxy(), args, 'get_host_info', SESSION)
+        # generate tasks
+        tasks = []
+        for host_id, address in host_address_list.items():
+            tasks.append({
+                'host_id': host_id,
+                'info_type': [],
+                'address': address,
+                "headers": {'content-type': 'application/json',
+                            'access_token': user.token}
+            })
+        # execute multi threading
+        multi_thread_handler = MultiThreadHandler(self.get_host_info, tasks, None)
+        multi_thread_handler.create_thread()
+        result_list = multi_thread_handler.get_result()
+
+        # analyse execute result and generate target data format
+        host_infos = self.analyse_query_result(args.get('host_list'), result_list)
+        return SUCCEED, {"host_infos": host_infos}
+
+    @staticmethod
+    def get_host_info(data: Dict) -> Dict:
+        """
+        Get host info from ceres.
+
+        Args:
+            data(dict): e.g
+                {
+                    "host_id": xx,
+                    "info_type": ["cpu", "os", "memory", "disk"],
+                    "address": "ip:port",
+                    "headers": {
+                        "content-type": "application/json",
+                        "access_token": "host token"
+                    }
+                }
+
+        Returns:
+            dict: e.g
+            {
+                "host_id":"host id",
+                "host_info": {
+                    "cpu": {...},
+                    "os":  {...},
+                    "memory": {...},
+                    "disk": [{...}]
+                }
+            }
+        """
+        headers = data.pop('headers')
+        url = f'http://{data.pop("address")}{CERES_HOST_INFO}'
+        res = {'host_id': data.get('host_id'), 'host_info': {}}
+        info_type = data.get('info_type')
+        try:
+            response = requests.post(url,
+                                     data=json.dumps(info_type),
+                                     headers=headers,
+                                     timeout=5)
+        except requests.exceptions.ConnectionError as error:
+            LOGGER.error(error)
+            return res
+
+        if response.status_code == SUCCEED:
+            res['host_info'] = response.json().get('resp', {})
+            return res
+        LOGGER.warning('Failed to get host info!')
+        return res
+
+    @staticmethod
+    def generate_fail_data(host_list: Iterable) -> List[dict]:
+        """
+        convert host list to fail data format
+
+        Args:
+            host_list (Iterable): e.g
+                [host_id1, host_id2... ] or { host_id1, host_id2...}
+
+        Returns:
+            dict: e.g
+                [
+                    {
+                        "host_id": host_id,
+                        "host_info":{}
+                    }
+                    ...
+                ]
+        """
+        res = []
+        for host_id in host_list:
+            res.append({
+                "host_id": host_id,
+                "host_info": {}
+            })
+        return res
+
+    def analyse_query_result(self, all_host: List[str],
+                             multithreading_execute_result: List) -> List:
+        """
+        Analyze multi-threaded execution results,
+        find out the data which fails to execute,
+        and generate the final execution result.
+        Args:
+            all_host(list): e.g
+                [host_id1, host_id2... ]
+            multithreading_execute_result(list): e.g
+                [
+                    {
+                    "host_id":"success host id",
+                    "host_info": {
+                        "cpu": {...},
+                        "os":" {...},
+                        "memory": {...}.
+                        "disk": [{...}]
+                        },
+                    }
+                ]
+
+        Returns:
+            list: e.g
+                [
+                    {
+                    "host_id":"success host id",
+                    "host_info": {
+                        "cpu": {...},
+                        "os":" {...},
+                        "memory": {...}.
+                        "disk": [{...}]
+                        },
+                    }.
+                    {
+                    "host_id":"fail host id",
+                    "host_info": {}
+                    }.
+                ]
+
+
+        """
+        host_infos = []
+        success_host = set()
+        for result in multithreading_execute_result:
+            if result.get('host_info'):
+                host_infos.append(result)
+                success_host.add(result.get('host_id'))
+
+        fail_host = set(all_host) - success_host
+        host_infos.extend(self.generate_fail_data(fail_host))
+        return host_infos
 
     def post(self):
         """
