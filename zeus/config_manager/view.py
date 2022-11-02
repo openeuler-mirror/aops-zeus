@@ -22,43 +22,19 @@ import requests
 
 from zeus.account_manager.cache import UserCache
 from zeus.conf.constant import CERES_COLLECT_FILE
-from vulcanus.database.table import Host
 from vulcanus.multi_thread_handler import MultiThreadHandler
+from zeus.database import SESSION
 from zeus.function.verify.config import CollectConfigSchema
 from zeus.database.proxy.host import HostProxy
-from zeus.database import SESSION
 from vulcanus.log.log import LOGGER
 from vulcanus.restful.status import (
     StatusCode,
     SUCCEED,
-    DATABASE_CONNECT_ERROR,
     TOKEN_ERROR,
-    HTTP_CONNECT_ERROR
+    HTTP_CONNECT_ERROR,
+    DATABASE_CONNECT_ERROR
 )
 from vulcanus.restful.response import BaseResponse
-
-
-def get_host_address(host_id_list: List[str]) -> Tuple[int, dict]:
-    """
-        get host ip and agent port from database
-    Args:
-        host_id_list( List[str] ) : [host_id1, host_id2, ...]
-    Returns:
-        tuple:
-            status_code, {host_id : ip_with_port}
-
-    """
-    proxy = HostProxy()
-    if proxy.connect(SESSION):
-        query_list = proxy.session.query(
-            Host).filter(Host.host_id.in_(host_id_list)).all()
-        proxy.close()
-        host_address = {}
-        for host_info in query_list:
-            host_address[host_info.host_id] = f'{host_info.public_ip}:{host_info.agent_port}'
-        return SUCCEED, host_address
-    LOGGER.error("connect to database error")
-    return DATABASE_CONNECT_ERROR, {}
 
 
 def get_file_content(host_info: Dict) -> Dict:
@@ -248,7 +224,13 @@ class CollectConfig(BaseResponse):
         headers = {'content-type': 'application/json', 'access_token': user.token}
 
         # Query host address from database
-        status, host_address_list = get_host_address(list(host_id_with_config_file.keys()))
+        proxy = HostProxy()
+        if proxy.connect(SESSION) is None:
+            file_content = convert_host_id_to_failed_data_format(
+                list(host_id_with_config_file.keys()), host_id_with_config_file)
+            return DATABASE_CONNECT_ERROR, {"resp": file_content}
+
+        status, host_address_list = proxy.get_host_address(list(host_id_with_config_file.keys()))
         if status != SUCCEED:
             file_content = convert_host_id_to_failed_data_format(
                 list(host_id_with_config_file.keys()), host_id_with_config_file)

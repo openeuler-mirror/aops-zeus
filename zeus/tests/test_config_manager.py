@@ -22,13 +22,13 @@ import json
 import requests
 from flask import Flask
 import responses
-from sqlalchemy.orm import scoping
 
 import zeus
+from vulcanus.database.proxy import MysqlProxy
 from vulcanus.multi_thread_handler import MultiThreadHandler
 from zeus.account_manager.cache import UserCache, UserInfo
 from vulcanus.restful.status import SUCCEED, PARAM_ERROR, SERVER_ERROR, DATABASE_CONNECT_ERROR
-from zeus.config_manager.view import get_file_content, get_host_address
+from zeus.config_manager.view import get_file_content
 from zeus.database.proxy.host import HostProxy
 
 header = {
@@ -65,11 +65,13 @@ class TestConfigManage(unittest.TestCase):
 
     @mock.patch.object(MultiThreadHandler, "get_result")
     @mock.patch.object(MultiThreadHandler, "create_thread")
-    @mock.patch('zeus.config_manager.view.get_host_address')
+    @mock.patch.object(HostProxy, 'get_host_address')
+    @mock.patch.object(MysqlProxy, 'connect')
     @mock.patch.object(UserCache, 'get')
     def test_collect_config_should_return_get_all_file_content_when_all_is_right(
-            self, mock_user, mock_host_address, mock_create_thread, mock_get_result):
+            self, mock_user, mock_connect, mock_host_address, mock_create_thread, mock_get_result):
         mock_create_thread.return_value = None
+        mock_connect.return_value = ''
         mock_user.return_value = UserInfo('admin', 'mock', 'mock')
         mock_host_address.return_value = SUCCEED, {
             'mock_host_id1': "mock_address1",
@@ -109,11 +111,13 @@ class TestConfigManage(unittest.TestCase):
 
     @mock.patch.object(MultiThreadHandler, "get_result")
     @mock.patch.object(MultiThreadHandler, "create_thread")
-    @mock.patch('zeus.config_manager.view.get_host_address')
+    @mock.patch.object(HostProxy, 'get_host_address')
+    @mock.patch.object(MysqlProxy, 'connect')
     @mock.patch.object(UserCache, 'get')
     def test_collect_config_should_return_fail_list_when_input_host_id_not_in_database(
-            self, mock_user, mock_host_address, mock_create_thread, mock_get_result):
+            self, mock_user, mock_connect, mock_host_address, mock_create_thread, mock_get_result):
         mock_create_thread.return_value = None
+        mock_connect.return_value = ''
         mock_user.return_value = UserInfo('admin', 'mock', 'mock')
         mock_host_address.return_value = SUCCEED, {
             'mock_host_id1': "mock_address1",
@@ -143,11 +147,13 @@ class TestConfigManage(unittest.TestCase):
 
     @mock.patch.object(MultiThreadHandler, "get_result")
     @mock.patch.object(MultiThreadHandler, "create_thread")
-    @mock.patch('zeus.config_manager.view.get_host_address')
+    @mock.patch.object(HostProxy, 'get_host_address')
+    @mock.patch.object(MysqlProxy, 'connect')
     @mock.patch.object(UserCache, 'get')
     def test_collect_config_should_return_fail_list_when_get_file_failed_from_ceres(
-            self, mock_user, mock_host_address, mock_create_thread, mock_get_result):
+            self, mock_user, mock_connect, mock_host_address, mock_create_thread, mock_get_result):
         mock_create_thread.return_value = None
+        mock_connect.return_value = ''
         mock_user.return_value = UserInfo('admin', 'mock', 'mock')
         mock_host_address.return_value = SUCCEED, {
             'mock_host_id1': "mock_address1",
@@ -223,11 +229,13 @@ class TestConfigManage(unittest.TestCase):
         res = get_file_content(mock_agrs)
         self.assertEqual("xx", res.get("config_file_list"), res)
 
-    @mock.patch.object(HostProxy, 'connect')
-    @mock.patch.object(scoping, 'scoped_session')
-    def test_get_host_address_should_return_database_error_when_connect_database_failed(
-            self, mock_session, mock_connect):
-        mock_session.return_value = ''
-        mock_connect.return_value = False
-        res = get_host_address([])
-        self.assertEqual((DATABASE_CONNECT_ERROR, {}), res)
+    @mock.patch.object(MysqlProxy, 'connect')
+    @mock.patch.object(UserCache, 'get')
+    def test_collect_config_should_return_database_connect_error_when_failed_to_connect_database(
+            self, mock_user, mock_connect):
+        mock_user.return_value = UserInfo('admin', 'mock', 'mock')
+        mock_connect.return_value = None
+        response = self.client.post('/manage/config/collect',
+                                    data=json.dumps(self.MOCK_GET_FILE_CONTENT_ARGS),
+                                    headers=header)
+        self.assertEqual(DATABASE_CONNECT_ERROR, response.json.get('code'))
