@@ -19,6 +19,7 @@ from zeus.agent_manager import view as agent_view
 from zeus.host_manager import view as host_view
 from zeus.config_manager import view as config_view
 from zeus.account_manager import view as account_view
+from zeus.vulnerability_manage import view as vulnerability_view
 from vulcanus.conf.constant import (
     ADD_HOST,
     DELETE_HOST,
@@ -36,7 +37,8 @@ from vulcanus.conf.constant import (
     AGENT_PLUGIN_INFO,
     AGENT_PLUGIN_SET,
     AGENT_METRIC_SET,
-    HOST_SCENE_GET
+    HOST_SCENE_GET,
+    EXECUTE_REPO_SET
 )
 
 URLS = []
@@ -68,7 +70,11 @@ SPECIFIC_URLS = {
         (agent_view.SetAgentPluginStatus, AGENT_PLUGIN_SET),
         (agent_view.SetAgentMetricStatus, AGENT_METRIC_SET),
         (agent_view.GetHostScene, HOST_SCENE_GET)
+    ],
+    'CVE_URLS': [
+        (vulnerability_view.ExecuteRepoSetTask, EXECUTE_REPO_SET)
     ]
+
 }
 
 for _, value in SPECIFIC_URLS.items():
