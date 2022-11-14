@@ -46,7 +46,8 @@ class HostProxy(MysqlProxy):
                     "host_id": "id1",
                     "public_ip": "127.0.0.1",
                     "management": False,
-                    "agent_port": 1122
+                    "agent_port": 1122,
+                    "os_version": "openEuler 22.03 LTS"
                 }
 
         Returns:
@@ -272,7 +273,8 @@ class HostProxy(MysqlProxy):
                 "public_ip": host.public_ip,
                 "management": host.management,
                 "status": host.status,
-                "scene": host.scene
+                "scene": host.scene,
+                "os_version": host.os_version,
             }
             result['host_infos'].append(host_info)
 
@@ -301,7 +303,7 @@ class HostProxy(MysqlProxy):
         temp_res = []
         result = {}
         result['host_infos'] = temp_res
-        query_fields = [Host.host_id, Host.host_name, Host.public_ip,
+        query_fields = [Host.host_id, Host.host_name, Host.public_ip, Host.os_version,
                         Host.host_group_name, Host.management, Host.status, Host.scene, Host.agent_port]
         filters = {
             Host.user == username
@@ -319,7 +321,8 @@ class HostProxy(MysqlProxy):
                     "management": host.management,
                     "status": host.status,
                     "scene": host.scene,
-                    "agent_port": host.agent_port
+                    "agent_port": host.agent_port,
+                    "os_version": host.os_version,
                 }
                 temp_res.append(host_info)
             self.session.commit()

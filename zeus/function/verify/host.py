@@ -35,6 +35,7 @@ class HostSchema(Schema):
     username = fields.String(required=True, validate=lambda s: len(s) > 0)
     password = fields.String(required=True, validate=lambda s: len(s) > 0)
     agent_port = fields.Integer(required=True, validate=lambda s: 65535 >= s >= 0)
+    os_version = fields.String(required=True, validate=lambda s:len(s) > 0)
 
 
 class DeleteHostSchema(Schema):
