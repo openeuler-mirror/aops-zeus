@@ -23,6 +23,7 @@ from zeus.vulnerability_manage import view as vulnerability_view
 from vulcanus.conf.constant import (
     ADD_HOST,
     DELETE_HOST,
+    EXECUTE_CVE_SCAN,
     GET_HOST_COUNT,
     QUERY_HOST,
     QUERY_HOST_DETAIL,
@@ -72,7 +73,8 @@ SPECIFIC_URLS = {
         (agent_view.GetHostScene, HOST_SCENE_GET)
     ],
     'CVE_URLS': [
-        (vulnerability_view.ExecuteRepoSetTask, EXECUTE_REPO_SET)
+        (vulnerability_view.ExecuteRepoSetTask, EXECUTE_REPO_SET),
+        (vulnerability_view.ExecuteCveScanTask, EXECUTE_CVE_SCAN)
     ]
 
 }

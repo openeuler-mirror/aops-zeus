@@ -30,14 +30,15 @@ CERES_COLLECT_FILE = '/v1/ceres/file/collect'
 CERES_HOST_INFO = '/v1/ceres/host/info'
 CERES_PLUGIN_INFO = '/v1/ceres/plugin/info'
 CERES_CVE_REPO_SET = '/v1/ceres/cve/repo/set'
+CERES_CVE_SCAN = '/v1/ceres/cve/scan'
 
 # check
 CHECK_IDENTIFY_SCENE = "/check/scene/identify"
 CHECK_WORKFLOW_HOST_EXIST = '/check/workflow/host/exist'
 
+
 # cve task status
-CVE_TASK_STATUS = {
-    "succeed": "succeed",
-    "fail": "fail",
-    "unknown": "unknown"
-}
+class CveTaskStatus:
+    SUCCEED = 'succeed'
+    FAIL = 'fail'
+    UNKNOWN = 'unknown'
