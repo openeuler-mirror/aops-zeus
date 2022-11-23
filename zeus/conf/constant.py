@@ -31,6 +31,7 @@ CERES_HOST_INFO = '/v1/ceres/host/info'
 CERES_PLUGIN_INFO = '/v1/ceres/plugin/info'
 CERES_CVE_REPO_SET = '/v1/ceres/cve/repo/set'
 CERES_CVE_SCAN = '/v1/ceres/cve/scan'
+CERES_CVE_FIX = '/v1/ceres/cve/fix'
 
 # check
 CHECK_IDENTIFY_SCENE = "/check/scene/identify"
