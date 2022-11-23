@@ -15,7 +15,6 @@ import unittest
 from unittest import mock
 
 import requests
-import responses
 from flask import Flask
 
 from vulcanus.conf.constant import QUERY_HOST_DETAIL
@@ -144,61 +143,6 @@ class TestGetHostInfo(unittest.TestCase):
                                data=json.dumps(mock_incorrect_data),
                                headers=header_with_token)
         self.assertEqual(PARAM_ERROR, response.json.get('code'))
-
-    @responses.activate
-    def test_get_host_info_should_return_host_info_when_all_is_right(self):
-        mock_args = {
-            "host_id": "mock_host_id1",
-            "info_type": ["cpu", "os", "memory", "disk"],
-            "address": "mock_address",
-            "headers": {
-                "content-type": "application/json",
-                "access_token": "host token"
-            }
-        }
-        mock_host_info = {
-            "cpu": {},
-            "os": {},
-            "memory": {},
-            "disk": [{}]
-        }
-        responses.add(responses.POST,
-                      'http://mock_address/v1/ceres/host/info',
-                      json={
-                          "code": SUCCEED,
-                          "msg": "mock_msg",
-                          "resp": mock_host_info
-                      },
-                      status=SUCCEED,
-                      content_type='application/json'
-                      )
-        result = GetHostInfo.get_host_info(mock_args)
-        self.assertEqual({"host_id": "mock_host_id1", "host_info": mock_host_info}, result)
-
-    @responses.activate
-    def test_get_host_info_should_return_host_info_is_empty_when_ceres_server_has_some_error(self):
-        mock_args = {
-            "host_id": "mock_host_id1",
-            "info_type": ["cpu", "os", "memory", "disk"],
-            "address": "mock_address",
-            "headers": {
-                "content-type": "application/json",
-                "access_token": "host token"
-            }
-        }
-
-        responses.add(responses.POST,
-                      'http://mock_address/v1/ceres/host/info',
-                      json={
-                          "code": SERVER_ERROR,
-                          "msg": "mock_msg",
-                          "resp": {}
-                      },
-                      status=SERVER_ERROR,
-                      content_type='application/json'
-                      )
-        result = GetHostInfo.get_host_info(mock_args)
-        self.assertEqual({"host_id": "mock_host_id1", "host_info": {}}, result)
 
     @mock.patch.object(requests, "post")
     def test_get_host_info_should_return_host_info_is_empty_when_http_connect_error(

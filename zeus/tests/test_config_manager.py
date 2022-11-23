@@ -21,13 +21,12 @@ import json
 
 import requests
 from flask import Flask
-import responses
 
 import zeus
 from vulcanus.database.proxy import MysqlProxy
 from vulcanus.multi_thread_handler import MultiThreadHandler
 from zeus.account_manager.cache import UserCache, UserInfo
-from vulcanus.restful.status import SUCCEED, PARAM_ERROR, SERVER_ERROR, DATABASE_CONNECT_ERROR
+from vulcanus.restful.status import SUCCEED, PARAM_ERROR, DATABASE_CONNECT_ERROR
 from zeus.config_manager.view import get_file_content
 from zeus.database.proxy.host import HostProxy
 
@@ -172,49 +171,6 @@ class TestConfigManage(unittest.TestCase):
         for file_content in resp.json.get('resp'):
             all_fail_file_list.extend(file_content.get("fail_files"))
         self.assertEqual(set(expecte_fail_file), set(all_fail_file_list))
-
-    @responses.activate
-    def test_get_file_content_should_return_file_content_when_all_is_right(self):
-        mock_agrs = {
-            "host_id": "xx",
-            "config_file_list": "xx",
-            "address": "xx",
-            "header": "xx"
-        }
-
-        mock_file_info = {
-            'fail_files': [],
-            'infos': [],
-            'success_files': ['xx'],
-        }
-        responses.add(responses.POST,
-                      'http://xx/v1/ceres/file/collect',
-                      json=mock_file_info,
-                      status=SUCCEED,
-                      content_type='application/json'
-                      )
-        res = get_file_content(mock_agrs)
-        self.assertEqual(None, res.get("config_file_list"), res)
-
-    @responses.activate
-    def test_get_file_content_should_return_host_id_and_config_file_list_when_response_status_code_is_not_success(
-            self):
-        mock_agrs = {
-            "host_id": "xx",
-            "config_file_list": "xx",
-            "address": "xx",
-            "header": "xx"
-        }
-
-        mock_file_info = {}
-        responses.add(responses.POST,
-                      'http://xx/v1/ceres/file/collect',
-                      json=mock_file_info,
-                      status=SERVER_ERROR,
-                      content_type='application/json'
-                      )
-        res = get_file_content(mock_agrs)
-        self.assertEqual("xx", res.get("config_file_list"), res)
 
     @mock.patch.object(requests, "post")
     def test_get_file_content_should_return_host_id_and_config_file_list_when_http_connect_failed(

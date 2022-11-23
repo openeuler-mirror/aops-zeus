@@ -14,11 +14,10 @@ import unittest
 from unittest import mock
 
 from flask import Flask
-import responses
 
 from zeus import BLUE_POINT
 from zeus.database.proxy.host import HostProxy
-from vulcanus.restful.status import SUCCEED, TOKEN_ERROR, DATABASE_CONNECT_ERROR
+from vulcanus.restful.status import TOKEN_ERROR, DATABASE_CONNECT_ERROR
 
 app = Flask("check")
 for blue, api in BLUE_POINT:
@@ -37,89 +36,6 @@ header_with_token = {
 
 
 class TestDeleteHost(unittest.TestCase):
-    @responses.activate
-    @mock.patch.object(HostProxy, 'delete_host')
-    @mock.patch.object(HostProxy, 'connect')
-    def test_delete_host_should_return_success_list_when_input_host_id_is_in_database_and_not_in_workflow(
-            self, mock_mysql_connect, mock_delete_host):
-        input_data = {'host_list': ['test_host_id_1', 'test_host_id_2', 'test_host_id_3']}
-        mock_mysql_connect.return_value = True
-        mock_delete_host.return_value = SUCCEED, {
-            'succeed_list': ['test_host_id_1', 'test_host_id_2', 'test_host_id_3'],
-            'fail_list': {},
-            'host_info': {'test_host_id_1': '', 'test_host_id_2': '', 'test_host_id_3': ''}
-        }
-        mock_check_json = {
-            'code': 200,
-            'msg': 'xxxxx',
-            'result': {host_id: False for host_id in input_data['host_list']}
-        }
-        responses.add(responses.POST,
-                      'http://127.0.0.1:11112/check/workflow/host/exist',
-                      json=mock_check_json,
-                      status=200,
-                      content_type='application/json'
-                      )
-        resp = client.delete('/manage/host/delete', json=input_data, headers=header_with_token)
-        self.assertEqual(input_data['host_list'], resp.json['succeed_list'])
-
-    @responses.activate
-    @mock.patch.object(HostProxy, 'delete_host')
-    @mock.patch.object(HostProxy, 'connect')
-    def test_delete_host_should_return_fail_list_when_input_host_id_is_in_database_and_workflow(
-            self, mock_mysql_connect, mock_delete_host):
-        input_data = {'host_list': ['test_host_id_1', 'test_host_id_2', 'test_host_id_3']}
-        mock_mysql_connect.return_value = True
-        mock_delete_host.return_value = SUCCEED, {
-            'succeed_list': [],
-            'fail_list': {},
-            'host_info': {}
-        }
-        mock_check_json = {
-            'code': 200,
-            'msg': 'xxxxx',
-            'result': {host_id: True for host_id in input_data['host_list']}
-        }
-        responses.add(responses.POST,
-                      'http://127.0.0.1:11112/check/workflow/host/exist',
-                      json=mock_check_json,
-                      status=200,
-                      content_type='application/json'
-                      )
-        resp = client.delete('/manage/host/delete', json=input_data, headers=header_with_token)
-        expect_res = dict(zip(input_data['host_list'],
-                              len(input_data['host_list']) * ("There are workflow in check",)))
-        self.assertEqual(expect_res, resp.json['fail_list'])
-
-    @responses.activate
-    @mock.patch.object(HostProxy, 'delete_host')
-    @mock.patch.object(HostProxy, 'connect')
-    def test_delete_host_should_return_succeed_list_and_fail_list_when_part_of_input_host_id_is_in_database_and_workflow(
-            self, mock_mysql_connect, mock_delete_host):
-        input_data = {'host_list': ['test_host_id_1', 'test_host_id_2', 'test_host_id_3']}
-        mock_mysql_connect.return_value = True
-        mock_delete_host.return_value = SUCCEED, {
-            'succeed_list': ['test_host_id_2'],
-            'fail_list': {},
-            'host_info': {'test_host_id_2': ''}
-        }
-        mock_check_json = {
-            'code': 200,
-            'msg': 'xxxxx',
-            'result': {'test_host_id_1': True, 'test_host_id_2': False, 'test_host_id_3': True}
-        }
-        responses.add(responses.POST,
-                      'http://127.0.0.1:11112/check/workflow/host/exist',
-                      json=mock_check_json,
-                      status=200,
-                      content_type='application/json'
-                      )
-        resp = client.delete('/manage/host/delete', json=input_data, headers=header_with_token)
-        expect_fail_list = {
-            'test_host_id_1':"There are workflow in check",
-            'test_host_id_3':"There are workflow in check"
-        }
-        self.assertEqual(expect_fail_list, resp.json.get('fail_list'), resp.json)
 
     def test_delete_host_should_return_token_error_when_part_of_input_with_no_token(self):
         input_data = {'host_list': ['test_host_id_1', 'test_host_id_2', 'test_host_id_3']}
@@ -130,22 +46,6 @@ class TestDeleteHost(unittest.TestCase):
     def test_delete_host_should_return_400_when_no_input(self):
         resp = client.delete('/manage/host/delete', headers=header_with_token)
         self.assertEqual(400, resp.status_code, resp.json)
-
-    @responses.activate
-    @mock.patch.object(HostProxy, 'connect')
-    def test_delete_host_should_return_fail_list_when_aops_check_cannot_be_accessed(
-            self, mock_mysql_connect):
-        input_data = {'host_list': ['test_host_id_1', 'test_host_id_2', 'test_host_id_3']}
-        mock_mysql_connect.return_value = True
-        responses.add(responses.POST,
-                      'http://127.0.0.1:11112/check/workflow/host/exist',
-                      json={'code': 500, 'msg': 'xxxxxxxx'},
-                      status=500,
-                      content_type='application/json'
-                      )
-        expect_res = dict(zip(input_data['host_list'],len(input_data['host_list'])*("query workflow fail",)))
-        resp = client.delete('/manage/host/delete', json=input_data, headers=header_with_token)
-        self.assertEqual(expect_res, resp.json.get('fail_list'), resp.json)
 
     @mock.patch.object(HostProxy, 'connect')
     def test_delete_host_should_return_database_error_when_database_cannot_connect(
