@@ -237,8 +237,8 @@ class GetHostScene(BaseResponse):
         Returns:
             tuple: (url, header)
         """
-        check_ip = configuration.aops_check.get("IP")
-        check_port = configuration.aops_check.get("PORT")
+        check_ip = configuration.diana.get("IP")
+        check_port = configuration.diana.get("PORT")
         check_url = f"http://{check_ip}:{check_port}{route}"
         check_header = {
             "Content-Type": "application/json; charset=UTF-8"

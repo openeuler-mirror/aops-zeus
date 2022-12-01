@@ -124,7 +124,7 @@ class DeleteHost(BaseResponse):
         args.pop('username')
         resp = self.get_response(
             'POST',
-            f'http://{configuration.aops_check["IP"]}:{configuration.aops_check["PORT"]}{CHECK_WORKFLOW_HOST_EXIST}',
+            f'http://{configuration.diana["IP"]}:{configuration.diana["PORT"]}{CHECK_WORKFLOW_HOST_EXIST}',
             args,
             {'content-type': 'application/json',
              'access_token': request.headers.get('access_token')}

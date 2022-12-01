@@ -29,7 +29,7 @@ mysql = {
     "POOL_RECYCLE": 7200
 }
 
-aops_check = {
+diana = {
     "IP": "127.0.0.1",
     "PORT": 11112
 }
