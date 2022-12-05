@@ -172,7 +172,10 @@ class DeleteHost(BaseResponse):
         Returns:
             dict: response body
         """
-        return jsonify(self.handle_request(DeleteHostSchema, self))
+        return jsonify(self.handle_request_db(DeleteHostSchema,
+                                              HostProxy(),
+                                              'delete_host',
+                                              SESSION))
 
 
 class GetHost(BaseResponse):
