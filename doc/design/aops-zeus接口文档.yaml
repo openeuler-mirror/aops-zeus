@@ -886,3 +886,855 @@ definitions:
                 - fail_files
                 - infos
             description: 响应体
+  AgentServiceInfoRsp:
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - required:
+          - agent_infos
+        type: object
+        properties:
+          agent_infos:
+            type: array
+            items:
+              required:
+                - host_id
+                - service_list
+              properties:
+                host_id:
+                  type: string
+                  description: 主机ID
+                service_list:
+                  type: array
+                  items:
+                    required:
+                      - service_name
+                      - service_status
+                    properties:
+                      service_name:
+                        type: string
+                        description: 服务名称
+                      service_status:
+                        type: string
+                        description: 服务状态
+                  description: 服务列表
+            description: 主机服务信息
+  SetAgentServiceStatusReq:
+    properties:
+      host_id:
+        type: string
+        description: 主机ID
+      plugins:
+        type: object
+        additionalProperties:
+          type: string
+        description: 插件状态
+    required:
+      - host_id
+      - plugins
+  GetAgentServiceStatusRsp:
+    description: 获取Agent状态信息请求
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - required:
+          - host_id
+          - agent_status
+          - agent_resource
+          - service_list
+        type: object
+        properties:
+          host_id:
+            type: string
+            description: 主机ID
+          agent_status:
+            type: string
+            description: agent状态
+          agent_resource:
+            description: agent资源情况
+            required:
+              - mem
+              - cpu
+            properties:
+              mem:
+                description: mem资源
+                required:
+                  - limit_value
+                  - current_value
+                properties:
+                  limit_value:
+                    type: string
+                    description: 限制值
+                  current_value:
+                    type: string
+                    description: 当前值
+              cpu:
+                description: cpu资源
+                required:
+                  - limit_value
+                  - current_value
+                properties:
+                  limit_value:
+                    type: string
+                    description: 限制值
+                  current_value:
+                    type: string
+                    description: 限制值
+          service_list:
+            type: array
+            items:
+              type: string
+              properties:
+                service_name:
+                  type: string
+                  description: 服务名称
+                resource_infos:
+                  description: 服务资源情况
+                  required:
+                    - service_name
+                  properties:
+                    service_name:
+                      description: 服务名称
+                      required:
+                        - mem
+                        - cpu
+                      properties:
+                        mem:
+                          description: mem资源
+                          required:
+                            - limit_value
+                            - current_value
+                          properties:
+                            limit_value:
+                              type: integer
+                              format: int32
+                              description: 限制值
+                            current_value:
+                              type: integer
+                              format: int32
+                              description: 当前值
+                        cpu:
+                          description: cpu资源
+                          required:
+                            - limit_value
+                            - current_value
+                          properties:
+                            limit_value:
+                              type: string
+                              description: 限制值
+                            current_value:
+                              type: string
+                              description: 当前值
+                metric_infos:
+                  type: array
+                  items:
+                    properties:
+                      metric_name:
+                        type: string
+                        description: 采集项名称
+                      metric_status:
+                        type: string
+                        description: 采集项开启状态
+                    required:
+                      - metric_name
+                      - metric_status
+                  description: 采集项信息
+              required:
+                - service_name
+                - resource_infos
+                - metric_infos
+            description: 服务列表
+  GetAgentServiceMetricListRsp:
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - required:
+          - host_metric_infos
+        type: object
+        properties:
+          host_metric_infos:
+            type: array
+            items:
+              required:
+                - host_id
+                - service_list
+              properties:
+                host_id:
+                  type: string
+                  description: 主机ID
+                service_list:
+                  type: array
+                  items:
+                    required:
+                      - service_name
+                    properties:
+                      service_name:
+                        type: array
+                        items:
+                          required:
+                            - metric_name
+                            - metric_status
+                            - metric_description
+                          properties:
+                            metric_name:
+                              type: string
+                              description: 数据项名称
+                            metric_status:
+                              type: string
+                              description: 数据项状态
+                            metric_description:
+                              type: string
+                              description: 数据项描述
+                        description: 服务名称
+                  description: 服务列表
+            description: 主机指标信息
+  SetAgentServiceMetricStatus:
+    properties:
+      host_id:
+        type: string
+        description: 主机ID
+      plugins:
+        description: 服务列表
+        properties:
+          gopher:
+            type: object
+            additionalProperties:
+              type: string
+  SceneListRsp:
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - required:
+          - scene_list
+        type: object
+        properties:
+          scene_list:
+            type: array
+            items:
+              required:
+                - scene_name
+                - scene_description
+              properties:
+                scene_name:
+                  type: string
+                  description: 场景名称
+                scene_description:
+                  type: string
+                  description: 场景描述
+            description: 场景列表
+  AddHostRsp:
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - required:
+          - token
+        type: object
+        properties:
+          token:
+            type: string
+            description: 主机注册token
+  AddHostGroupInfoRsp:
+    description: 添加主机组信息响应
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+  GetHostGroupInfoRsp:
+    description: 获取主机组信息响应
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - required:
+          - total_count
+          - total_page
+          - host_group_infos
+        type: object
+        properties:
+          total_count:
+            type: integer
+            format: int32
+            description: 总条数
+            minimum: 0
+          total_page:
+            type: integer
+            format: int32
+            description: 总页数
+            minimum: 0
+          host_group_infos:
+            type: array
+            items:
+              properties:
+                host_group_name:
+                  type: string
+                  description: 主机组名称
+                description:
+                  type: string
+                  description: 主机组描述
+                host_count:
+                  type: integer
+                  format: int32
+                  description: 主机个数
+              required:
+                - host_group_name
+                - description
+                - host_count
+            description: 主机组信息
+  UserLoginRsp:
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - required:
+          - access_token
+        type: object
+        properties:
+          access_token:
+            type: string
+            description: 授权码
+  GetHostBasicInfoRsp:
+    description: 查询主机基本信息响应
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - required:
+          - host_infos
+        type: object
+        properties:
+          host_infos:
+            type: array
+            items:
+              properties:
+                host_id:
+                  type: string
+                  description: 主机ID
+                infos:
+                  description: 信息列表
+                  properties:
+                    os:
+                      description: OS信息
+                      properties:
+                        kernel_version:
+                          type: string
+                          description: 内核版本
+                        bios_version:
+                          type: string
+                          description: bios版本
+                        name:
+                          type: string
+                          description: 名称
+                      required:
+                        - kernel_version
+                        - bios_version
+                        - name
+                    cpu:
+                      description: cpu信息
+                      required:
+                        - architecture
+                        - core_count
+                        - model_name
+                        - vendor_id
+                        - l1d_cache
+                        - l1i_cache
+                        - l2_cache
+                        - l3_cache
+                      properties:
+                        architecture:
+                          type: string
+                          description: 架构
+                        core_count:
+                          type: string
+                          description: 核数
+                        model_name:
+                          type: string
+                          description: 模式名称
+                        vendor_id:
+                          type: string
+                          description: 厂商ID
+                        l1d_cache:
+                          type: string
+                          description: 1级数据缓存大小
+                        l1i_cache:
+                          type: string
+                          description: 1级指令缓存大小
+                        l2_cache:
+                          type: string
+                          description: 2级缓存大小
+                        l3_cache:
+                          type: string
+                          description: 3级缓存大小
+                    memory:
+                      description: 内存信息
+                      required:
+                        - size
+                        - total
+                        - info
+                      properties:
+                        size:
+                          type: string
+                          description: 大小
+                        total:
+                          type: integer
+                          format: int32
+                          description: 总大小
+                        info:
+                          type: array
+                          items:
+                            properties:
+                              size:
+                                type: string
+                                description: 大小
+                              type:
+                                type: string
+                                description: 类型
+                              speed:
+                                type: string
+                                description: 速度
+                              manufacturer:
+                                type: string
+                                description: 厂商
+                            required:
+                              - size
+                              - type
+                              - speed
+                              - manufacturer
+                          description: 信息
+                  required:
+                    - os
+                    - cpu
+                    - memory
+              required:
+                - host_id
+                - infos
+            description: 主机基本信息
+  SetAgentServiceResourceReq:
+    description: 设置agent服务资源消耗
+    properties:
+      host_id:
+        type: string
+        description: 主机ID
+      agent_source:
+        description: agent资源设置
+        required:
+          - cpu
+          - mem
+        properties:
+          cpu:
+            type: integer
+            format: int32
+            description: cpu资源
+          mem:
+            type: integer
+            format: int32
+            description: mem资源
+      plugin_resource:
+        type: array
+        items:
+          properties:
+            plugin_name:
+              description: 插件名称
+              required:
+                - cpu
+                - mem
+              properties:
+                cpu:
+                  type: integer
+                  format: int32
+                  description: cpu资源
+                mem:
+                  type: integer
+                  format: int32
+                  description: mem资源
+          required:
+            - plugin_name
+        description: 插件资源设置
+    required:
+      - host_id
+      - agent_source
+      - plugin_resource
+  GetHostTokenRsp:
+    description: 获取主机token响应
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - required:
+          - host_token
+        type: object
+        properties:
+          host_token:
+            type: string
+            description: 用户的主机token
+  InstallAgentPluginReq:
+    description: 安装agent插件
+    properties:
+      plugin_name:
+        type: string
+        description: 插件名称
+      plugin_config:
+        type: string
+        description: 插件配置
+      start:
+        type: boolean
+        description: 是否启动
+      rpm_name:
+        type: string
+        description: rpm包名称
+      rpm_version:
+        type: string
+        description: rpm包版本
+    required:
+      - plugin_name
+      - plugin_config
+      - start
+      - rpm_name
+      - rpm_version
+  GetAgentPluginInfoRsp:
+    description: 获取agent插件信息响应
+    properties:
+      code:
+        type: integer
+        format: int32
+      msg:
+        type: string
+      info:
+        items:
+          $ref: '#/definitions/PluginInfo'
+        description: 插件信息
+        type: array
+  DeleteGroupRsp:
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - type: object
+        properties:
+          deleted:
+            type: array
+            items:
+              type: string
+  DeleteHostRsp:
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - type: object
+        properties:
+          succeed_list:
+            type: array
+            items:
+              type: string
+          fail_list:
+            type: array
+            items:
+              type: string
+  PluginInfo:
+    properties:
+      plugin_name:
+        type: string
+      is_installed:
+        type: boolean
+      status:
+        type: string
+      collect_items:
+        type: array
+        items:
+          $ref: '#/definitions/CollectItems'
+      resource:
+        items:
+          $ref: '#/definitions/Resource'
+        type: array
+  CollectItems:
+    properties:
+      probe_name:
+        type: string
+      probe_status:
+        type: string
+      support_auto:
+        type: boolean
+  Resource:
+    properties:
+      name:
+        type: string
+      limit_value:
+        type: string
+      current_value:
+        type: string
+  ExecuteRepoSetRsp:
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - type: object
+        properties:
+          result:
+            type: object
+            allOf:
+              - $ref: '#/definitions/CveTaskBasicInfo'
+              - type: object
+                properties:
+                  task_result:
+                    type: array
+                    items:
+                      $ref: '#/definitions/RepoSetResult'
+  CveTaskBasicInfo:
+    properties:
+      task_id:
+        type: string
+      task_type:
+        type: string
+        description: 任务类型repo set,cve scan或cve fix
+  CveTaskBasicResult:
+    type: object
+    properties:
+      host_id:
+        type: string
+      host_name:
+        type: string
+      host_ip:
+        type: string
+      status:
+        type: string
+        description: 任务状态, 可为succeed,fail,unknown
+      check_items:
+        description: 预置的检查项,如repo源是否配置
+        type: array
+        items:
+          $ref: '#/definitions/CveCheckItems'
+  CveCheckItems:
+    type: object
+    properties:
+      item:
+        type: string
+        description: 检测项
+      result:
+        type: boolean
+        description: 检测结果
+  RepoSetResult:
+    allOf:
+      - $ref: '#/definitions/CveTaskBasicResult'
+      - type: object
+        properties:
+          log:
+            type: string
+            description: 详细日志
+          repo:
+            type: string
+            description: repo名称
+  CveScanResult:
+    allOf:
+      - $ref: '#/definitions/CveTaskBasicResult'
+      - type: object
+        properties:
+          log:
+            type: string
+            description: 日志
+
+  CveFixResult:
+    allOf:
+      - $ref: '#/definitions/CveTaskBasicResult'
+      - type: object
+        properties:
+          cves:
+            type: array
+            items:
+              $ref: '#/definitions/CveFixSingleResult'
+            description: 详细情况
+  CveFixSingleResult:
+    type: object
+    properties:
+      cve_id:
+        type: string
+      log:
+        type: string
+      result:
+        type: string
+        description: fixed or unfixed
+  ExecuteCveScanRsp:
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - type: object
+        properties:
+          task_result:
+            type: array
+            items:
+              type: object
+              properties:
+                host_id:
+                  type: string
+                  description: 主机id
+                status:
+                  type: string
+                  description: 该字段值可为 succeed, fail, unknown
+                log:
+                  type: string
+  ExecuteCveFixRsp:
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - type: object
+        properties:
+          result:
+            type: object
+            allOf:
+              - $ref: '#/definitions/CveTaskBasicInfo'
+              - type: object
+                properties:
+                  task_result:
+                    type: array
+                    items:
+                      $ref: '#/definitions/CveFixResult'
+  RepoSetReq:
+    properties:
+      task_id:
+        type: string
+      task_type:
+        type: string
+        example: repo set
+      task_name:
+        type: string
+      total_hosts:
+        type: array
+        items:
+          type: string
+      check_items:
+        type: array
+        items:
+          type: string
+      repo_info:
+        properties:
+          name:
+            type: string
+          dest:
+            type: string
+          repo_content:
+            type: string
+      tasks:
+        description: 任务信息
+        type: array
+        items:
+          properties:
+            host_id:
+              type: string
+            check:
+              type: boolean
+      callback:
+        type: string
+        example: /vulnerability/task/callback/repo/set
+    type: object
+  CveScanReq:
+    properties:
+      task_id:
+        type: string
+      task_type:
+        type: string
+        example: cve scan
+      total_hosts:
+        type: array
+        items:
+          type: string
+      check_items:
+        type: array
+        items:
+          type: string
+      # unaffected_cves:
+      #   type: object
+      #   additionalProperties:
+      #     properties:
+      #       os_version:
+      #         type: array
+      #         items:
+      #           type: string
+      #       package:
+      #         type: array
+      #         items:
+      #           type: string
+      tasks:
+        type: array
+        items:
+          properties:
+            host_id:
+              type: string
+            check:
+              type: boolean
+      callback:
+        type: string
+        example: /vulnerability/task/callback/cve/scan
+    type: object
+  CveFixReq:
+    properties:
+      task_id:
+        type: string
+      task_type:
+        type: string
+        example: cve fix
+      task_name:
+        type: string
+      total_hosts:
+        type: array
+        items:
+          type: string
+      check_items:
+        type: array
+        items:
+          type: string
+      tasks:
+        type: array
+        items:
+          type: object
+          properties:
+            host_id:
+              type: string
+            check:
+              type: boolean
+            cves:
+              type: array
+              items:
+                type: string
+      callback:
+        type: string
+        example: /vulnerability/task/callback/cve/fix
+  SetAgentServiceStatusRsp:
+    type: object
+    description: 设置agent服务状态返回结果
+    required:
+      - code
+      - msg
+      - failed_list
+      - succeed_list
+    properties:
+      code:
+        type: integer
+        format: int32
+      msg:
+        type: string
+      failed_list:
+        type: array
+        items:
+          type: string
+        description: 设置失败的服务名
+      succeed_list:
+        type: array
+        items:
+          type: string
+        description: 设置成功的服务名
+  SetAgentPluginProbeRsp:
+    type: object
+    description: 设置agent采集插件的采集项状态返回体
+    required:
+      - code
+      - msg
+      - resp
+    properties:
+      code:
+        type: integer
+        format: int32
+      msg:
+        type: string
+      resp:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/SetPluginProbeStatus'
+  SetPluginProbeStatus:
+    type: object
+    description: 单个插件的采集项状态设置的结果
+    required:
+      - failure
+      - success
+    properties:
+      failure:
+        type: array
+        items:
+          type: string
+        description: 设置失败的探针/采集项名称
+      success:
+        type: array
+        items:
+          type: string
+        description: 设置成功的探针/采集项名称
+  GetHostCountRsp:
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - type: object
+        properties:
+          host_count:
+            type: integer
