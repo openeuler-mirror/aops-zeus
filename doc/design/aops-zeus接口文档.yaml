@@ -1,0 +1,888 @@
+swagger: '2.0'
+info:
+  version: v1
+  title: ApplicationTitle
+  description: GroupDesc
+schemes:
+  - https
+host: localhost.com
+basePath: /
+tags:
+  - name: account
+    description: |
+      token认证
+  - name: host_manage
+  - name: host_group
+  - name: scene
+  - name: collect_config
+  - name: agent_manager
+  - name: cve
+paths:
+  /manage/account/user/add:
+    post:
+      tags:
+        - account
+      description: 添加用户
+      operationId: AddUser
+      consumes:
+        - application/x-www-form-urlencoded
+      deprecated: true
+      parameters:
+        - name: username
+          in: formData
+          required: true
+          description: 用户名
+          type: string
+        - name: password
+          in: formData
+          required: true
+          description: 密码
+          type: string
+      responses:
+        '200':
+          description: 添加用户响应
+          schema:
+            $ref: '#/definitions/UserLoginRsp'
+      x-apidesigner: 0
+  /manage/account/login:
+    post:
+      tags:
+        - account
+      description: 用户登录
+      operationId: login
+      consumes:
+        - application/x-www-form-urlencoded
+      parameters:
+        - name: username
+          in: formData
+          required: true
+          description: 用户名
+          type: string
+        - name: password
+          in: formData
+          required: true
+          description: 登录密码
+          type: string
+      responses:
+        '200':
+          description: 用户登录响应
+          schema:
+            $ref: '#/definitions/UserLoginRsp'
+      x-apidesigner: 1
+  /manage/account/change:
+    post:
+      tags:
+        - account
+      description: 修改密码
+      operationId: ChangePassword
+      deprecated: true
+      parameters:
+        - name: password
+          in: query
+          required: true
+          description: 修改后的密码
+          type: string
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+      responses:
+        '200':
+          description: 修改密码响应
+          schema:
+            $ref: '#/definitions/OperateSuccess'
+      x-apidesigner: 2
+  /manage/host/add:
+    post:
+      tags:
+        - host_manage
+      description: 添加主机
+      operationId: add_host
+      deprecated: false
+      parameters:
+        - name: AddHostReq
+          in: body
+          required: true
+          description: 添加主机请求
+          schema:
+            $ref: '#/definitions/AddHostReq'
+      responses:
+        '200':
+          description: 添加主机响应
+          schema:
+            $ref: '#/definitions/AddHostRsp'
+  /manage/host/get:
+    post:
+      tags:
+        - host_manage
+      description: 获取指定主机信息（列表）
+      operationId: get_host_list
+      parameters:
+        - name: GetHost
+          in: body
+          required: true
+          description: 获取主机列表请求
+          schema:
+            $ref: '#/definitions/GetHostListReq'
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+      responses:
+        '200':
+          description: 获取主机列表响应
+          schema:
+            $ref: '#/definitions/GetHostListRsp'
+  /manage/host/info/query:
+    post:
+      tags:
+        - host_manage
+      description: 查询指定主机详细信息
+      operationId: query_host_info
+      consumes:
+        - application/x-www-form-urlencoded
+      parameters:
+        - name: host_list
+          in: formData
+          required: true
+          description: 要获取的主机信息的id，不为空
+          type: array
+          items:
+            type: string
+        - name: basic
+          in: formData
+          required: false
+          description: 获取主机基本信息还是详细信息
+          type: boolean
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+      responses:
+        '200':
+          description: 获取主机基本信息响应
+          schema:
+            $ref: '#/definitions/GetHostBasicInfoRsp'
+  /manage/host/delete:
+    delete:
+      tags:
+        - host_manage
+      description: 删除主机
+      operationId: delete_host
+      parameters:
+        - name: host_list
+          in: body
+          required: true
+          description: 要删除的主机id列表
+          schema:
+            type: array
+            items:
+              type: string
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+      responses:
+        '200':
+          description: 删除主机响应
+          schema:
+            $ref: '#/definitions/DeleteHostRsp'
+  /manage/host/group/add:
+    post:
+      tags:
+        - host_group
+      description: 添加主机组
+      operationId: add_host_group
+      parameters:
+        - name: AddHostReq
+          in: body
+          required: true
+          description: 添加主机组请求
+          schema:
+            $ref: '#/definitions/AddHostGroupInfoReq'
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+      responses:
+        '200':
+          description: 添加主机组响应
+          schema:
+            $ref: '#/definitions/AddHostGroupInfoRsp'
+  /manage/host/group/get:
+    post:
+      tags:
+        - host_group
+      description: 查询主机组
+      operationId: get_host_group
+      consumes:
+        - application/x-www-form-urlencoded
+      parameters:
+        - name: sort
+          in: formData
+          required: false
+          description: 目前可选host_group_name或host_count，为空表示不排序
+          type: string
+          enum:
+            - host_group_name
+            - host_count
+        - name: direction
+          in: formData
+          required: false
+          description: 升序(asc)，降序(desc)，默认:asc
+          type: string
+          default: asc
+          enum:
+            - asc
+            - desc
+        - name: page
+          in: formData
+          required: false
+          description: 当前的页码
+          type: integer
+          format: int32
+          minimum: 0
+        - name: per_page
+          in: formData
+          required: false
+          description: 每页的数量，最大为50
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 50
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+      responses:
+        '200':
+          description: 获取主机组信息响应
+          schema:
+            $ref: '#/definitions/GetHostGroupInfoRsp'
+  /manage/host/group/delete:
+    delete:
+      tags:
+        - host_group
+      description: 删除主机组
+      operationId: delete_host_group
+      parameters:
+        - name: host_group_list
+          in: body
+          required: true
+          description: 删除主机组列表
+          schema:
+            type: array
+            items:
+              type: string
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+      responses:
+        '200':
+          description: 删除主机列表响应
+          schema:
+            $ref: '#/definitions/DeleteGroupRsp'
+  /manage/host/scene/get:
+    get:
+      tags:
+        - scene
+      description: 查询主机场景与推荐采集指标
+      operationId: get_host_scene
+      parameters:
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+        - name: host_id
+          in: query
+          required: false
+          type: string
+      responses:
+        '200':
+          description: 查询主机场景响应
+          schema:
+            $ref: '#/definitions/HostSceneInfoRsp'
+  /manage/host/scene/list:
+    post:
+      tags:
+        - scene
+      description: 查询主机场景列表
+      operationId: GetHostSceneList
+      consumes:
+        - application/x-www-form-urlencoded
+      deprecated: true
+      parameters:
+        - name: sort
+          in: formData
+          required: false
+          description: 目前可选scene_name,为空表示不排序
+          type: string
+          default: scene_name
+        - name: direction
+          in: formData
+          required: false
+          description: 升序(asc)，降序(desc)，默认:asc
+          type: string
+          default: asc
+          enum:
+            - asc
+            - desc
+        - name: page
+          in: formData
+          required: false
+          description: 当前的页码
+          type: integer
+          format: int32
+          minimum: 1
+          exclusiveMinimum: true
+        - name: per_page
+          in: formData
+          required: false
+          description: 每页的数量，最大为50
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 50
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+      responses:
+        '200':
+          description: 获取场景列表响应
+          schema:
+            $ref: '#/definitions/SceneListRsp'
+  /manage/config/collect:
+    post:
+      tags:
+        - collect_config
+      description: 收集主机配置文件信息
+      operationId: get_config
+      parameters:
+        - name: ConfigList
+          in: body
+          required: true
+          description: 配置文件收集请求
+          schema:
+            $ref: '#/definitions/ConfigList'
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+      responses:
+        '200':
+          description: 配置文件收集响应
+          schema:
+            $ref: '#/definitions/ConfigListRsp'
+  /manage/agent/plugin/set:
+    post:
+      tags:
+        - agent_manager
+      description: 设置agent插件状态
+      operationId: set_plugin_status
+      parameters:
+        - name: SetAgentServiceStatusReq
+          in: body
+          required: true
+          description: 设置agent服务信息
+          schema:
+            $ref: '#/definitions/SetAgentServiceStatusReq'
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+      responses:
+        '200':
+          description: 设置agent服务响应
+          schema:
+            $ref: '#/definitions/SetAgentServiceStatusRsp'
+  /manage/agent/service/resource/set:
+    post:
+      tags:
+        - agent_manager
+      description: 设置agent服务的资源消耗
+      operationId: SetAgentServiceResource
+      deprecated: true
+      parameters:
+        - name: SetAgentServiceResourceReq
+          in: body
+          required: true
+          description: 设置agent服务资源限制请求
+          schema:
+            $ref: '#/definitions/SetAgentServiceResourceReq'
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+      responses:
+        '200':
+          description: 设置agent服务的资源消耗响应
+          schema:
+            $ref: '#/definitions/OperateSuccess'
+  /manage/agent/metric/set:
+    post:
+      tags:
+        - agent_manager
+      description: 设置agent采集项状态
+      operationId: set_plugin_probe
+      parameters:
+        - name: SetAgentServiceMetricStatus
+          in: body
+          required: true
+          description: 设置agent服务采集项状态
+          schema:
+            $ref: '#/definitions/SetAgentServiceMetricStatus'
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+      responses:
+        '200':
+          description: 设置Agent采集项状态响应
+          schema:
+            $ref: '#/definitions/SetAgentPluginProbeRsp'
+  /manage/host/count:
+    post:
+      tags:
+       - host_manage
+      summary: 查询主机数量
+      operationId: get_host_count
+      description: 查询主机数量
+      parameters:
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+      responses:
+        '200':
+          description: 主机数量
+          schema:
+            $ref: '#/definitions/GetHostCountRsp'
+    
+  /manage/host/token/query:
+    get:
+      tags:
+        - host_manage
+      description: 查询主机token
+      operationId: GetHostToken
+      deprecated: true
+      parameters:
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/GetHostTokenRsp'
+  /manage/agent/plugin/install:
+    post:
+      tags:
+        - agent_manager
+      description: 安装agent插件
+      operationId: InstallAgentPlugin
+      deprecated: true
+      parameters:
+        - name: InstallAgentPluginReq
+          in: body
+          required: true
+          description: 安装插件请求
+          schema:
+            $ref: '#/definitions/InstallAgentPluginReq'
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+      responses:
+        '200':
+          description: 安装插件响应
+          schema:
+            $ref: '#/definitions/OperateSuccess'
+  /manage/uninstall/plugin:
+    post:
+      tags:
+        - agent_manager
+      description: 卸载插件
+      operationId: UninstallAgentPlugin
+      deprecated: true
+      parameters:
+        - name: plugin_list
+          in: body
+          required: true
+          description: 插件列表
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: 卸载插件响应
+          schema:
+            $ref: '#/definitions/OperateSuccess'
+  /manage/agent/plugin/info:
+    get:
+      tags:
+        - agent_manager
+      description: 获取agent插件运行信息
+      operationId: get_plugin_info
+      parameters:
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+        - name: host_id
+          in: query
+          required: false
+          description: 主机id
+          type: string
+      responses:
+        '200':
+          description: 获取插件运行信息响应
+          schema:
+            $ref: '#/definitions/GetAgentPluginInfoRsp'
+  /manage/vulnerability/repo/set/:
+    post:
+      tags:
+        - cve
+      operationId: execute_repo_set_task
+      produces:
+        - application/json
+      parameters:
+        - name: access_token
+          in: header
+          required: false
+          type: string
+        - name: task
+          in: body
+          required: true
+          description: 任务信息
+          schema:
+            $ref: '#/definitions/RepoSetReq'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/ExecuteRepoSetRsp'
+  /manage/vulnerability/cve/scan:
+    post:
+      tags:
+        - cve
+      operationId: execute_cve_scan_task
+      produces:
+        - application/json
+      parameters:
+        - name: access_token
+          in: header
+          required: false
+          type: string
+        - name: task
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/CveScanReq'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/ExecuteCveScanRsp'
+  /manage/vulnerability/cve/fix:
+    post:
+      tags:
+        - cve
+      operationId: execute_cve_fix_task
+      produces:
+        - application/json
+      parameters:
+        - name: access_token
+          in: header
+          required: false
+          type: string
+        - name: task
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/CveFixReq'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/ExecuteCveFixRsp'
+definitions:
+  ErrorRsp:
+    description: 失败时返回的错误对象
+    required:
+      - error_code
+      - error_msg
+    properties:
+      error_code:
+        description: 错误码
+        type: integer
+        minLength: 8
+        maxLength: 36
+      error_msg:
+        description: error_msg
+        type: string
+        minLength: 2
+        maxLength: 512
+  OperateSuccess:
+    description: OperateSuccess
+    type: object
+    required:
+      - code
+      - msg
+    properties:
+      code:
+        type: integer
+        format: int32
+      msg:
+        type: string
+  GetHostListReq:
+    description: 前端请求查询参数,主机组名称,节点信息,排序条件,页码,分页查询数量
+    properties:
+      host_group_list:
+        type: array
+        items:
+          type: string
+        description: 获取指定主机组里的主机信息，为空表示所有
+        example: '[]'
+      management:
+        type: boolean
+        description: 管理节点or监控节点，不传表示所有
+      sort:
+        type: string
+        description: 目前可选host_name或host_group_name，为空表示不排序
+        example: host_name
+      direction:
+        type: string
+        description: 排序规则,asc 或 descge
+        example: asc(default)
+      page:
+        type: integer
+        description: 当前页码
+        example: 2
+      per_page:
+        type: integer
+        description: 每页数量,最大数量50
+        maximum: 50
+        example: 50
+    required:
+      - host_group_list
+  GetHostListRsp:
+    description: 主机信息
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - required:
+          - total_count
+          - total_page
+          - host_infos
+        type: object
+        properties:
+          total_count:
+            type: integer
+            format: int32
+            description: 总条数
+          total_page:
+            type: integer
+            format: int32
+            description: 总页数
+          host_infos:
+            type: array
+            items:
+              properties:
+                host_id:
+                  type: string
+                  description: 主机ID
+                host_name:
+                  type: string
+                  description: 主机名称
+                host_group_name:
+                  type: string
+                  description: 主机组名称
+                public_ip:
+                  type: string
+                  description: 主机IP
+                management:
+                  type: string
+                  description: 是否为管理节点
+                status:
+                  type: string
+                  description: 主机在线状态
+                scene:
+                  type: string
+                  description: 主机场景
+              required:
+                - host_id
+                - host_name
+                - host_group_name
+                - public_ip
+                - management
+                - status
+                - scene
+            description: 主机信息
+  AddHostReq:
+    description: 需要添加的主机信息
+    properties:
+      host_name:
+        type: string
+        description: 主机别名
+      host_id:
+        type: string
+        description: 主机ID
+      host_group_name:
+        type: string
+        description: 主机组名
+      public_ip:
+        type: string
+        description: 主机公网IP地址
+      management:
+        type: boolean
+        description: 用作管理主机还是监控主机
+        default: 'false'
+      username:
+        type: string
+        description: 登录web的用户名
+        example: root
+      password:
+        type: string
+        description: 登录web的密码
+        example: admin
+    required:
+      - host_name
+      - host_id
+      - host_group_name
+      - public_ip
+      - management
+      - username
+      - password
+  AddHostGroupInfoReq:
+    properties:
+      host_group_name:
+        type: string
+        description: 主机组名称
+      decription:
+        type: string
+        description: 主机组描述
+    description: 添加主机组信息请求
+    required:
+      - host_group_name
+      - decription
+  HostSceneInfoRsp:
+    description: 主机场景信息
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - required:
+          - scene_name
+          - collect_items
+        type: object
+        properties:
+          scene_name:
+            type: string
+            description: 场景名称
+          collect_items:
+            type: object
+            additionalProperties:
+              type: array
+              items:
+                type: string
+            description: 推荐指标列表
+  ConfigList:
+    properties:
+      infos:
+        type: array
+        items:
+          properties:
+            host_id:
+              type: string
+              description: 主机id
+            config_list:
+              type: array
+              items:
+                type: string
+              description: 配置文件列表
+          required:
+            - host_id
+            - config_list
+        description: 配置文件列表
+    required:
+      - infos
+  ConfigListRsp:
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - required:
+          - resp
+        type: object
+        properties:
+          resp:
+            type: array
+            items:
+              properties:
+                host_id:
+                  type: string
+                  description: 主机ID
+                success_files:
+                  type: array
+                  items:
+                    type: string
+                  description: 收集成功文件列表
+                fail_files:
+                  type: array
+                  items:
+                    type: string
+                  description: 收集失败文件列表
+                infos:
+                  description: 信息列表
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      path:
+                        type: string
+                        description: 文件路径
+                      file_attr:
+                        description: 文件属性
+                        properties:
+                          mode:
+                            type: string
+                            description: 文件mode
+                          owner:
+                            type: string
+                            description: 文件owner
+                          group:
+                            type: string
+                            description: 文件group
+                        required:
+                          - mode
+                          - owner
+                          - group
+                      content:
+                        type: string
+                        description: 文件内容
+                    required:
+                      - path
+                      - file_attr
+                      - content
+              required:
+                - host_id
+                - success_files
+                - fail_files
+                - infos
+            description: 响应体
