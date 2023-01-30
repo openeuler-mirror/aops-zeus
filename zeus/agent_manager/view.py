@@ -56,12 +56,12 @@ class AgentUtil:
     """
 
     @classmethod
-    def get_host_ip_with_port(cls, host_id: str) -> tuple:
+    def get_host_ip_with_port(cls, host_id: int) -> tuple:
         """
             get host ip from database by host id
 
         Args:
-            host_id(str)
+            host_id(int)
 
         Returns:
             tuple: host ip, status code

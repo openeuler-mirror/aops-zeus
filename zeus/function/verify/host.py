@@ -26,7 +26,6 @@ class HostSchema(Schema):
     """
     validator for host info
     """
-    host_id = fields.String(required=True, validate=lambda s: len(s) > 0)
     host_name = fields.String(required=True, validate=lambda s: len(s) > 0)
     host_group_name = fields.String(
         required=True, validate=lambda s: len(s) > 0)
@@ -42,7 +41,7 @@ class DeleteHostSchema(Schema):
     """
     validators for parameter of /manage/host/delete_host
     """
-    host_list = fields.List(fields.String(required=True, validate=lambda s: len(s) > 0), required=True,
+    host_list = fields.List(fields.Integer(required=True, validate=lambda s: s > 0), required=True,
                             validate=lambda s: len(s) > 0)
 
 
@@ -93,5 +92,5 @@ class GetHostInfoSchema(Schema):
     """
     validators for parameter of /manage/host/get_host_information
     """
-    host_list = fields.List(fields.String(), required=True)
+    host_list = fields.List(fields.Integer(), required=True)
     basic = fields.Boolean(required=False)

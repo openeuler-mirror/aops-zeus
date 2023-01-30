@@ -161,7 +161,7 @@ def generate_target_data_format(collect_result_list: List[Dict],
         target data format: e.g
             [
                 {
-                    host_id: string,
+                    host_id: host_id,
                     infos: [
                         path: file_path,
                         content: string,
@@ -264,7 +264,7 @@ class CollectConfig(BaseResponse):
                 msg: string,
                 resp:[
                     {
-                        host_id: string,
+                        host_id: host_id,
                         infos: [
                             path: file_path1,
                             content: string,

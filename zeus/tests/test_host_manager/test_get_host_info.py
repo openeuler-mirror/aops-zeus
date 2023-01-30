@@ -45,7 +45,7 @@ header_with_token = {
 
 class TestGetHostInfo(unittest.TestCase):
     MOCK_ARGS = {
-        "host_list": ['mock_host_id1', 'mock_host_id2'],
+        "host_list": [1, 2],
         "basic": False
     }
 
@@ -60,13 +60,13 @@ class TestGetHostInfo(unittest.TestCase):
         mock_create_thread.return_value = None
         mock_user.return_value = UserInfo('admin', 'mock', 'mock')
         mock_host_address.return_value = SUCCEED, {
-            'mock_host_id1': "mock_address1",
-            'mock_host_id2': "mock_address2"
+            1: "mock_address1",
+            2: "mock_address2"
         }
 
         mock_get_result.return_value = [
             {
-                "host_id": "mock_host_id1",
+                "host_id": 1,
                 "host_info": {
                     "cpu": {},
                     "os": {},
@@ -75,7 +75,7 @@ class TestGetHostInfo(unittest.TestCase):
                 }
             },
             {
-                "host_id": "mock_host_id2",
+                "host_id": 2,
                 "host_info": {
                     "cpu": {},
                     "os": {},
@@ -149,7 +149,7 @@ class TestGetHostInfo(unittest.TestCase):
             self, mock_request):
         mock_request.side_effect = requests.exceptions.ConnectionError()
         mock_args = {
-            "host_id": "mock_host_id1",
+            "host_id": 1,
             "info_type": ["cpu", "os", "memory", "disk"],
             "address": "mock_address",
             "headers": {
@@ -158,4 +158,4 @@ class TestGetHostInfo(unittest.TestCase):
             }
         }
         result = GetHostInfo.get_host_info(mock_args)
-        self.assertEqual({"host_id": "mock_host_id1", "host_info": {}}, result)
+        self.assertEqual({"host_id": 1, "host_info": {}}, result)

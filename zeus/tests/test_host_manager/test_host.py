@@ -22,7 +22,8 @@ from werkzeug.security import generate_password_hash
 
 from vulcanus.database.table import Host, User, Base, create_utils_tables
 from vulcanus.database.helper import drop_tables, create_database_engine
-from vulcanus.restful.status import DATA_EXIST, PARTIAL_SUCCEED, SUCCEED, DATA_DEPENDENCY_ERROR, DATABASE_INSERT_ERROR, NO_DATA
+from vulcanus.restful.status import DATA_EXIST, PARTIAL_SUCCEED, SUCCEED, DATA_DEPENDENCY_ERROR, \
+    DATABASE_INSERT_ERROR, NO_DATA
 from vulcanus.compare import compare_two_object
 from zeus.database.proxy.host import HostProxy
 
@@ -82,46 +83,46 @@ class TestHostDatabase(unittest.TestCase):
             "host_group_name": "group1",
             "description": "xxx",
         }
-        host=[{
+        host = [{
             "username": "admin",
             "host_name": "host1",
             "host_group_name": "group2",
-            "host_id": "id1",
+            "host_id": 1,
             "public_ip": "127.0.0.1",
             "management": False,
             "agent_port": 1122,
             "os_version": "openEuler 2203"
         },
-         {
-            "username": "admin",
-            "host_name": "host2",
-            "host_group_name": "group2",
-            "host_id": "id2",
-            "public_ip": "127.0.0.2",
-            "management": False,
-            "agent_port": 1122,
-            "os_version": "openEuler 2003"
-        },
-        {
-            "username": "admin",
-            "host_name": "host3",
-            "host_group_name": "group2",
-            "host_id": "id3",
-            "public_ip": "127.0.0.3",
-            "management": False,
-            "agent_port": 1122,
-            "os_version": "openEuler 2109"
-        },
-        {
-            "username": "admin",
-            "host_name": "host4",
-            "host_group_name": "group3",
-            "host_id": "id4",
-            "public_ip": "127.0.0.4",
-            "management": False,
-            "agent_port": 1122,
-            "os_version": "openEuler 2003"
-        }]
+            {
+                "username": "admin",
+                "host_name": "host2",
+                "host_group_name": "group2",
+                "host_id": 2,
+                "public_ip": "127.0.0.2",
+                "management": False,
+                "agent_port": 1122,
+                "os_version": "openEuler 2003"
+            },
+            {
+                "username": "admin",
+                "host_name": "host3",
+                "host_group_name": "group2",
+                "host_id": 3,
+                "public_ip": "127.0.0.3",
+                "management": False,
+                "agent_port": 1122,
+                "os_version": "openEuler 2109"
+            },
+            {
+                "username": "admin",
+                "host_name": "host4",
+                "host_group_name": "group3",
+                "host_id": 4,
+                "public_ip": "127.0.0.4",
+                "management": False,
+                "agent_port": 1122,
+                "os_version": "openEuler 2003"
+            }]
 
         res = self.proxy.add_host_group(group_data1)
         self.assertEqual(res, SUCCEED)
@@ -242,7 +243,6 @@ class TestHostDatabase(unittest.TestCase):
             {
                 "host_name": "host1",
                 "host_group_name": "group1",
-                "host_id": "id1",
                 "public_ip": "127.0.0.1",
                 "management": False,
                 "username": "admin",
@@ -252,7 +252,6 @@ class TestHostDatabase(unittest.TestCase):
             {
                 "host_name": "host2",
                 "host_group_name": "group1",
-                "host_id": "id2",
                 "public_ip": "127.0.0.2",
                 "management": True,
                 "username": "admin",
@@ -262,7 +261,6 @@ class TestHostDatabase(unittest.TestCase):
             {
                 "host_name": "host3",
                 "host_group_name": "group2",
-                "host_id": "id3",
                 "public_ip": "127.0.0.3",
                 "management": False,
                 "username": "admin",
@@ -272,7 +270,6 @@ class TestHostDatabase(unittest.TestCase):
             {
                 "host_name": "host4",
                 "host_group_name": "group2",
-                "host_id": "id4",
                 "public_ip": "127.0.0.4",
                 "management": True,
                 "username": "admin",
@@ -282,7 +279,6 @@ class TestHostDatabase(unittest.TestCase):
             {
                 "host_name": "host5",
                 "host_group_name": "group2",
-                "host_id": "id5",
                 "public_ip": "127.0.0.5",
                 "management": False,
                 "username": "admin",
@@ -321,7 +317,6 @@ class TestHostDatabase(unittest.TestCase):
         data = {
             "host_name": "host1",
             "host_group_name": "group99",
-            "host_id": "id1",
             "public_ip": "127.0.0.1",
             "management": False,
             "username": "admin",
@@ -335,7 +330,6 @@ class TestHostDatabase(unittest.TestCase):
         data = {
             "host_name": "host1",
             "host_group_name": "group1",
-            "host_id": "id1",
             "public_ip": "127.0.0.1",
             "management": False,
             "username": "admin",
@@ -358,7 +352,7 @@ class TestHostDatabase(unittest.TestCase):
         res = self.proxy.get_host(args)
         expected_res = [
             {
-                "host_id": "id5",
+                "host_id": 5,
                 "host_name": "host5",
                 "host_group_name": "group2",
                 "public_ip": "127.0.0.5",
@@ -368,7 +362,7 @@ class TestHostDatabase(unittest.TestCase):
                 "os_version": "openEuler"
             },
             {
-                "host_id": "id4",
+                "host_id": 4,
                 "host_name": "host4",
                 "host_group_name": "group2",
                 "public_ip": "127.0.0.4",
@@ -393,7 +387,7 @@ class TestHostDatabase(unittest.TestCase):
         res = self.proxy.get_host(args)
         expected_res = [
             {
-                "host_id": "id3",
+                "host_id": 3,
                 "host_name": "host3",
                 "host_group_name": "group2",
                 "public_ip": "127.0.0.3",
@@ -403,7 +397,7 @@ class TestHostDatabase(unittest.TestCase):
                 "os_version": "openEuler2203"
             },
             {
-                "host_id": "id4",
+                "host_id": 4,
                 "host_name": "host4",
                 "host_group_name": "group2",
                 "public_ip": "127.0.0.4",
@@ -427,13 +421,13 @@ class TestHostDatabase(unittest.TestCase):
         # ================get host info=================
         args = {
             "username": "admin",
-            "host_list": ["id1", "id2"]
+            "host_list": [1, 2]
         }
         expected_res = [
             {
                 "host_name": "host1",
                 "host_group_name": "group1",
-                "host_id": "id1",
+                "host_id": 1,
                 "public_ip": "127.0.0.1",
                 "management": False,
                 "status": None,
@@ -444,7 +438,7 @@ class TestHostDatabase(unittest.TestCase):
             {
                 "host_name": "host2",
                 "host_group_name": "group1",
-                "host_id": "id2",
+                "host_id": 2,
                 "public_ip": "127.0.0.2",
                 "management": True,
                 "status": None,
@@ -464,31 +458,31 @@ class TestHostDatabase(unittest.TestCase):
                 {
                     "host_name": "host1",
                     "host_group_name": "group1",
-                    "host_id": "id1",
+                    "host_id": 1,
                     "public_ip": "127.0.0.1"
                 },
                 {
                     "host_name": "host2",
                     "host_group_name": "group1",
-                    "host_id": "id2",
+                    "host_id": 2,
                     "public_ip": "127.0.0.2"
                 },
                 {
                     "host_name": "host3",
                     "host_group_name": "group2",
-                    "host_id": "id3",
+                    "host_id": 3,
                     "public_ip": "127.0.0.3"
                 },
                 {
                     "host_name": "host4",
                     "host_group_name": "group2",
-                    "host_id": "id4",
+                    "host_id": 4,
                     "public_ip": "127.0.0.4"
                 },
                 {
                     "host_name": "host5",
                     "host_group_name": "group2",
-                    "host_id": "id5",
+                    "host_id": 5,
                     "public_ip": "127.0.0.5"
                 }
             ]
@@ -499,12 +493,12 @@ class TestHostDatabase(unittest.TestCase):
         # ==============delete host===================
         args = {
             "username": "admin",
-            "host_list": ["id1", "id9"]
+            "host_list": [1, 9]
         }
         res = self.proxy.delete_host(args)
         self.assertEqual(res[0], PARTIAL_SUCCEED)
-        self.assertEqual(list(res[1]["fail_list"].keys()), ["id9"])
-        self.assertEqual(res[1]['succeed_list'][0], "id1")
+        self.assertEqual(list(res[1]["fail_list"].keys()), [9])
+        self.assertEqual(res[1]['succeed_list'][0], 1)
 
         args = {
             "host_group_list": ["group1"],
