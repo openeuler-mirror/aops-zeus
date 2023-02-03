@@ -16,7 +16,8 @@ setup(
         'Flask-RESTful',
         'requests',
         'SQLAlchemy',
-        'Werkzeug'
+        'Werkzeug',
+        'paramiko'
         ],
     author='cmd-lsw-yyy-zyc',
     data_files=[

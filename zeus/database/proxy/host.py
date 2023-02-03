@@ -17,25 +17,34 @@ Description: Host table operation
 """
 import math
 from typing import Dict, List, Tuple
-import sqlalchemy
-from sqlalchemy.sql.expression import desc, asc
-from sqlalchemy import func
 
-from vulcanus.log.log import LOGGER
+import sqlalchemy
+from sqlalchemy import func
+from sqlalchemy.sql.expression import asc, desc
+
 from vulcanus.database.helper import judge_return_code, sort_and_page
 from vulcanus.database.proxy import MysqlProxy
 from vulcanus.database.table import Host, HostGroup, User
-from vulcanus.restful.status import DATABASE_DELETE_ERROR, DATABASE_INSERT_ERROR, \
-    DATABASE_QUERY_ERROR, DATA_DEPENDENCY_ERROR, DATA_EXIST, SUCCEED, NO_DATA
+from vulcanus.log.log import LOGGER
+from vulcanus.restful.status import (
+    DATABASE_DELETE_ERROR,
+    DATABASE_INSERT_ERROR,
+    DATABASE_QUERY_ERROR,
+    DATABASE_UPDATE_ERROR,
+    DATA_DEPENDENCY_ERROR,
+    DATA_EXIST,
+    NO_DATA,
+    SUCCEED
+)
 
 
 class HostProxy(MysqlProxy):
     """
     Host related table operation
     """
-    def add_host(self, data: Dict) -> int:
+    def add_host_from_client(self, data: Dict) -> int:
         """
-        Add host to table
+        Verify whether the data is valid and add valid data to the database
 
         Args:
             data: parameter, e.g.
@@ -86,6 +95,7 @@ class HostProxy(MysqlProxy):
             LOGGER.error("add host fail")
             self.session.rollback()
             return DATABASE_INSERT_ERROR
+
 
     def delete_host(self, data):
         """
@@ -643,3 +653,79 @@ class HostProxy(MysqlProxy):
         except sqlalchemy.exc.SQLAlchemyError as error:
             LOGGER.error(error)
             return DATABASE_QUERY_ERROR, result
+
+    def query_host_groups(self, username: str) -> Tuple[int, dict]:
+        """
+        query all host groups by username
+
+        Args:
+            username(str): admin
+
+        Returns:
+            tuple:
+                status_code, {group name : group id}
+        """
+        try:
+            query_list = self.session.query(HostGroup).filter(HostGroup.username == username).all()
+            result = {}
+            for group_info in query_list:
+                result[group_info.host_group_name] = group_info.host_group_id
+            return SUCCEED, result
+        except sqlalchemy.exc.SQLAlchemyError as error:
+            LOGGER.error(error)
+            LOGGER.error(f"query groups of {username} fail")
+            return DATABASE_QUERY_ERROR, {}
+
+    def add_host(self, data: dict) -> int:
+        """
+        add host to table
+
+        Args:
+            data: parameter, e.g.
+                {
+                    "user": "admin",
+                    "host_name": "test-host",
+                    "host_group_name": "group1",
+                    "public_ip": "127.0.0.1",
+                    "management": False,
+                    "ssh_user": "root",
+                    "pkey": "string",
+                    "ssh_port": 22,
+                    "host_group_id": 1,
+                }
+
+        Returns:
+            int: SUCCEED or DATABASE_INSERT_ERROR
+        """
+        host = Host(**data)
+
+        try:
+            self.session.add(host)
+            self.session.commit()
+            LOGGER.info(f"add host {data.get('public_ip')} succeed")
+            return SUCCEED
+
+        except sqlalchemy.exc.SQLAlchemyError as error:
+            LOGGER.error(error)
+            LOGGER.error(f"add host {data.get('public_ip')} fail")
+            self.session.rollback()
+            return DATABASE_INSERT_ERROR
+
+    def get_hosts(self, username: str) -> Tuple[int, list]:
+        """
+        get all hosts by username
+
+        Args:
+            username(str): admin
+
+        Returns:
+            tuple:
+                status_code, list of host object
+        """
+        try:
+            user = self.session.query(User).filter(
+                User.username == username).one()
+            return SUCCEED, user.hosts
+        except sqlalchemy.exc.SQLAlchemyError as error:
+            LOGGER.error(error)
+            return DATABASE_QUERY_ERROR, []

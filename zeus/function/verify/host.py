@@ -19,8 +19,6 @@ from marshmallow import Schema
 from marshmallow import fields
 from marshmallow import validate
 
-from vulcanus.conf import constant
-
 
 class HostSchema(Schema):
     """
@@ -34,7 +32,7 @@ class HostSchema(Schema):
     username = fields.String(required=True, validate=lambda s: len(s) > 0)
     password = fields.String(required=True, validate=lambda s: len(s) > 0)
     agent_port = fields.Integer(required=True, validate=lambda s: 65535 >= s >= 0)
-    os_version = fields.String(required=True, validate=lambda s:len(s) > 0)
+    os_version = fields.String(required=True, validate=lambda s: len(s) > 0)
 
 
 class DeleteHostSchema(Schema):
@@ -94,3 +92,16 @@ class GetHostInfoSchema(Schema):
     """
     host_list = fields.List(fields.Integer(), required=True)
     basic = fields.Boolean(required=False)
+
+
+class AddHostSchema(Schema):
+    """
+    validators for parameter of /manage/host/add
+    """
+    ssh_user = fields.String(required=True, validate=lambda s: len(s) > 0)
+    password = fields.String(required=True, validate=lambda s: len(s) > 0)
+    host_name = fields.String(required=True, validate=lambda s: len(s) > 0)
+    public_ip = fields.IP(required=True)
+    ssh_port = fields.Integer(required=True, validate=lambda s: s > 0)
+    host_group_name = fields.String(required=True, validate=lambda s: len(s) > 0)
+    management = fields.Boolean(required=True)

@@ -16,40 +16,48 @@ Author:
 Description: Restful APIs for host
 """
 import json
-from typing import Dict, Tuple, List, Iterable
+import socket
+from typing import Dict, Iterable, List, Tuple
 
+import paramiko
 import requests
 from flask import jsonify, request
 
-from vulcanus.multi_thread_handler import MultiThreadHandler
-from zeus.conf.constant import CERES_HOST_INFO, CHECK_WORKFLOW_HOST_EXIST
-from vulcanus.restful.status import (
-    SUCCEED,
-    DATABASE_CONNECT_ERROR,
-    NO_DATA,
-    TOKEN_ERROR,
-    DATABASE_DELETE_ERROR
-)
-from vulcanus.restful.response import BaseResponse
 from vulcanus.database.helper import operate
-from vulcanus.database.table import User, Host
+from vulcanus.database.table import Host, User
 from vulcanus.log.log import LOGGER
-from zeus.database.proxy.host import HostProxy
-from zeus.conf import configuration
-from zeus.database import SESSION
+from vulcanus.multi_thread_handler import MultiThreadHandler
+from vulcanus.restful.response import BaseResponse
+from vulcanus.restful.status import (
+    DATABASE_CONNECT_ERROR,
+    DATABASE_DELETE_ERROR,
+    DATA_EXIST,
+    EXECUTE_COMMAND_ERROR,
+    NO_DATA,
+    PARAM_ERROR,
+    SSH_ERROR,
+    SUCCEED,
+    TOKEN_ERROR
+)
 from zeus.account_manager.cache import UserCache
+from zeus.conf import configuration
+from zeus.conf.constant import CERES_HOST_INFO, CHECK_WORKFLOW_HOST_EXIST, HostStatus
+from zeus.database import SESSION
+from zeus.database.proxy.host import HostProxy
 from zeus.function.verify.host import (
-    HostSchema,
-    DeleteHostSchema,
-    GetHostSchema,
     AddHostGroupSchema,
     DeleteHostGroupSchema,
+    DeleteHostSchema,
     GetHostGroupSchema,
-    GetHostInfoSchema
+    GetHostInfoSchema,
+    GetHostSchema,
+    AddHostSchema,
+    HostSchema
 )
+from zeus.host_manager.ssh import SSH, generate_key
 
 
-class AddHost(BaseResponse):
+class RegisterHost(BaseResponse):
     """
     Interface for add host.
     Restful API: post
@@ -490,3 +498,111 @@ class GetHostInfo(BaseResponse):
             dict: response body
         """
         return jsonify(self.handle_request(GetHostInfoSchema, self))
+
+
+class AddHost(BaseResponse):
+    """
+    Interface for add host from web.
+    Restful API: POST
+    """
+
+    def _handle(self, args):
+        """
+        Handle function
+
+        Args:
+            args (dict):
+            {
+                "host_name":"host name",
+                "ssh_user":"root",
+                "password":"password",
+                "host_group_name":"host_group_name",
+                "ip":"127.0.0.1",
+                "ssh_port":"22",
+                "management":false,
+                "username": "admin"
+            }
+
+        Returns:
+            tuple:
+                status code, result
+        """
+        proxy = HostProxy()
+        if not proxy.connect(SESSION):
+            LOGGER.error("connect to database error")
+            return DATABASE_CONNECT_ERROR, {}
+
+        status, hosts = proxy.get_hosts(args.get('username'))
+        if status != SUCCEED:
+            return status, {}
+        status, group_infos = proxy.query_host_groups(args.get('username'))
+        if status != SUCCEED:
+            return status, {}
+        if group_infos.get(args.get("host_group_name")) is None:
+            return PARAM_ERROR, {"msg": "invalid host group name"}
+
+        host_data = {
+            "host_name": args.get("host_name"),
+            "ssh_user": args.get("ssh_user"),
+            "host_group_name": args.get("host_group_name"),
+            "host_group_id": group_infos.get(args.get("host_group_name")),
+            "public_ip": args.get("public_ip"),
+            "ssh_port": args.get("ssh_port"),
+            "user": args.get("username"),
+            "management": args.get("management"),
+        }
+        if Host(**host_data) in hosts:
+            return DATA_EXIST, {}
+
+        status, data = save_ssh_public_key_to_client({
+            "hostname": args.get('public_ip'),
+            "port": args.get('ssh_port'),
+            "username": args.get('ssh_user'),
+            "password": args.get('password')}
+        )
+        if status == SUCCEED:
+            host_data.update(data)
+            data.clear()
+        return proxy.add_host(host_data), data
+
+    def post(self):
+        """
+        Get host info
+
+        Args:
+            dict: host info
+
+        Returns:
+            dict: response body
+        """
+        return jsonify(self.handle_request(schema=AddHostSchema, obj=self, debug=False))
+
+
+def save_ssh_public_key_to_client(data: dict) -> Tuple[int, dict]:
+    """
+    generate RSA key pair,save public key to the target host machine
+
+    Args:
+        data (dict): Parameter information required for SSH connection
+
+    Returns:
+        tuple:
+            status code(int), relation information(dict)
+    """
+    private_key, public_key = generate_key()
+    command = f"mkdir -p -m 700 ~/.ssh && echo {public_key!r} >> ~/.ssh/authorized_keys"
+    try:
+        client = SSH(**data)
+        stdin, stdout, stderr = client.execute_command(command)
+    except socket.error as error:
+        LOGGER.error(error)
+        return SSH_ERROR, {"msg": "connection failed, invalid ip address or port"}
+    except paramiko.ssh_exception.SSHException as error:
+        LOGGER.error(error)
+        return SSH_ERROR, {"msg": "authentication failed, invalid username or password!"}
+
+    if stderr.read().decode("utf8"):
+        LOGGER.error(f"add public key failed when add host {data.get('public_ip')} to database!")
+        return EXECUTE_COMMAND_ERROR, {"msg": "add public key failed!"}
+
+    return SUCCEED, {"pkey": private_key, "status": HostStatus.ONLINE}
