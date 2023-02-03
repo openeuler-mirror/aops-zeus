@@ -39,13 +39,13 @@ class TestConfigManage(unittest.TestCase):
     MOCK_GET_FILE_CONTENT_ARGS = {
         "infos": [
             {
-                "host_id": "mock_host_id1",
+                "host_id": 1,
                 "config_list": [
                     "mock_path1",
                     "mock_path2"
                 ]},
             {
-                "host_id": "mock_host_id2",
+                "host_id": 2,
                 "config_list": [
                     "mock_path3",
                     "mock_path4"
@@ -73,20 +73,20 @@ class TestConfigManage(unittest.TestCase):
         mock_connect.return_value = ''
         mock_user.return_value = UserInfo('admin', 'mock', 'mock')
         mock_host_address.return_value = SUCCEED, {
-            'mock_host_id1': "mock_address1",
-            'mock_host_id2': "mock_address1"
+            'mock_host_id1': 1,
+            'mock_host_id2': 2
         }
         mock_file_content = [{
             'fail_files': [],
             'infos': [],
             'success_files': ['mock_path'],
-            'host_id': 'mock_host_id1',
+            'host_id': 1,
         },
             {
                 'fail_files': [],
                 'infos': [],
                 'success_files': ['mock_path'],
-                'host_id': 'mock_host_id2',
+                'host_id': 2,
             }
         ]
         mock_get_result.return_value = mock_file_content
@@ -99,7 +99,7 @@ class TestConfigManage(unittest.TestCase):
         self.assertEqual([], all_fail_file_list, resp.json)
 
     def test_collect_config_should_return_param_error_when_input_is_incorrect(self):
-        mock_args = {"infos": [{"host_id": 2333, "config_list": ["test_config_path"]}]}
+        mock_args = {"infos": [{"host_id": "id1", "config_list": ["test_config_path"]}]}
         resp = self.client.post('/manage/config/collect', data=json.dumps(mock_args),
                                 headers=header)
         self.assertEqual(PARAM_ERROR, resp.json.get('code'), resp.json)
@@ -119,7 +119,7 @@ class TestConfigManage(unittest.TestCase):
         mock_connect.return_value = ''
         mock_user.return_value = UserInfo('admin', 'mock', 'mock')
         mock_host_address.return_value = SUCCEED, {
-            'mock_host_id1': "mock_address1",
+            'mock_host_id1': 1,
         }
         mock_file_content = [{
             'fail_files': [],
@@ -132,7 +132,7 @@ class TestConfigManage(unittest.TestCase):
                 'path': 'mock_path1'
             }],
             'success_files': ['mock_path'],
-            'host_id': 'mock_host_id1'
+            'host_id': 1
         }]
         mock_get_result.return_value = mock_file_content
         resp = self.client.post('/manage/config/collect',
@@ -155,8 +155,8 @@ class TestConfigManage(unittest.TestCase):
         mock_connect.return_value = ''
         mock_user.return_value = UserInfo('admin', 'mock', 'mock')
         mock_host_address.return_value = SUCCEED, {
-            'mock_host_id1': "mock_address1",
-            'mock_host_id2': "mock_address2",
+            'mock_host_id1': 1,
+            'mock_host_id2': 2,
         }
 
         mock_file_content = [{"message": "error"}, {"message": "error"}]
@@ -177,7 +177,7 @@ class TestConfigManage(unittest.TestCase):
             self, mock_request):
         mock_request.side_effect = requests.exceptions.ConnectionError()
         mock_agrs = {
-            "host_id": "xx",
+            "host_id": 1,
             "config_file_list": "xx",
             "address": "xx",
             "header": "xx"

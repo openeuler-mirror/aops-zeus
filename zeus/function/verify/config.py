@@ -23,7 +23,7 @@ class ConfigSchema(Schema):
     """
         validators for CollectConfigSchema
     """
-    host_id = fields.String(required=True, validate=lambda s: len(s) > 0)
+    host_id = fields.Integer(required=True, validate=lambda s: s > 0)
     config_list = fields.List(fields.String(required=True, validate=lambda s: len(s) > 0),
                               required=True,
                               validate=lambda s: len(s) > 0)

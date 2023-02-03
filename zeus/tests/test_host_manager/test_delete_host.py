@@ -38,7 +38,7 @@ header_with_token = {
 class TestDeleteHost(unittest.TestCase):
 
     def test_delete_host_should_return_token_error_when_part_of_input_with_no_token(self):
-        input_data = {'host_list': ['test_host_id_1', 'test_host_id_2', 'test_host_id_3']}
+        input_data = {'host_list': [1, 2, 3]}
         resp = client.delete('/manage/host/delete', json=input_data, headers=header)
 
         self.assertEqual(TOKEN_ERROR, resp.json.get('code'), resp.json)
@@ -50,7 +50,7 @@ class TestDeleteHost(unittest.TestCase):
     @mock.patch.object(HostProxy, 'connect')
     def test_delete_host_should_return_database_error_when_database_cannot_connect(
             self, mock_mysql_connect):
-        input_data = {'host_list': ['test_host_id_1', 'test_host_id_2', 'test_host_id_3']}
+        input_data = {'host_list': [1, 2, 3]}
         mock_mysql_connect.return_value = False
         resp = client.delete('/manage/host/delete', json=input_data, headers=header_with_token)
         self.assertEqual(DATABASE_CONNECT_ERROR, resp.json.get('code'), resp.json)

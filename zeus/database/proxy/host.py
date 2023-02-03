@@ -43,7 +43,6 @@ class HostProxy(MysqlProxy):
                     "username": "admin",
                     "host_name": "host1",
                     "host_group_name": "group1",
-                    "host_id": "id1",
                     "public_ip": "127.0.0.1",
                     "management": False,
                     "agent_port": 1122,
@@ -95,7 +94,7 @@ class HostProxy(MysqlProxy):
         Args:
             data(dict): parameter, e.g.
                 {
-                    "host_list": ["host1", "host2"],
+                    "host_list": [1, 2],
                     "username": "admin"
                 }
 
