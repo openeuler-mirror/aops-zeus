@@ -40,7 +40,10 @@ from vulcanus.conf.constant import (
     AGENT_PLUGIN_SET,
     AGENT_METRIC_SET,
     HOST_SCENE_GET,
-    EXECUTE_REPO_SET
+    EXECUTE_REPO_SET,
+    GITEE_AUTH_LOGIN,
+    AUTH_REDIRECT_URL,
+    BIND_AUTH_ACCOUNT
 )
 
 URLS = []
@@ -50,7 +53,10 @@ SPECIFIC_URLS = {
         (account_view.Login, USER_LOGIN),
         (account_view.Certificate, USER_CERTIFICATE),
         (account_view.ChangePassword, CHANGE_PASSWORD),
-        (account_view.AddUser, ADD_USER)
+        (account_view.AddUser, ADD_USER),
+        (account_view.GiteeAuthLogin, GITEE_AUTH_LOGIN),
+        (account_view.AuthRedirectUrl, AUTH_REDIRECT_URL),
+        (account_view.BindAuthAccount, BIND_AUTH_ACCOUNT)
     ],
     "HOST_URLS": [
         (host_view.AddHost, ADD_HOST),
