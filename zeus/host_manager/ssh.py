@@ -36,14 +36,21 @@ def generate_key() -> Tuple[str, str]:
 class SSH:
     """
     A SSH client used to run command in remote node
+
+    Attributes:
+        hostname(str):   host ip address, the field is used to record ip information in method
+        paramiko.client.SSHClient()
+        username(str):   remote login user
+        port(int or str):   remote login port
+        password(str)
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, hostname, username, port, password):
         self._client_args = {
-            'hostname': kwargs.get('hostname'),
-            'username': kwargs.get('username'),
-            'port': kwargs.get('port'),
-            "password": kwargs.get('password')
+            'hostname': hostname,
+            'username': username,
+            'port': port,
+            "password": password
         }
         self._client = self.client()
 

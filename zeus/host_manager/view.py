@@ -35,7 +35,8 @@ from vulcanus.restful.status import (
     EXECUTE_COMMAND_ERROR,
     NO_DATA,
     PARAM_ERROR,
-    SSH_ERROR,
+    SSH_CONNECTION_ERROR,
+    SSH_AUTHENTICATION_ERROR,
     SUCCEED,
     TOKEN_ERROR
 )
@@ -511,7 +512,45 @@ class AddHost(BaseResponse):
         Handle function
 
         Args:
-            args (dict):
+            args (dict): e.g
+            {
+                "host_name":"host name",
+                "ssh_user":"root",
+                "password":"password",
+                "host_group_name":"host_group_name",
+                "ip":"127.0.0.1",
+                "ssh_port":"22",
+                "management":false,
+                "username": "admin"
+            }
+
+        Returns:
+            int: status code
+        """
+        self.proxy = HostProxy()
+        if not self.proxy.connect(SESSION):
+            LOGGER.error("connect to database error")
+            return DATABASE_CONNECT_ERROR
+
+        status, host = self.validate_host_info(args)
+        if status != SUCCEED:
+            return status
+
+        status, private_key = save_ssh_public_key_to_client(
+            args.get('public_ip'), args.get('ssh_port'), args.get('ssh_user'), args.get('password'))
+        if status == SUCCEED:
+            host.pkey = private_key
+            host.status = HostStatus.ONLINE
+
+        return self.proxy.add_host(host)
+
+    def validate_host_info(self, host_info: dict) -> Tuple[int, Host]:
+        """
+        query hosts info and groups info, validate that the host info is valid
+        return host object
+
+        Args:
+            host_info (dict): e.g
             {
                 "host_name":"host name",
                 "ssh_user":"root",
@@ -525,45 +564,35 @@ class AddHost(BaseResponse):
 
         Returns:
             tuple:
-                status code, result
+                status code, host object
         """
-        proxy = HostProxy()
-        if not proxy.connect(SESSION):
-            LOGGER.error("connect to database error")
-            return DATABASE_CONNECT_ERROR, {}
-
-        status, hosts = proxy.get_hosts(args.get('username'))
+        status, hosts, groups = self.proxy.get_hosts_and_groups(host_info.get('username'))
         if status != SUCCEED:
-            return status, {}
-        status, group_infos = proxy.query_host_groups(args.get('username'))
-        if status != SUCCEED:
-            return status, {}
-        if group_infos.get(args.get("host_group_name")) is None:
-            return PARAM_ERROR, {"msg": "invalid host group name"}
+            return status, Host()
 
-        host_data = {
-            "host_name": args.get("host_name"),
-            "ssh_user": args.get("ssh_user"),
-            "host_group_name": args.get("host_group_name"),
-            "host_group_id": group_infos.get(args.get("host_group_name")),
-            "public_ip": args.get("public_ip"),
-            "ssh_port": args.get("ssh_port"),
-            "user": args.get("username"),
-            "management": args.get("management"),
-        }
-        if Host(**host_data) in hosts:
-            return DATA_EXIST, {}
+        group_id = None
+        for group in groups:
+            if group.host_group_name == host_info.get('host_group_name'):
+                group_id = group.host_group_id
 
-        status, data = save_ssh_public_key_to_client({
-            "hostname": args.get('public_ip'),
-            "port": args.get('ssh_port'),
-            "username": args.get('ssh_user'),
-            "password": args.get('password')}
-        )
-        if status == SUCCEED:
-            host_data.update(data)
-            data.clear()
-        return proxy.add_host(host_data), data
+        if group_id is None:
+            LOGGER.warning(f"host group doesn't exist "
+                           f"which named {host_info.get('host_group_name')} !")
+            return PARAM_ERROR, Host()
+
+        host = Host(**{
+            "host_name": host_info.get("host_name"),
+            "ssh_user": host_info.get("ssh_user"),
+            "host_group_name": host_info.get("host_group_name"),
+            "host_group_id": group_id,
+            "public_ip": host_info.get("public_ip"),
+            "ssh_port": host_info.get("ssh_port"),
+            "user": host_info.get("username"),
+            "management": host_info.get("management"),
+        })
+        if host in hosts:
+            return DATA_EXIST, Host()
+        return SUCCEED, host
 
     def post(self):
         """
@@ -578,31 +607,36 @@ class AddHost(BaseResponse):
         return jsonify(self.handle_request(schema=AddHostSchema, obj=self, debug=False))
 
 
-def save_ssh_public_key_to_client(data: dict) -> Tuple[int, dict]:
+def save_ssh_public_key_to_client(hostname: str, port: int, username: str, password: str) -> tuple:
     """
     generate RSA key pair,save public key to the target host machine
 
     Args:
-        data (dict): Parameter information required for SSH connection
+        hostname(str):   host ip address
+        username(str):   remote login user
+        port(int):   remote login port
+        password(str)
 
     Returns:
         tuple:
-            status code(int), relation information(dict)
+            status code(int), private key string
     """
     private_key, public_key = generate_key()
-    command = f"mkdir -p -m 700 ~/.ssh && echo {public_key!r} >> ~/.ssh/authorized_keys"
+    command = f"mkdir -p -m 700 ~/.ssh " \
+              f"&& echo {public_key!r} >> ~/.ssh/authorized_keys" \
+              f"&& chmod 600 ~/.ssh/authorized_keys"
     try:
-        client = SSH(**data)
+        client = SSH(hostname=hostname, username=username, port=port, password=password)
         stdin, stdout, stderr = client.execute_command(command)
     except socket.error as error:
         LOGGER.error(error)
-        return SSH_ERROR, {"msg": "connection failed, invalid ip address or port"}
+        return SSH_CONNECTION_ERROR, ""
     except paramiko.ssh_exception.SSHException as error:
         LOGGER.error(error)
-        return SSH_ERROR, {"msg": "authentication failed, invalid username or password!"}
+        return SSH_AUTHENTICATION_ERROR, ""
 
     if stderr.read().decode("utf8"):
-        LOGGER.error(f"add public key failed when add host {data.get('public_ip')} to database!")
-        return EXECUTE_COMMAND_ERROR, {"msg": "add public key failed!"}
+        LOGGER.error(f"save public key on host failed, host ip is {hostname}!")
+        return EXECUTE_COMMAND_ERROR, ""
 
-    return SUCCEED, {"pkey": private_key, "status": HostStatus.ONLINE}
+    return SUCCEED, private_key

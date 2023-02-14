@@ -22,6 +22,8 @@ from vulcanus.conf.constant import (
     AGENT_METRIC_SET,
     AGENT_PLUGIN_INFO,
     AGENT_PLUGIN_SET,
+    AUTH_REDIRECT_URL,
+    BIND_AUTH_ACCOUNT,
     CHANGE_PASSWORD,
     COLLECT_CONFIG,
     DELETE_GROUP,
@@ -31,23 +33,14 @@ from vulcanus.conf.constant import (
     EXECUTE_REPO_SET,
     GET_GROUP,
     GET_HOST_COUNT,
+    GITEE_AUTH_LOGIN,
     HOST_SCENE_GET,
     QUERY_HOST,
     QUERY_HOST_DETAIL,
     REGISTER_HOST,
     USER_CERTIFICATE,
-    CHANGE_PASSWORD,
-    ADD_USER,
-    AGENT_PLUGIN_INFO,
-    AGENT_PLUGIN_SET,
-    AGENT_METRIC_SET,
-    HOST_SCENE_GET,
-    EXECUTE_REPO_SET,
-    GITEE_AUTH_LOGIN,
-    AUTH_REDIRECT_URL,
-    BIND_AUTH_ACCOUNT
+    USER_LOGIN
 )
-
 from zeus.account_manager import view as account_view
 from zeus.agent_manager import view as agent_view
 from zeus.config_manager import view as config_view

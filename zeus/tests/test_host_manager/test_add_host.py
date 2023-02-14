@@ -22,7 +22,8 @@ from paramiko import AuthenticationException
 from sqlalchemy.orm.collections import InstrumentedList
 
 from vulcanus.conf.constant import ADD_HOST
-from vulcanus.database.table import Host
+from vulcanus.database.table import Host, HostGroup, User
+from vulcanus.restful.response import BaseResponse
 from vulcanus.restful.status import (
     DATABASE_CONNECT_ERROR,
     DATABASE_INSERT_ERROR,
@@ -30,15 +31,15 @@ from vulcanus.restful.status import (
     DATA_EXIST,
     EXECUTE_COMMAND_ERROR,
     PARAM_ERROR,
-    SSH_ERROR,
+    SSH_AUTHENTICATION_ERROR,
+    SSH_CONNECTION_ERROR,
     SUCCEED,
     TOKEN_ERROR
 )
 from zeus import BLUE_POINT
-from zeus.conf.constant import HostStatus
 from zeus.database.proxy.host import HostProxy
 from zeus.host_manager.ssh import SSH
-from zeus.host_manager.view import save_ssh_public_key_to_client
+from zeus.host_manager.view import AddHost, save_ssh_public_key_to_client
 
 app = Flask("check")
 for blue, api in BLUE_POINT:
@@ -57,12 +58,13 @@ header_with_token = {
 
 
 class TestAddHost(unittest.TestCase):
+    @mock.patch("zeus.host_manager.view.save_ssh_public_key_to_client")
+    @mock.patch.object(BaseResponse, 'verify_token')
     @mock.patch.object(HostProxy, 'add_host')
-    @mock.patch.object(HostProxy, 'query_host_groups')
-    @mock.patch.object(HostProxy, 'get_hosts')
+    @mock.patch.object(AddHost, 'validate_host_info')
     @mock.patch.object(HostProxy, 'connect')
     def test_add_host_should_add_host_succeed_when_input_valid_data_with_token(
-            self, mock_connect, mock_hosts, mock_group_info, add_host):
+            self, mock_connect, mock_validate_host_info, add_host, mock_token, mock_save_key):
         host_data = {
             "ssh_user": "test_user",
             "password": "test_password",
@@ -73,9 +75,10 @@ class TestAddHost(unittest.TestCase):
             "management": False,
         }
         mock_connect.return_value = True
-        mock_hosts.return_value = SUCCEED, InstrumentedList([])
-        mock_group_info.return_value = SUCCEED, {"test_host_group": 1}
+        mock_validate_host_info.return_value = SUCCEED, Host()
         add_host.return_value = SUCCEED
+        mock_token.return_value = SUCCEED
+        mock_save_key.return_value = SUCCEED, {"pkey": "private_key"}
         response = client.post(ADD_HOST, data=json.dumps(host_data), headers=header_with_token)
         self.assertEqual(SUCCEED, response.json.get('code'))
 
@@ -92,9 +95,10 @@ class TestAddHost(unittest.TestCase):
         response = client.post(ADD_HOST, data=json.dumps(host_data), headers=header)
         self.assertEqual(TOKEN_ERROR, response.json.get('code'))
 
-    @mock.patch.object(HostProxy, 'connect')
-    def test_add_host_should_return_database_connect_error_when_all_input_is_right_but_cannot_connect_database(
-            self, mock_connect):
+    @mock.patch.object(BaseResponse, 'verify_token')
+    def test_add_host_should_return_token_error_when_request_interface_with_invalid_token(self,
+                                                                                          mock_token):
+        mock_token.return_value = TOKEN_ERROR
         host_data = {
             "ssh_user": "test_user",
             "password": "test_password",
@@ -104,14 +108,32 @@ class TestAddHost(unittest.TestCase):
             "ssh_port": 22,
             "management": False,
         }
+        response = client.post(ADD_HOST, data=json.dumps(host_data), headers=header_with_token)
+        self.assertEqual(TOKEN_ERROR, response.json.get('code'))
+
+    @mock.patch.object(HostProxy, 'connect')
+    @mock.patch.object(BaseResponse, 'verify_token')
+    def test_add_host_should_return_database_connect_error_when_all_input_is_right_but_cannot_connect_database(
+            self, mock_token, mock_connect):
+        host_data = {
+            "ssh_user": "test_user",
+            "password": "test_password",
+            "host_name": "test_host",
+            "public_ip": "127.0.0.1",
+            "host_group_name": "test_host_group",
+            "ssh_port": 22,
+            "management": False,
+        }
+        mock_token.return_value = SUCCEED
         mock_connect.return_value = False
         response = client.post(ADD_HOST, data=json.dumps(host_data), headers=header_with_token)
         self.assertEqual(DATABASE_CONNECT_ERROR, response.json.get('code'))
 
-    @mock.patch.object(HostProxy, 'get_hosts')
+    @mock.patch.object(AddHost, 'validate_host_info')
     @mock.patch.object(HostProxy, 'connect')
+    @mock.patch.object(BaseResponse, 'verify_token')
     def test_add_host_should_return_database_query_error_when_input_all_is_right_but_query_hosts_failed(
-            self, mock_connect, mock_hosts):
+            self, mock_token, mock_connect, mock_hosts):
         host_data = {
             "ssh_user": "test_user",
             "password": "test_password",
@@ -121,37 +143,18 @@ class TestAddHost(unittest.TestCase):
             "ssh_port": 22,
             "management": False,
         }
+        mock_token.return_value = SUCCEED
         mock_connect.return_value = True
         mock_hosts.return_value = DATABASE_QUERY_ERROR, InstrumentedList([])
         response = client.post(ADD_HOST, data=json.dumps(host_data), headers=header_with_token)
         self.assertEqual(DATABASE_QUERY_ERROR, response.json.get('code'))
 
-    @mock.patch.object(HostProxy, 'query_host_groups')
-    @mock.patch.object(HostProxy, 'get_hosts')
-    @mock.patch.object(HostProxy, 'connect')
-    def test_add_host_should_return_database_query_error_when_input_all_is_right_but_query_host_group_info_failed(
-            self, mock_connect, mock_hosts, mock_group_info):
-        host_data = {
-            "ssh_user": "test_user",
-            "password": "test_password",
-            "host_name": "test_host",
-            "public_ip": "127.0.0.1",
-            "host_group_name": "test_host_group",
-            "ssh_port": 22,
-            "management": False,
-        }
-        mock_connect.return_value = True
-        mock_hosts.return_value = SUCCEED, InstrumentedList([])
-        mock_group_info.return_value = DATABASE_QUERY_ERROR, {}
-        response = client.post(ADD_HOST, data=json.dumps(host_data), headers=header_with_token)
-        self.assertEqual(DATABASE_QUERY_ERROR, response.json.get('code'))
-
     @mock.patch.object(HostProxy, 'add_host')
-    @mock.patch.object(HostProxy, 'query_host_groups')
-    @mock.patch.object(HostProxy, 'get_hosts')
+    @mock.patch.object(AddHost, 'validate_host_info')
     @mock.patch.object(HostProxy, 'connect')
+    @mock.patch.object(BaseResponse, 'verify_token')
     def test_add_host_should_add_host_failed_when_input_valid_data_with_token_but_add_host_to_database_failed(
-            self, mock_connect, mock_hosts, mock_group_info, mock_add_host):
+            self, mock_token, mock_connect, mock_validate_host, mock_add_host):
         host_data = {
             "ssh_user": "test_user",
             "password": "test_password",
@@ -161,48 +164,19 @@ class TestAddHost(unittest.TestCase):
             "ssh_port": 22,
             "management": False,
         }
+        mock_token.return_value = SUCCEED
         mock_connect.return_value = True
-        mock_hosts.return_value = SUCCEED, InstrumentedList([])
-        mock_group_info.return_value = SUCCEED, {"test_host_group": 1}
+        mock_validate_host.return_value = SUCCEED, Host()
         mock_add_host.return_value = DATABASE_INSERT_ERROR
         response = client.post(ADD_HOST, data=json.dumps(host_data), headers=header_with_token)
         self.assertEqual(DATABASE_INSERT_ERROR, response.json.get('code'))
 
-    @mock.patch.object(HostProxy, 'query_host_groups')
-    @mock.patch.object(HostProxy, 'get_hosts')
+    @mock.patch.object(AddHost, 'validate_host_info')
     @mock.patch.object(HostProxy, 'connect')
-    def test_add_host_should_host_existed_when_host_name_is_in_database(
-            self, mock_connect, mock_hosts, mock_group_info):
-        host_data = {
-            "ssh_user": "test_user",
-            "password": "test_password",
-            "host_name": "test_host",
-            "public_ip": "127.0.0.1",
-            "host_group_name": "test_host_group",
-            "ssh_port": 22,
-            "management": False,
-        }
-        mock_host = Host(**{
-            "ssh_user": "test_user",
-            "host_name": "test_host",
-            "public_ip": "127.0.0.2",
-            "host_group_name": "test_host_group",
-            "ssh_port": 22,
-            "management": False,
-            "host_group_id": 1,
-            "user": "admin"
-        })
-        mock_connect.return_value = True
-        mock_hosts.return_value = SUCCEED, InstrumentedList([mock_host])
-        mock_group_info.return_value = SUCCEED, {"test_host_group": 1}
-        response = client.post(ADD_HOST, data=json.dumps(host_data), headers=header_with_token)
-        self.assertEqual(DATA_EXIST, response.json.get('code'))
-
-    @mock.patch.object(HostProxy, 'query_host_groups')
-    @mock.patch.object(HostProxy, 'get_hosts')
-    @mock.patch.object(HostProxy, 'connect')
-    def test_add_host_should_host_existed_when_host_ip_is_in_database(
-            self, mock_connect, mock_hosts, mock_group_info):
+    @mock.patch.object(BaseResponse, 'verify_request')
+    @mock.patch.object(BaseResponse, 'verify_token')
+    def test_add_host_should_host_existed_when_host_is_in_database(
+            self, mock_token, mcok_request, mock_connect, mock_validate_host_info):
         host_data = {
             "ssh_user": "test_user",
             "password": "test_password",
@@ -211,28 +185,21 @@ class TestAddHost(unittest.TestCase):
             "host_group_name": "test_host_group",
             "ssh_port": 22,
             "management": False,
+            "username": "admin"
         }
-        mock_host = Host(**{
-            "ssh_user": "test_user",
-            "host_name": "test_host_2",
-            "public_ip": "127.0.0.1",
-            "host_group_name": "test_host_group",
-            "ssh_port": 22,
-            "management": False,
-            "host_group_id": 1,
-            "user": "admin"
-        })
+
+        mock_token.return_value = SUCCEED
+        mcok_request.return_value = host_data, SUCCEED
         mock_connect.return_value = True
-        mock_hosts.return_value = SUCCEED, InstrumentedList([mock_host])
-        mock_group_info.return_value = SUCCEED, {"test_host_group": 1}
+        mock_validate_host_info.return_value = DATA_EXIST, Host()
         response = client.post(ADD_HOST, data=json.dumps(host_data), headers=header_with_token)
         self.assertEqual(DATA_EXIST, response.json.get('code'))
 
-    @mock.patch.object(HostProxy, 'query_host_groups')
-    @mock.patch.object(HostProxy, 'get_hosts')
+    @mock.patch.object(AddHost, 'validate_host_info')
     @mock.patch.object(HostProxy, 'connect')
+    @mock.patch.object(BaseResponse, 'verify_token')
     def test_add_host_should_param_error_when_host_group_is_not_in_database(
-            self, mock_connect, mock_hosts, mock_group_info):
+            self, mock_token, mock_connect, mock_validate_host_info):
         host_data = {
             "ssh_user": "test_user",
             "password": "test_password",
@@ -242,13 +209,15 @@ class TestAddHost(unittest.TestCase):
             "ssh_port": 22,
             "management": False,
         }
+        mock_token.return_value = SUCCEED
         mock_connect.return_value = True
-        mock_hosts.return_value = SUCCEED, InstrumentedList([])
-        mock_group_info.return_value = SUCCEED, {"test_host_group": 1}
+        mock_validate_host_info.return_value = PARAM_ERROR, Host()
         response = client.post(ADD_HOST, data=json.dumps(host_data), headers=header_with_token)
         self.assertEqual(PARAM_ERROR, response.json.get('code'))
 
-    def test_add_host_should_param_error_when_input_host_attr_is_not_valid(self):
+    @mock.patch.object(BaseResponse, 'verify_token')
+    def test_add_host_should_param_error_when_input_host_attr_is_not_valid(self, mock_token):
+        mock_token.return_value = SUCCEED
         host_infos = [
             {
                 "host_name": "",
@@ -411,14 +380,6 @@ class TestAddHost(unittest.TestCase):
                 "host_group_name": 123,
                 "public_ip": "127.0.0.1",
                 "management": False,
-            }, {
-                "host_name": "test_host_1",
-                "ssh_user": "test_user",
-                "password": "test_password",
-                "host_group_name": "test_host_group",
-                "public_ip": "127.0.0.1",
-                "ssh_port": 22,
-                "management": True,
             }
         ]
         result = []
@@ -427,28 +388,29 @@ class TestAddHost(unittest.TestCase):
             result.append(response.json.get("code"))
         self.assertEqual(result, [PARAM_ERROR] * len(host_infos))
 
-    @mock.patch.object(HostProxy, "add_host")
     @mock.patch("zeus.host_manager.view.generate_key")
     @mock.patch.object(SSH, "execute_command")
     @mock.patch.object(SSH, "client")
     def test_save_ssh_public_key_to_client_should_return_add_succeed_and_pkey_when_save_public_key_succeed(
-            self, mock_ssh, mock_execute_command, mock_key_pair, mock_add_host):
+            self, mock_ssh, mock_execute_command, mock_key_pair):
         mock_ssh.return_value = paramiko.client.SSHClient()
         mock_key_pair.return_value = "private_key", "public_key"
         mock_execute_command.return_value = '', '', BytesIO()
-        mock_add_host.return_value = SUCCEED
         mock_data = {
             "ssh_user": "test_user",
             "password": "test_password",
             "public_ip": "127.0.0.1",
             "ssh_port": 22
         }
-        self.assertEqual((SUCCEED, {"pkey": "private_key", "status": HostStatus.ONLINE}),
-                         save_ssh_public_key_to_client(mock_data))
+        self.assertEqual((SUCCEED, "private_key"),
+                         save_ssh_public_key_to_client(mock_data['public_ip'],
+                                                       mock_data['ssh_port'],
+                                                       mock_data["ssh_user"],
+                                                       mock_data["password"]))
 
     @mock.patch("zeus.host_manager.view.generate_key")
     @mock.patch.object(SSH, "client")
-    def test_save_ssh_public_key_to_client_should_return_ssh_error_when_connect_host_failed(
+    def test_save_ssh_public_key_to_client_should_return_ssh_connect_error_when_connect_host_failed(
             self, mock_ssh, mock_key_pair):
         mock_ssh.side_effect = socket.error()
         mock_key_pair.return_value = "private_key", "public_key"
@@ -458,11 +420,15 @@ class TestAddHost(unittest.TestCase):
             "public_ip": "127.0.0.1",
             "ssh_port": 22
         }
-        self.assertEqual(SSH_ERROR, save_ssh_public_key_to_client(mock_data)[0])
+        self.assertEqual(SSH_CONNECTION_ERROR,
+                         save_ssh_public_key_to_client(mock_data['public_ip'],
+                                                       mock_data['ssh_port'],
+                                                       mock_data["ssh_user"],
+                                                       mock_data["password"])[0])
 
     @mock.patch("zeus.host_manager.view.generate_key")
     @mock.patch.object(SSH, "client")
-    def test_save_ssh_public_key_to_client_should_return_ssh_error_when_authentication_failed(
+    def test_save_ssh_public_key_to_client_should_return_ssh_authentication_error_when_authentication_failed(
             self, mock_ssh, mock_key_pair):
         mock_ssh.side_effect = AuthenticationException
         mock_key_pair.return_value = "private_key", "public_key"
@@ -472,7 +438,11 @@ class TestAddHost(unittest.TestCase):
             "public_ip": "127.0.0.1",
             "ssh_port": 22
         }
-        self.assertEqual(SSH_ERROR, save_ssh_public_key_to_client(mock_data)[0])
+        self.assertEqual(SSH_AUTHENTICATION_ERROR,
+                         save_ssh_public_key_to_client(mock_data['public_ip'],
+                                                       mock_data['ssh_port'],
+                                                       mock_data["ssh_user"],
+                                                       mock_data["password"])[0])
 
     @mock.patch("zeus.host_manager.view.generate_key")
     @mock.patch.object(SSH, "execute_command")
@@ -488,4 +458,104 @@ class TestAddHost(unittest.TestCase):
             "public_ip": "127.0.0.1",
             "ssh_port": 22
         }
-        self.assertEqual(EXECUTE_COMMAND_ERROR, save_ssh_public_key_to_client(mock_data)[0])
+        self.assertEqual(EXECUTE_COMMAND_ERROR,
+                         save_ssh_public_key_to_client(mock_data['public_ip'],
+                                                       mock_data['ssh_port'],
+                                                       mock_data["ssh_user"],
+                                                       mock_data["password"])[0])
+
+    @mock.patch.object(HostProxy, "get_hosts_and_groups")
+    def test_validate_host_info_should_return_host_object_when_host_info_is_valid(
+            self, mock_hosts_with_groups):
+        mock_host_info = {
+            "ssh_user": "test_user",
+            "host_name": "test_host_2",
+            "public_ip": "127.0.0.1",
+            "host_group_name": "test_host_group",
+            "ssh_port": 22,
+            "management": False,
+            "user": "admin"
+        }
+        mock_group = HostGroup(host_group_id=1, host_group_name="test_host_group", description="test", username="admin")
+        mock_hosts_with_groups.return_value = SUCCEED, InstrumentedList(), InstrumentedList([mock_group])
+        target = AddHost()
+        target.proxy = HostProxy()
+        self.assertEqual(target.validate_host_info(mock_host_info)[0], SUCCEED)
+
+    @mock.patch.object(HostProxy, "get_hosts_and_groups")
+    def test_validate_host_info_should_return_param_error_when_host_group_not_in_database(
+            self, mock_hosts_with_groups):
+        mock_host_info = {
+            "ssh_user": "test_user",
+            "host_name": "test_host_2",
+            "public_ip": "127.0.0.1",
+            "host_group_name": "test_host_group",
+            "ssh_port": 22,
+            "management": False,
+            "user": "admin"
+        }
+        mock_group = HostGroup(host_group_id=1, host_group_name="test_group", description="test", username="admin")
+        mock_hosts_with_groups.return_value = SUCCEED, InstrumentedList(), InstrumentedList([mock_group])
+        target = AddHost()
+        target.proxy = HostProxy()
+        self.assertEqual(target.validate_host_info(mock_host_info)[0], PARAM_ERROR)
+
+    @mock.patch.object(HostProxy, "get_hosts_and_groups")
+    def test_validate_host_info_should_return_data_exist_when_host_name_in_database(
+            self, mock_hosts_with_groups):
+        mock_host_info = {
+            "ssh_user": "test_user",
+            "host_name": "test_host",
+            "public_ip": "127.0.0.1",
+            "host_group_name": "test_host_group",
+            "ssh_port": 22,
+            "management": False,
+            "username": "admin"
+        }
+
+        mock_host = Host(**{
+            "ssh_user": "test_user",
+            "host_name": "test_host",
+            "public_ip": "127.0.0.2",
+            "host_group_name": "test_host_group",
+            "host_group_id": 1,
+            "ssh_port": 22,
+            "management": False,
+            "user": "admin"
+        })
+        mock_group = HostGroup(host_group_id=1, host_group_name="test_host_group",
+                               description="test", username="admin")
+        mock_hosts_with_groups.return_value = SUCCEED, InstrumentedList([mock_host]), InstrumentedList([mock_group])
+        target = AddHost()
+        target.proxy = HostProxy()
+        self.assertEqual(DATA_EXIST, target.validate_host_info(mock_host_info)[0])
+
+    @mock.patch.object(HostProxy, "get_hosts_and_groups")
+    def test_validate_host_info_should_return_data_exist_when_host_ip_in_database(
+            self, mock_hosts_with_groups):
+        mock_host_info = {
+            "ssh_user": "test_user",
+            "host_name": "test_host_1",
+            "public_ip": "127.0.0.1",
+            "host_group_name": "test_host_group",
+            "ssh_port": 22,
+            "management": False,
+            "username": "admin"
+        }
+
+        mock_host = Host(**{
+            "ssh_user": "test_user",
+            "host_name": "test_host_2",
+            "public_ip": "127.0.0.1",
+            "host_group_name": "test_host_group",
+            "host_group_id": 1,
+            "ssh_port": 22,
+            "management": False,
+            "user": "admin"
+        })
+        mock_group = HostGroup(host_group_id=1, host_group_name="test_host_group",
+                               description="test", username="admin")
+        mock_hosts_with_groups.return_value = SUCCEED, InstrumentedList([mock_host]), InstrumentedList([mock_group])
+        target = AddHost()
+        target.proxy = HostProxy()
+        self.assertEqual(DATA_EXIST, target.validate_host_info(mock_host_info)[0])
