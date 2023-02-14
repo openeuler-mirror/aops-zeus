@@ -16,13 +16,16 @@ Author:
 Description: Manager that start aops-zeus
 """
 import sqlalchemy
-
+import redis
+from redis import RedisError
 from vulcanus.database.table import User, Base, create_utils_tables
 from vulcanus.log.log import LOGGER
 from vulcanus.restful.status import SUCCEED
 from vulcanus.manage import init_app
+from vulcanus.database.proxy import RedisProxy
 from zeus.database import SESSION, ENGINE
 from zeus.database.proxy.account import UserProxy
+from zeus.conf import configuration
 
 
 def init_user():
@@ -61,7 +64,19 @@ def init_database():
     init_user()
 
 
+def init_redis_connect():
+    """
+    Init redis connect
+    """
+    try:
+        redis_connect = RedisProxy(configuration)
+        redis_connect.connect()
+    except (RedisError, redis.ConnectionError):
+        raise RedisError("redis connect error.")
+
+
 init_database()
+init_redis_connect()
 app, config = init_app('zeus')
 
 if __name__ == "__main__":
