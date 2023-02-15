@@ -53,7 +53,7 @@ class HostProxy(MysqlProxy):
                     "username": "admin",
                     "host_name": "host1",
                     "host_group_name": "group1",
-                    "public_ip": "127.0.0.1",
+                    "host_ip": "127.0.0.1",
                     "management": False,
                     "agent_port": 1122,
                     "os_version": "openEuler 22.03 LTS"
@@ -279,11 +279,12 @@ class HostProxy(MysqlProxy):
                 "host_id": host.host_id,
                 "host_name": host.host_name,
                 "host_group_name": host.host_group_name,
-                "public_ip": host.public_ip,
+                "host_ip": host.host_ip,
                 "management": host.management,
                 "status": host.status,
                 "scene": host.scene,
                 "os_version": host.os_version,
+                "ssh_port": host.ssh_port,
             }
             result['host_infos'].append(host_info)
 
@@ -312,9 +313,8 @@ class HostProxy(MysqlProxy):
         temp_res = []
         result = {}
         result['host_infos'] = temp_res
-        query_fields = [Host.host_id, Host.host_name, Host.public_ip, Host.os_version,
-                        Host.host_group_name, Host.management, Host.status, Host.scene,
-                        Host.agent_port]
+        query_fields = [Host.host_id, Host.host_name, Host.host_ip, Host.os_version,Host.ssh_port,
+                        Host.host_group_name, Host.management, Host.status, Host.scene]
         filters = {
             Host.user == username
         }
@@ -327,12 +327,12 @@ class HostProxy(MysqlProxy):
                     "host_id": host.host_id,
                     "host_group_name": host.host_group_name,
                     "host_name": host.host_name,
-                    "public_ip": host.public_ip,
+                    "host_ip": host.host_ip,
                     "management": host.management,
                     "status": host.status,
                     "scene": host.scene,
-                    "agent_port": host.agent_port,
                     "os_version": host.os_version,
+                    "ssh_port": host.ssh_port,
                 }
                 temp_res.append(host_info)
             self.session.commit()
@@ -376,7 +376,7 @@ class HostProxy(MysqlProxy):
                         "host_id": host.host_id,
                         "host_group_name": host.host_group_name,
                         "host_name": host.host_name,
-                        "public_ip": host.public_ip
+                        "host_ip": host.host_ip
                     }
                     temp_res[name].append(host_info)
             self.session.commit()
@@ -651,7 +651,7 @@ class HostProxy(MysqlProxy):
             self.session.commit()
 
             for host_info in query_list:
-                result[host_info.host_id] = f'{host_info.public_ip}:{host_info.agent_port}'
+                result[host_info.host_id] = f'{host_info.host_ip}:{host_info.agent_port}'
             return SUCCEED, result
         except sqlalchemy.exc.SQLAlchemyError as error:
             LOGGER.error(error)
@@ -689,7 +689,7 @@ class HostProxy(MysqlProxy):
                     "user": "admin",
                     "host_name": "test-host",
                     "host_group_name": "group1",
-                    "public_ip": "127.0.0.1",
+                    "host_ip": "127.0.0.1",
                     "management": False,
                     "ssh_user": "root",
                     "pkey": "string",
@@ -703,12 +703,12 @@ class HostProxy(MysqlProxy):
         try:
             self.session.add(host)
             self.session.commit()
-            LOGGER.info(f"add host {host.public_ip} succeed")
+            LOGGER.info(f"add host {host.host_ip} succeed")
             return SUCCEED
 
         except sqlalchemy.exc.SQLAlchemyError as error:
             LOGGER.error(error)
-            LOGGER.error(f"add host {host.public_ip} fail")
+            LOGGER.error(f"add host {host.host_ip} fail")
             self.session.rollback()
             return DATABASE_INSERT_ERROR
 

@@ -77,7 +77,7 @@ class AgentUtil:
         else:
             LOGGER.error("connect to database error when get host ip with port of %s", host_id)
             return '', DATABASE_CONNECT_ERROR
-        host_ip_with_port = f'{query_res[0].public_ip}:{query_res[0].agent_port}'
+        host_ip_with_port = f'{query_res[0].host_ip}:{query_res[0].agent_port}'
         return host_ip_with_port, SUCCEED
 
     @classmethod

@@ -27,7 +27,7 @@ class HostSchema(Schema):
     host_name = fields.String(required=True, validate=lambda s: len(s) > 0)
     host_group_name = fields.String(
         required=True, validate=lambda s: len(s) > 0)
-    public_ip = fields.IP(required=True)
+    host_ip = fields.IP(required=True)
     management = fields.Boolean(required=True)
     username = fields.String(required=True, validate=lambda s: len(s) > 0)
     password = fields.String(required=True, validate=lambda s: len(s) > 0)
@@ -101,7 +101,7 @@ class AddHostSchema(Schema):
     ssh_user = fields.String(required=True, validate=lambda s: len(s) > 0)
     password = fields.String(required=True, validate=lambda s: len(s) > 0)
     host_name = fields.String(required=True, validate=lambda s: len(s) > 0)
-    public_ip = fields.IP(required=True)
+    host_ip = fields.IP(required=True)
     ssh_port = fields.Integer(required=True, validate=lambda s: s > 0)
     host_group_name = fields.String(required=True, validate=lambda s: len(s) > 0)
     management = fields.Boolean(required=True)

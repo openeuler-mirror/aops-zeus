@@ -518,7 +518,7 @@ class AddHost(BaseResponse):
                 "ssh_user":"root",
                 "password":"password",
                 "host_group_name":"host_group_name",
-                "ip":"127.0.0.1",
+                "host_ip":"127.0.0.1",
                 "ssh_port":"22",
                 "management":false,
                 "username": "admin"
@@ -537,7 +537,7 @@ class AddHost(BaseResponse):
             return status
 
         status, private_key = save_ssh_public_key_to_client(
-            args.get('public_ip'), args.get('ssh_port'), args.get('ssh_user'), args.get('password'))
+            args.get('host_ip'), args.get('ssh_port'), args.get('ssh_user'), args.get('password'))
         if status == SUCCEED:
             host.pkey = private_key
             host.status = HostStatus.ONLINE
@@ -556,7 +556,7 @@ class AddHost(BaseResponse):
                 "ssh_user":"root",
                 "password":"password",
                 "host_group_name":"host_group_name",
-                "ip":"127.0.0.1",
+                "host_ip":"127.0.0.1",
                 "ssh_port":"22",
                 "management":false,
                 "username": "admin"
@@ -585,7 +585,7 @@ class AddHost(BaseResponse):
             "ssh_user": host_info.get("ssh_user"),
             "host_group_name": host_info.get("host_group_name"),
             "host_group_id": group_id,
-            "public_ip": host_info.get("public_ip"),
+            "host_ip": host_info.get("host_ip"),
             "ssh_port": host_info.get("ssh_port"),
             "user": host_info.get("username"),
             "management": host_info.get("management"),
