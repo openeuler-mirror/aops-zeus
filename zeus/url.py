@@ -15,36 +15,37 @@ Time:
 Author:
 Description: url set
 """
-from zeus.agent_manager import view as agent_view
-from zeus.host_manager import view as host_view
-from zeus.config_manager import view as config_view
-from zeus.account_manager import view as account_view
-from zeus.vulnerability_manage import view as vulnerability_view
 from vulcanus.conf.constant import (
+    ADD_GROUP,
     ADD_HOST,
+    ADD_USER,
+    AGENT_METRIC_SET,
+    AGENT_PLUGIN_INFO,
+    AGENT_PLUGIN_SET,
+    AUTH_REDIRECT_URL,
+    BIND_AUTH_ACCOUNT,
+    CHANGE_PASSWORD,
+    COLLECT_CONFIG,
+    DELETE_GROUP,
     DELETE_HOST,
     EXECUTE_CVE_FIX,
     EXECUTE_CVE_SCAN,
+    EXECUTE_REPO_SET,
+    GET_GROUP,
     GET_HOST_COUNT,
+    GITEE_AUTH_LOGIN,
+    HOST_SCENE_GET,
     QUERY_HOST,
     QUERY_HOST_DETAIL,
-    ADD_GROUP,
-    DELETE_GROUP,
-    GET_GROUP,
-    COLLECT_CONFIG,
-    USER_LOGIN,
+    REGISTER_HOST,
     USER_CERTIFICATE,
-    CHANGE_PASSWORD,
-    ADD_USER,
-    AGENT_PLUGIN_INFO,
-    AGENT_PLUGIN_SET,
-    AGENT_METRIC_SET,
-    HOST_SCENE_GET,
-    EXECUTE_REPO_SET,
-    GITEE_AUTH_LOGIN,
-    AUTH_REDIRECT_URL,
-    BIND_AUTH_ACCOUNT
+    USER_LOGIN
 )
+from zeus.account_manager import view as account_view
+from zeus.agent_manager import view as agent_view
+from zeus.config_manager import view as config_view
+from zeus.host_manager import view as host_view
+from zeus.vulnerability_manage import view as vulnerability_view
 
 URLS = []
 
@@ -59,6 +60,7 @@ SPECIFIC_URLS = {
         (account_view.BindAuthAccount, BIND_AUTH_ACCOUNT)
     ],
     "HOST_URLS": [
+        (host_view.RegisterHost, REGISTER_HOST),
         (host_view.AddHost, ADD_HOST),
         (host_view.DeleteHost, DELETE_HOST),
         (host_view.GetHost, QUERY_HOST),

@@ -43,3 +43,9 @@ class CveTaskStatus:
     SUCCEED = 'succeed'
     FAIL = 'fail'
     UNKNOWN = 'unknown'
+
+
+class HostStatus:
+    ONLINE = 0
+    OFFLINE = 1
+    UNESTABLISHED = 2

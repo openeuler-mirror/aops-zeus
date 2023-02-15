@@ -17,25 +17,35 @@ Description: Host table operation
 """
 import math
 from typing import Dict, List, Tuple
-import sqlalchemy
-from sqlalchemy.sql.expression import desc, asc
-from sqlalchemy import func
 
-from vulcanus.log.log import LOGGER
+import sqlalchemy
+from sqlalchemy import func
+from sqlalchemy.sql.expression import asc, desc
+from sqlalchemy.orm.collections import InstrumentedList
+
 from vulcanus.database.helper import judge_return_code, sort_and_page
 from vulcanus.database.proxy import MysqlProxy
 from vulcanus.database.table import Host, HostGroup, User
-from vulcanus.restful.status import DATABASE_DELETE_ERROR, DATABASE_INSERT_ERROR, \
-    DATABASE_QUERY_ERROR, DATA_DEPENDENCY_ERROR, DATA_EXIST, SUCCEED, NO_DATA
+from vulcanus.log.log import LOGGER
+from vulcanus.restful.status import (
+    DATABASE_DELETE_ERROR,
+    DATABASE_INSERT_ERROR,
+    DATABASE_QUERY_ERROR,
+    DATA_DEPENDENCY_ERROR,
+    DATA_EXIST,
+    NO_DATA,
+    SUCCEED
+)
 
 
 class HostProxy(MysqlProxy):
     """
     Host related table operation
     """
-    def add_host(self, data: Dict) -> int:
+
+    def add_host_from_client(self, data: Dict) -> int:
         """
-        Add host to table
+        Verify whether the data is valid and add valid data to the database
 
         Args:
             data: parameter, e.g.
@@ -126,7 +136,7 @@ class HostProxy(MysqlProxy):
             LOGGER.error(error)
             LOGGER.error("delete host %s fail", host_list)
             self.session.rollback()
-            result['fail_list'].update(zip(host_list, len(host_list)*("Connect database fail",)))
+            result['fail_list'].update(zip(host_list, len(host_list) * ("Connect database fail",)))
             return DATABASE_DELETE_ERROR, result
 
     def get_host(self, data):
@@ -248,9 +258,9 @@ class HostProxy(MysqlProxy):
         if sort:
             if page and per_page:
                 total_page = math.ceil(total_count / per_page)
-                hosts = self.session.query(Host).filter(*filters).\
-                    order_by(direction(getattr(Host, sort))).\
-                    offset((page - 1) * per_page).\
+                hosts = self.session.query(Host).filter(*filters). \
+                    order_by(direction(getattr(Host, sort))). \
+                    offset((page - 1) * per_page). \
                     limit(per_page).all()
             else:
                 hosts = self.session.query(Host).filter(
@@ -303,7 +313,8 @@ class HostProxy(MysqlProxy):
         result = {}
         result['host_infos'] = temp_res
         query_fields = [Host.host_id, Host.host_name, Host.public_ip, Host.os_version,
-                        Host.host_group_name, Host.management, Host.status, Host.scene, Host.agent_port]
+                        Host.host_group_name, Host.management, Host.status, Host.scene,
+                        Host.agent_port]
         filters = {
             Host.user == username
         }
@@ -433,10 +444,11 @@ class HostProxy(MysqlProxy):
         not_deleted = []
         try:
             # Filter the group if there are hosts in the group
-            host_groups = self.session.query(HostGroup, func.count(Host.host_id).label("host_count")).\
-                outerjoin(Host, HostGroup.host_group_id == Host.host_group_id).\
-                filter(HostGroup.username == username).\
-                filter(HostGroup.host_group_name.in_(host_group_list)).\
+            host_groups = self.session.query(HostGroup,
+                                             func.count(Host.host_id).label("host_count")). \
+                outerjoin(Host, HostGroup.host_group_id == Host.host_group_id). \
+                filter(HostGroup.username == username). \
+                filter(HostGroup.host_group_name.in_(host_group_list)). \
                 group_by(HostGroup.host_group_id).all()
             for host_group, host_count in host_groups:
                 if host_count > 0:
@@ -486,7 +498,7 @@ class HostProxy(MysqlProxy):
             LOGGER.error(error)
             LOGGER.error("query host group fail")
             return DATABASE_QUERY_ERROR, result
-    
+
     def _sort_group_by_column(self, data):
         result = {
             "total_count": 0,
@@ -495,24 +507,25 @@ class HostProxy(MysqlProxy):
         }
         host_group_infos = self.session.query(HostGroup.host_group_name,
                                               HostGroup.description,
-                                              func.count(Host.host_id).label("host_count"))\
-                                        .outerjoin(Host, HostGroup.host_group_id == Host.host_group_id)\
-                                        .filter(HostGroup.username == data['username'])\
-                                        .group_by(HostGroup.host_group_id)
+                                              func.count(Host.host_id).label("host_count")) \
+            .outerjoin(Host, HostGroup.host_group_id == Host.host_group_id) \
+            .filter(HostGroup.username == data['username']) \
+            .group_by(HostGroup.host_group_id)
         total_count = len(host_group_infos.all())
         if not total_count:
             return result
-        
+
         sort_column = self._get_group_column(data.get('sort'))
         direction, page, per_page = data.get('direction'), data.get('page'), data.get('per_page')
-        processed_query, total_page = sort_and_page(host_group_infos, sort_column, direction, per_page, page)
+        processed_query, total_page = sort_and_page(host_group_infos, sort_column, direction,
+                                                    per_page, page)
         infos = processed_query.all()
         host_group_infos = self._group_info_row2dict(infos)
         result['total_count'] = total_count
         result['total_page'] = total_page
         result['host_group_infos'] = host_group_infos
         return result
-    
+
     @staticmethod
     def _get_group_column(column_name):
         if not column_name:
@@ -564,16 +577,16 @@ class HostProxy(MysqlProxy):
         if sort:
             if page and per_page:
                 total_page = math.ceil(total_count / per_page)
-                host_groups = self.session.query(*query_fields).filter(*filters).\
-                    order_by(direction(getattr(HostGroup, sort))).\
+                host_groups = self.session.query(*query_fields).filter(*filters). \
+                    order_by(direction(getattr(HostGroup, sort))). \
                     offset((page - 1) * per_page).limit(per_page).all()
             else:
-                host_groups = self.session.query(*query_fields).filter(*filters).\
+                host_groups = self.session.query(*query_fields).filter(*filters). \
                     order_by(direction(getattr(HostGroup, sort))).all()
         else:
             if page and per_page:
                 total_page = math.ceil(total_count / per_page)
-                host_groups = self.session.query(*query_fields).filter(*filters).\
+                host_groups = self.session.query(*query_fields).filter(*filters). \
                     offset((page - 1) * per_page).limit(per_page).all()
             else:
                 host_groups = self.session.query(
@@ -643,3 +656,77 @@ class HostProxy(MysqlProxy):
         except sqlalchemy.exc.SQLAlchemyError as error:
             LOGGER.error(error)
             return DATABASE_QUERY_ERROR, result
+
+    def query_host_groups(self, username: str) -> Tuple[int, dict]:
+        """
+        query all host groups by username
+
+        Args:
+            username(str): admin
+
+        Returns:
+            tuple:
+                status_code, {group name : group id}
+        """
+        try:
+            query_list = self.session.query(HostGroup).filter(HostGroup.username == username).all()
+            result = {}
+            for group_info in query_list:
+                result[group_info.host_group_name] = group_info.host_group_id
+            return SUCCEED, result
+        except sqlalchemy.exc.SQLAlchemyError as error:
+            LOGGER.error(error)
+            LOGGER.error(f"query groups of {username} fail")
+            return DATABASE_QUERY_ERROR, {}
+
+    def add_host(self, host: Host) -> int:
+        """
+        add host to table
+
+        Args:
+            host: parameter, e.g.
+                {
+                    "user": "admin",
+                    "host_name": "test-host",
+                    "host_group_name": "group1",
+                    "public_ip": "127.0.0.1",
+                    "management": False,
+                    "ssh_user": "root",
+                    "pkey": "string",
+                    "ssh_port": 22,
+                    "host_group_id": 1,
+                }
+
+        Returns:
+            int: SUCCEED or DATABASE_INSERT_ERROR
+        """
+        try:
+            self.session.add(host)
+            self.session.commit()
+            LOGGER.info(f"add host {host.public_ip} succeed")
+            return SUCCEED
+
+        except sqlalchemy.exc.SQLAlchemyError as error:
+            LOGGER.error(error)
+            LOGGER.error(f"add host {host.public_ip} fail")
+            self.session.rollback()
+            return DATABASE_INSERT_ERROR
+
+    def get_hosts_and_groups(self, username: str) -> Tuple[int, InstrumentedList, InstrumentedList]:
+        """
+        get all hosts by username
+
+        Args:
+            username(str): admin
+
+        Returns:
+            tuple:
+                status_code, list of host object, list of group object
+        """
+        try:
+            user = self.session.query(User).filter(
+                User.username == username).one()
+            return SUCCEED, user.hosts, user.host_groups
+        except sqlalchemy.exc.SQLAlchemyError as error:
+            LOGGER.error(error)
+            return DATABASE_QUERY_ERROR, InstrumentedList(), InstrumentedList()
