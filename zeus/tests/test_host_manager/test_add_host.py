@@ -69,7 +69,7 @@ class TestAddHost(unittest.TestCase):
             "ssh_user": "test_user",
             "password": "test_password",
             "host_name": "test_host",
-            "public_ip": "127.0.0.1",
+            "host_ip": "127.0.0.1",
             "host_group_name": "test_host_group",
             "ssh_port": 22,
             "management": False,
@@ -87,7 +87,7 @@ class TestAddHost(unittest.TestCase):
             "ssh_user": "test_user",
             "password": "test_password",
             "host_name": "test_host",
-            "public_ip": "127.0.0.1",
+            "host_ip": "127.0.0.1",
             "host_group_name": "test_host_group",
             "ssh_port": 22,
             "management": False,
@@ -103,7 +103,7 @@ class TestAddHost(unittest.TestCase):
             "ssh_user": "test_user",
             "password": "test_password",
             "host_name": "test_host",
-            "public_ip": "127.0.0.1",
+            "host_ip": "127.0.0.1",
             "host_group_name": "test_host_group",
             "ssh_port": 22,
             "management": False,
@@ -119,7 +119,7 @@ class TestAddHost(unittest.TestCase):
             "ssh_user": "test_user",
             "password": "test_password",
             "host_name": "test_host",
-            "public_ip": "127.0.0.1",
+            "host_ip": "127.0.0.1",
             "host_group_name": "test_host_group",
             "ssh_port": 22,
             "management": False,
@@ -138,7 +138,7 @@ class TestAddHost(unittest.TestCase):
             "ssh_user": "test_user",
             "password": "test_password",
             "host_name": "test_host",
-            "public_ip": "127.0.0.1",
+            "host_ip": "127.0.0.1",
             "host_group_name": "test_host_group",
             "ssh_port": 22,
             "management": False,
@@ -159,7 +159,7 @@ class TestAddHost(unittest.TestCase):
             "ssh_user": "test_user",
             "password": "test_password",
             "host_name": "test_host",
-            "public_ip": "127.0.0.1",
+            "host_ip": "127.0.0.1",
             "host_group_name": "test_host_group",
             "ssh_port": 22,
             "management": False,
@@ -181,7 +181,7 @@ class TestAddHost(unittest.TestCase):
             "ssh_user": "test_user",
             "password": "test_password",
             "host_name": "test_host_1",
-            "public_ip": "127.0.0.1",
+            "host_ip": "127.0.0.1",
             "host_group_name": "test_host_group",
             "ssh_port": 22,
             "management": False,
@@ -204,7 +204,7 @@ class TestAddHost(unittest.TestCase):
             "ssh_user": "test_user",
             "password": "test_password",
             "host_name": "test_host_1",
-            "public_ip": "127.0.0.1",
+            "host_ip": "127.0.0.1",
             "host_group_name": "test_host_group_1",
             "ssh_port": 22,
             "management": False,
@@ -223,7 +223,7 @@ class TestAddHost(unittest.TestCase):
                 "host_name": "",
                 "ssh_user": "test_user",
                 "password": "test_password",
-                "public_ip": "",
+                "host_ip": "",
                 "ssh_port": 0,
             }, {
                 "ssh_user": "",
@@ -234,21 +234,21 @@ class TestAddHost(unittest.TestCase):
                 "host_name": "test_host_1",
                 "ssh_user": 2,
                 "password": True,
-                "public_ip": "ip",
+                "host_ip": "ip",
                 "management": True,
             }, {
                 "host_name": "test_host_1",
                 "ssh_user": "test_user",
                 "password": "test_password",
                 "host_group_name": "test_host_group",
-                "public_ip": 22,
+                "host_ip": 22,
                 "ssh_port": -22,
                 "management": True,
             }, {
                 "host_name": "",
                 "ssh_user": "",
                 "password": "test_password",
-                "public_ip": 22,
+                "host_ip": 22,
                 "ssh_port": -22,
                 "management": True,
             }, {
@@ -256,20 +256,20 @@ class TestAddHost(unittest.TestCase):
                 "ssh_user": 123,
                 "password": 123,
                 "host_group_name": "test_host_group",
-                "public_ip": "127.0.0.1",
+                "host_ip": "127.0.0.1",
                 "ssh_port": -22,
                 "management": False,
             }, {
                 "host_name": "",
                 "ssh_user": 123,
                 "host_group_name": "test_host_group",
-                "public_ip": "1271.0.0.1",
+                "host_ip": "1271.0.0.1",
                 "ssh_port": 0,
             }, {
                 "host_name": "",
                 "password": "",
                 "host_group_name": "",
-                "public_ip": 123,
+                "host_ip": 123,
                 "ssh_port": -22,
                 "management": True,
             }, {
@@ -282,13 +282,13 @@ class TestAddHost(unittest.TestCase):
                 "host_name": 123,
                 "ssh_user": "",
                 "password": "test_password",
-                "public_ip": "1271.0.0.1",
+                "host_ip": "1271.0.0.1",
                 "management": True,
             }, {
                 "host_name": 123,
                 "ssh_user": "",
                 "host_group_name": 123,
-                "public_ip": "127.0.0.1",
+                "host_ip": "127.0.0.1",
                 "ssh_port": -22,
                 "management": True,
             }, {
@@ -300,26 +300,26 @@ class TestAddHost(unittest.TestCase):
                 "host_name": 123,
                 "password": "",
                 "host_group_name": "test_host_group",
-                "public_ip": "127q.0.0.1",
+                "host_ip": "127q.0.0.1",
                 "ssh_port": 22,
             }, {
                 "host_name": 123,
                 "host_group_name": "test_host_group",
-                "public_ip": 123,
+                "host_ip": 123,
                 "management": False,
             }, {
                 "host_name": 123,
                 "ssh_user": "test_user",
                 "password": 123,
                 "host_group_name": "",
-                "public_ip": "127.0.0.1",
+                "host_ip": "127.0.0.1",
                 "ssh_port": 0,
                 "management": False,
             }, {
                 "host_name": 123,
                 "ssh_user": "test_user",
                 "host_group_name": 123,
-                "public_ip": 123,
+                "host_ip": 123,
                 "ssh_port": 22,
             }, {
                 "ssh_user": "",
@@ -329,24 +329,24 @@ class TestAddHost(unittest.TestCase):
             }, {
                 "ssh_user": 123,
                 "password": "",
-                "public_ip": "127.0.0.1",
+                "host_ip": "127.0.0.1",
                 "ssh_port": 22,
             }, {
                 "ssh_user": 123,
                 "password": "test_password",
                 "host_group_name": "",
-                "public_ip": 123,
+                "host_ip": 123,
                 "ssh_port": 0,
                 "management": True,
             }, {
                 "password": "test_password",
                 "host_group_name": 123,
-                "public_ip": "1271.0.0.1",
+                "host_ip": "1271.0.0.1",
                 "ssh_port": 0,
                 "management": True,
             }, {
                 "ssh_user": "test_user",
-                "public_ip": "1271.0.0.1",
+                "host_ip": "1271.0.0.1",
                 "ssh_port": -22,
                 "management": False,
             }, {
@@ -354,7 +354,7 @@ class TestAddHost(unittest.TestCase):
                 "ssh_user": "",
                 "password": "",
                 "host_group_name": "",
-                "public_ip": "1271.0.0.1",
+                "host_ip": "1271.0.0.1",
                 "ssh_port": 0,
                 "management": False,
             }, {
@@ -367,7 +367,7 @@ class TestAddHost(unittest.TestCase):
                 "ssh_user": 123,
                 "password": 123,
                 "host_group_name": 123,
-                "public_ip": 123,
+                "host_ip": 123,
                 "ssh_port": -22,
             }, {
                 "host_name": "test_host_1",
@@ -378,7 +378,7 @@ class TestAddHost(unittest.TestCase):
                 "host_name": "test_host_1",
                 "password": "test_password",
                 "host_group_name": 123,
-                "public_ip": "127.0.0.1",
+                "host_ip": "127.0.0.1",
                 "management": False,
             }
         ]
@@ -399,11 +399,11 @@ class TestAddHost(unittest.TestCase):
         mock_data = {
             "ssh_user": "test_user",
             "password": "test_password",
-            "public_ip": "127.0.0.1",
+            "host_ip": "127.0.0.1",
             "ssh_port": 22
         }
         self.assertEqual((SUCCEED, "private_key"),
-                         save_ssh_public_key_to_client(mock_data['public_ip'],
+                         save_ssh_public_key_to_client(mock_data['host_ip'],
                                                        mock_data['ssh_port'],
                                                        mock_data["ssh_user"],
                                                        mock_data["password"]))
@@ -417,11 +417,11 @@ class TestAddHost(unittest.TestCase):
         mock_data = {
             "ssh_user": "test_user",
             "password": "test_password",
-            "public_ip": "127.0.0.1",
+            "host_ip": "127.0.0.1",
             "ssh_port": 22
         }
         self.assertEqual(SSH_CONNECTION_ERROR,
-                         save_ssh_public_key_to_client(mock_data['public_ip'],
+                         save_ssh_public_key_to_client(mock_data['host_ip'],
                                                        mock_data['ssh_port'],
                                                        mock_data["ssh_user"],
                                                        mock_data["password"])[0])
@@ -435,11 +435,11 @@ class TestAddHost(unittest.TestCase):
         mock_data = {
             "ssh_user": "test_user",
             "password": "test_password",
-            "public_ip": "127.0.0.1",
+            "host_ip": "127.0.0.1",
             "ssh_port": 22
         }
         self.assertEqual(SSH_AUTHENTICATION_ERROR,
-                         save_ssh_public_key_to_client(mock_data['public_ip'],
+                         save_ssh_public_key_to_client(mock_data['host_ip'],
                                                        mock_data['ssh_port'],
                                                        mock_data["ssh_user"],
                                                        mock_data["password"])[0])
@@ -455,11 +455,11 @@ class TestAddHost(unittest.TestCase):
         mock_data = {
             "ssh_user": "test_user",
             "password": "test_password",
-            "public_ip": "127.0.0.1",
+            "host_ip": "127.0.0.1",
             "ssh_port": 22
         }
         self.assertEqual(EXECUTE_COMMAND_ERROR,
-                         save_ssh_public_key_to_client(mock_data['public_ip'],
+                         save_ssh_public_key_to_client(mock_data['host_ip'],
                                                        mock_data['ssh_port'],
                                                        mock_data["ssh_user"],
                                                        mock_data["password"])[0])
@@ -470,7 +470,7 @@ class TestAddHost(unittest.TestCase):
         mock_host_info = {
             "ssh_user": "test_user",
             "host_name": "test_host_2",
-            "public_ip": "127.0.0.1",
+            "host_ip": "127.0.0.1",
             "host_group_name": "test_host_group",
             "ssh_port": 22,
             "management": False,
@@ -488,7 +488,7 @@ class TestAddHost(unittest.TestCase):
         mock_host_info = {
             "ssh_user": "test_user",
             "host_name": "test_host_2",
-            "public_ip": "127.0.0.1",
+            "host_ip": "127.0.0.1",
             "host_group_name": "test_host_group",
             "ssh_port": 22,
             "management": False,
@@ -506,7 +506,7 @@ class TestAddHost(unittest.TestCase):
         mock_host_info = {
             "ssh_user": "test_user",
             "host_name": "test_host",
-            "public_ip": "127.0.0.1",
+            "host_ip": "127.0.0.1",
             "host_group_name": "test_host_group",
             "ssh_port": 22,
             "management": False,
@@ -516,7 +516,7 @@ class TestAddHost(unittest.TestCase):
         mock_host = Host(**{
             "ssh_user": "test_user",
             "host_name": "test_host",
-            "public_ip": "127.0.0.2",
+            "host_ip": "127.0.0.2",
             "host_group_name": "test_host_group",
             "host_group_id": 1,
             "ssh_port": 22,
@@ -536,7 +536,7 @@ class TestAddHost(unittest.TestCase):
         mock_host_info = {
             "ssh_user": "test_user",
             "host_name": "test_host_1",
-            "public_ip": "127.0.0.1",
+            "host_ip": "127.0.0.1",
             "host_group_name": "test_host_group",
             "ssh_port": 22,
             "management": False,
@@ -546,7 +546,7 @@ class TestAddHost(unittest.TestCase):
         mock_host = Host(**{
             "ssh_user": "test_user",
             "host_name": "test_host_2",
-            "public_ip": "127.0.0.1",
+            "host_ip": "127.0.0.1",
             "host_group_name": "test_host_group",
             "host_group_id": 1,
             "ssh_port": 22,

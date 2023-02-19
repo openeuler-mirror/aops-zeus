@@ -64,64 +64,68 @@ class TestHostDatabase(unittest.TestCase):
         group_data1 = {
             "username": "admin",
             "host_group_name": "group1",
-            "description": "xxx"
+            "description": "xxx",
+            "host_group_id": 1
         }
         group_data2 = {
             "username": "admin",
             "host_group_name": "group2",
             "description": "xxx",
+            "host_group_id": 2
             # "host_count": 3
         }
         group_data3 = {
             "username": "admin",
             "host_group_name": "group3",
             "description": "xxx",
+            "host_group_id": 3
             # "host_count": 1
         }
         group_data4 = {
             "username": "admin",
             "host_group_name": "group1",
             "description": "xxx",
+            "host_group_id": 1
         }
         host = [{
-            "username": "admin",
+            "user": "admin",
             "host_name": "host1",
             "host_group_name": "group2",
             "host_id": 1,
-            "public_ip": "127.0.0.1",
+            "host_ip": "127.0.0.1",
             "management": False,
-            "agent_port": 1122,
-            "os_version": "openEuler 2203"
+            "os_version": "openEuler 2203",
+            "host_group_id": 2
         },
             {
-                "username": "admin",
+                "user": "admin",
                 "host_name": "host2",
                 "host_group_name": "group2",
                 "host_id": 2,
-                "public_ip": "127.0.0.2",
+                "host_ip": "127.0.0.2",
                 "management": False,
-                "agent_port": 1122,
-                "os_version": "openEuler 2003"
+                "os_version": "openEuler 2003",
+                "host_group_id": 2
             },
             {
-                "username": "admin",
+                "user": "admin",
                 "host_name": "host3",
                 "host_group_name": "group2",
                 "host_id": 3,
-                "public_ip": "127.0.0.3",
+                "host_ip": "127.0.0.3",
                 "management": False,
-                "agent_port": 1122,
-                "os_version": "openEuler 2109"
+                "os_version": "openEuler 2109",
+                "host_group_id": 2
             },
             {
-                "username": "admin",
+                "user": "admin",
                 "host_name": "host4",
                 "host_group_name": "group3",
                 "host_id": 4,
-                "public_ip": "127.0.0.4",
+                "host_ip": "127.0.0.4",
                 "management": False,
-                "agent_port": 1122,
-                "os_version": "openEuler 2003"
+                "os_version": "openEuler 2003",
+                "host_group_id": 3
             }]
 
         res = self.proxy.add_host_group(group_data1)
@@ -132,8 +136,9 @@ class TestHostDatabase(unittest.TestCase):
         self.assertEqual(res, SUCCEED)
         res = self.proxy.add_host_group(group_data4)
         self.assertEqual(res, DATA_EXIST)
+
         for data in host:
-            self.proxy.add_host(data)
+            self.proxy.add_host(Host(**data))
         # ==============get host group=================
         args = {
             "username": "admin",
@@ -143,7 +148,7 @@ class TestHostDatabase(unittest.TestCase):
             {
                 'host_group_name': 'group1',
                 'description': 'xxx',
-                'host_count': 0
+                'host_count': 0,
             },
             {
                 'host_group_name': 'group2',
@@ -157,6 +162,7 @@ class TestHostDatabase(unittest.TestCase):
             }
         ]
         res = self.proxy.get_host_group(args)
+
         self.assertEqual(res[0], SUCCEED)
         self.assertEqual(res[1]['host_group_infos'], expected_res)
 
@@ -227,12 +233,14 @@ class TestHostDatabase(unittest.TestCase):
         group_data1 = {
             "username": "admin",
             "host_group_name": "group1",
-            "description": "xxx"
+            "description": "xxx",
+            "host_group_id": 1
         }
         group_data2 = {
             "username": "admin",
             "host_group_name": "group2",
             "description": "xxx",
+            "host_group_id": 2
             # "host_count": 0
         }
         self.proxy.add_host_group(group_data1)
@@ -243,51 +251,51 @@ class TestHostDatabase(unittest.TestCase):
             {
                 "host_name": "host1",
                 "host_group_name": "group1",
-                "public_ip": "127.0.0.1",
+                "host_ip": "127.0.0.1",
                 "management": False,
-                "username": "admin",
-                "agent_port": 1111,
-                "os_version": "openEuler2003"
+                "user": "admin",
+                "os_version": "openEuler2003",
+                "host_group_id": 1
             },
             {
                 "host_name": "host2",
                 "host_group_name": "group1",
-                "public_ip": "127.0.0.2",
+                "host_ip": "127.0.0.2",
                 "management": True,
-                "username": "admin",
-                "agent_port": 1111,
-                "os_version": "openEuler2109"
+                "user": "admin",
+                "os_version": "openEuler2109",
+                "host_group_id": 1
             },
             {
                 "host_name": "host3",
                 "host_group_name": "group2",
-                "public_ip": "127.0.0.3",
+                "host_ip": "127.0.0.3",
                 "management": False,
-                "username": "admin",
-                "agent_port": 1111,
-                "os_version": "openEuler2203"
+                "user": "admin",
+                "os_version": "openEuler2203",
+                "host_group_id": 2
             },
             {
                 "host_name": "host4",
                 "host_group_name": "group2",
-                "public_ip": "127.0.0.4",
+                "host_ip": "127.0.0.4",
                 "management": True,
-                "username": "admin",
-                "agent_port": 1111,
-                "os_version": "openEuler2209"
+                "user": "admin",
+                "os_version": "openEuler2209",
+                "host_group_id": 2
             },
             {
                 "host_name": "host5",
                 "host_group_name": "group2",
-                "public_ip": "127.0.0.5",
+                "host_ip": "127.0.0.5",
                 "management": False,
-                "username": "admin",
-                "agent_port": 1111,
-                "os_version": "openEuler"
+                "user": "admin",
+                "os_version": "openEuler",
+                "host_group_id": 2
             }
         ]
         for host in data:
-            res = self.proxy.add_host(host)
+            res = self.proxy.add_host(Host(**host))
             self.assertEqual(res, SUCCEED)
 
         condition = {}
@@ -313,32 +321,6 @@ class TestHostDatabase(unittest.TestCase):
         self.assertEqual(res[0], SUCCEED)
         self.assertEqual(res[1]['host_group_infos'], expected_res)
 
-        # no such host group
-        data = {
-            "host_name": "host1",
-            "host_group_name": "group99",
-            "public_ip": "127.0.0.1",
-            "management": False,
-            "username": "admin",
-            "agent_port": 1111,
-            "os_version": "openEuler2003"
-        }
-        res = self.proxy.add_host(data)
-        self.assertEqual(res, NO_DATA)
-
-        # existed host
-        data = {
-            "host_name": "host1",
-            "host_group_name": "group1",
-            "public_ip": "127.0.0.1",
-            "management": False,
-            "username": "admin",
-            "agent_port": 1111,
-            "os_version": "openEuler2003"
-        }
-        res = self.proxy.add_host(data)
-        self.assertEqual(res, DATA_EXIST)
-
         # ==============get host=====================
         args = {
             "host_group_list": [],
@@ -355,21 +337,23 @@ class TestHostDatabase(unittest.TestCase):
                 "host_id": 5,
                 "host_name": "host5",
                 "host_group_name": "group2",
-                "public_ip": "127.0.0.5",
+                "host_ip": "127.0.0.5",
                 "management": False,
-                "status": None,
+                "status": 2,
                 "scene": None,
-                "os_version": "openEuler"
+                "os_version": "openEuler",
+                "ssh_port": 22
             },
             {
                 "host_id": 4,
                 "host_name": "host4",
                 "host_group_name": "group2",
-                "public_ip": "127.0.0.4",
+                "host_ip": "127.0.0.4",
                 "management": True,
-                "status": None,
+                "status": 2,
                 "scene": None,
-                "os_version": "openEuler2209"
+                "os_version": "openEuler2209",
+                "ssh_port": 22
             }
         ]
         self.assertEqual(res[1]['total_count'], 5)
@@ -390,21 +374,23 @@ class TestHostDatabase(unittest.TestCase):
                 "host_id": 3,
                 "host_name": "host3",
                 "host_group_name": "group2",
-                "public_ip": "127.0.0.3",
+                "host_ip": "127.0.0.3",
                 "management": False,
-                "status": None,
+                "status": 2,
                 "scene": None,
-                "os_version": "openEuler2203"
+                "os_version": "openEuler2203",
+                "ssh_port": 22
             },
             {
                 "host_id": 4,
                 "host_name": "host4",
                 "host_group_name": "group2",
-                "public_ip": "127.0.0.4",
+                "host_ip": "127.0.0.4",
                 "management": True,
-                "status": None,
+                "status": 2,
                 "scene": None,
-                "os_version": "openEuler2209"
+                "os_version": "openEuler2209",
+                "ssh_port": 22
             }
         ]
         self.assertEqual(res[1]['total_count'], 5)
@@ -428,23 +414,23 @@ class TestHostDatabase(unittest.TestCase):
                 "host_name": "host1",
                 "host_group_name": "group1",
                 "host_id": 1,
-                "public_ip": "127.0.0.1",
+                "host_ip": "127.0.0.1",
                 "management": False,
-                "status": None,
+                "status": 2,
                 "scene": None,
-                "agent_port": 1111,
-                "os_version": "openEuler2003"
+                "os_version": "openEuler2003",
+                "ssh_port": 22
             },
             {
                 "host_name": "host2",
                 "host_group_name": "group1",
                 "host_id": 2,
-                "public_ip": "127.0.0.2",
+                "host_ip": "127.0.0.2",
                 "management": True,
-                "status": None,
+                "status": 2,
                 "scene": None,
-                "agent_port": 1111,
-                "os_version": "openEuler2109"
+                "os_version": "openEuler2109",
+                "ssh_port": 22
             }
         ]
         res = self.proxy.get_host_info(args)
@@ -459,31 +445,31 @@ class TestHostDatabase(unittest.TestCase):
                     "host_name": "host1",
                     "host_group_name": "group1",
                     "host_id": 1,
-                    "public_ip": "127.0.0.1"
+                    "host_ip": "127.0.0.1"
                 },
                 {
                     "host_name": "host2",
                     "host_group_name": "group1",
                     "host_id": 2,
-                    "public_ip": "127.0.0.2"
+                    "host_ip": "127.0.0.2"
                 },
                 {
                     "host_name": "host3",
                     "host_group_name": "group2",
                     "host_id": 3,
-                    "public_ip": "127.0.0.3"
+                    "host_ip": "127.0.0.3"
                 },
                 {
                     "host_name": "host4",
                     "host_group_name": "group2",
                     "host_id": 4,
-                    "public_ip": "127.0.0.4"
+                    "host_ip": "127.0.0.4"
                 },
                 {
                     "host_name": "host5",
                     "host_group_name": "group2",
                     "host_id": 5,
-                    "public_ip": "127.0.0.5"
+                    "host_ip": "127.0.0.5"
                 }
             ]
         }

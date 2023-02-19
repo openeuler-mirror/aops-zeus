@@ -17,7 +17,8 @@ setup(
         'requests',
         'SQLAlchemy',
         'Werkzeug',
-        'paramiko'
+        'paramiko',
+        "redis"
         ],
     author='cmd-lsw-yyy-zyc',
     data_files=[
