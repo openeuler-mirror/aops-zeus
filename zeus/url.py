@@ -33,6 +33,7 @@ from vulcanus.conf.constant import (
     EXECUTE_REPO_SET,
     GET_GROUP,
     GET_HOST_COUNT,
+    GET_HOST_TEMPLATE_FILE,
     GITEE_AUTH_LOGIN,
     HOST_SCENE_GET,
     QUERY_HOST,
@@ -65,7 +66,8 @@ SPECIFIC_URLS = {
         (host_view.DeleteHost, DELETE_HOST),
         (host_view.GetHost, QUERY_HOST),
         (host_view.GetHostInfo, QUERY_HOST_DETAIL),
-        (host_view.GetHostCount, GET_HOST_COUNT)
+        (host_view.GetHostCount, GET_HOST_COUNT),
+        (host_view.GetHostTemplateFile, GET_HOST_TEMPLATE_FILE)
     ],
     "HOST_GROUP_URLS": [
         (host_view.AddHostGroup, ADD_GROUP),

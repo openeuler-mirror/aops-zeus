@@ -23,7 +23,7 @@ setup(
     author='cmd-lsw-yyy-zyc',
     data_files=[
         ('/etc/aops', ['conf/zeus.ini']),
-        ('/usr/lib/systemd/system', ['aops-zeus.service']),
+        ('/usr/lib/systemd/system', ['aops-zeus.service'])
     ],
     scripts=['aops-zeus'],
     zip_safe=False
