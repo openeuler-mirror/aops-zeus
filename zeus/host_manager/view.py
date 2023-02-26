@@ -17,42 +17,47 @@ Description: Restful APIs for host
 """
 import json
 import socket
+from io import BytesIO
 from typing import Dict, Iterable, List, Tuple
 
 import paramiko
 import requests
-from flask import jsonify, request
+from flask import jsonify, request, send_file
 
 from vulcanus.database.helper import operate
 from vulcanus.database.table import Host, User
 from vulcanus.log.log import LOGGER
 from vulcanus.multi_thread_handler import MultiThreadHandler
-from vulcanus.restful.response import BaseResponse
-from vulcanus.restful.status import (
+from vulcanus.restful.resp.state import (
     DATABASE_CONNECT_ERROR,
     DATABASE_DELETE_ERROR,
     DATA_EXIST,
     EXECUTE_COMMAND_ERROR,
-    NO_DATA,
-    PARAM_ERROR,
-    SSH_CONNECTION_ERROR,
+    NO_DATA, PARAM_ERROR,
     SSH_AUTHENTICATION_ERROR,
+    SSH_CONNECTION_ERROR,
     SUCCEED,
     TOKEN_ERROR
 )
+from vulcanus.restful.response import BaseResponse
 from zeus.account_manager.cache import UserCache
 from zeus.conf import configuration
-from zeus.conf.constant import CERES_HOST_INFO, CHECK_WORKFLOW_HOST_EXIST, HostStatus
+from zeus.conf.constant import (
+    CERES_HOST_INFO,
+    CHECK_WORKFLOW_HOST_EXIST,
+    HOST_TEMPLATE_FILE_CONTENT,
+    HostStatus
+)
 from zeus.database import SESSION
 from zeus.database.proxy.host import HostProxy
 from zeus.function.verify.host import (
     AddHostGroupSchema,
+    AddHostSchema,
     DeleteHostGroupSchema,
     DeleteHostSchema,
     GetHostGroupSchema,
     GetHostInfoSchema,
     GetHostSchema,
-    AddHostSchema,
     HostSchema
 )
 from zeus.host_manager.ssh import SSH, generate_key
@@ -640,3 +645,27 @@ def save_ssh_public_key_to_client(hostname: str, port: int, username: str, passw
         return EXECUTE_COMMAND_ERROR, ""
 
     return SUCCEED, private_key
+
+
+class GetHostTemplateFile(BaseResponse):
+    """
+    Interface for download host template file.
+    Restful API: Get
+    """
+
+    def get(self):
+        """
+        download host template file
+
+        Returns:
+            BytesIO
+        """
+        args, verify_code = self.verify_request()
+        if verify_code != SUCCEED:
+            return self.response(code=TOKEN_ERROR)
+
+        file = BytesIO()
+        file.write(HOST_TEMPLATE_FILE_CONTENT.encode('utf-8'))
+        file.seek(0)
+
+        return send_file(file, as_attachment=True, attachment_filename="template.csv")
