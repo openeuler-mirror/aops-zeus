@@ -21,7 +21,7 @@ from sqlalchemy.orm.scoping import scoped_session
 
 from vulcanus.database.table import User, Base, create_utils_tables
 from vulcanus.database.helper import drop_tables, create_database_engine
-from vulcanus.restful.status import LOGIN_ERROR, REPEAT_PASSWORD, SUCCEED
+from vulcanus.restful.resp.state import LOGIN_ERROR, REPEAT_PASSWORD, SUCCEED
 from zeus.database.proxy.account import UserProxy
 
 
@@ -31,7 +31,7 @@ class TestAccountDatabase(unittest.TestCase):
         self.proxy = UserProxy()
         mysql_host = "127.0.0.1"
         mysql_port = 3306
-        mysql_url_format = "mysql+pymysql://@%s:%s/%s"
+        mysql_url_format = "mysql+pymysql://%s:%s/%s"
         mysql_database_name = "aops_test"
         engine_url = mysql_url_format % (
             mysql_host, mysql_port, mysql_database_name)
@@ -72,27 +72,28 @@ class TestAccountDatabase(unittest.TestCase):
             "password": "aa"
         }
         res = self.proxy.login(data)
-        self.assertEqual(res, LOGIN_ERROR)
+        self.assertEqual(res[0], LOGIN_ERROR)
         # wrong password
         data = {
             "username": "test",
             "password": "2111"
         }
         res = self.proxy.login(data)
-        self.assertEqual(res, LOGIN_ERROR)
+        self.assertEqual(res[0], LOGIN_ERROR)
         # right
         data = {
             "username": "test",
             "password": "123456"
         }
         res = self.proxy.login(data)
-        self.assertEqual(res, SUCCEED)
+        self.assertEqual(res[0], SUCCEED)
 
         # =============change password===================
         # new password is the same as origin
         data = {
             "username": "test",
-            "password": "123456"
+            "password": "123456",
+            "old_password": "123456"
         }
         res = self.proxy.change_password(data)
         self.assertEqual(res[0], REPEAT_PASSWORD)
@@ -100,10 +101,11 @@ class TestAccountDatabase(unittest.TestCase):
         # right
         data = {
             "username": "test",
-            "password": "444"
+            "password": "444",
+            "old_password": "123456"
         }
         res = self.proxy.change_password(data)
         self.assertEqual(res[0], SUCCEED)
 
         res = self.proxy.login(data)
-        self.assertEqual(res, SUCCEED)
+        self.assertEqual(res[0], SUCCEED)

@@ -26,7 +26,7 @@ import zeus
 from vulcanus.database.proxy import MysqlProxy
 from vulcanus.multi_thread_handler import MultiThreadHandler
 from zeus.account_manager.cache import UserCache, UserInfo
-from vulcanus.restful.status import SUCCEED, PARAM_ERROR, DATABASE_CONNECT_ERROR
+from vulcanus.restful.resp.state import SUCCEED, PARAM_ERROR, DATABASE_CONNECT_ERROR
 from zeus.config_manager.view import get_file_content
 from zeus.database.proxy.host import HostProxy
 
@@ -87,22 +87,24 @@ class TestConfigManage(unittest.TestCase):
                 'infos': [],
                 'success_files': ['mock_path'],
                 'host_id': 2,
-            }
+        }
         ]
         mock_get_result.return_value = mock_file_content
         resp = self.client.post('/manage/config/collect',
-                                data=json.dumps(self.MOCK_GET_FILE_CONTENT_ARGS),
+                                data=json.dumps(
+                                    self.MOCK_GET_FILE_CONTENT_ARGS),
                                 headers=header)
         all_fail_file_list = []
-        for file_content in resp.json.get('resp'):
+        for file_content in resp.json["data"].get('resp'):
             all_fail_file_list.extend(file_content.get("fail_files"))
         self.assertEqual([], all_fail_file_list, resp.json)
 
     def test_collect_config_should_return_param_error_when_input_is_incorrect(self):
-        mock_args = {"infos": [{"host_id": "id1", "config_list": ["test_config_path"]}]}
+        mock_args = {
+            "infos": [{"host_id": "id1", "config_list": ["test_config_path"]}]}
         resp = self.client.post('/manage/config/collect', data=json.dumps(mock_args),
                                 headers=header)
-        self.assertEqual(PARAM_ERROR, resp.json.get('code'), resp.json)
+        self.assertEqual("1000", resp.json.get('code'), resp.json)
 
     def test_collect_config_should_return_400_when_no_input(self):
         resp = self.client.post('/manage/config/collect', headers=header)
@@ -136,10 +138,11 @@ class TestConfigManage(unittest.TestCase):
         }]
         mock_get_result.return_value = mock_file_content
         resp = self.client.post('/manage/config/collect',
-                                data=json.dumps(self.MOCK_GET_FILE_CONTENT_ARGS),
+                                data=json.dumps(
+                                    self.MOCK_GET_FILE_CONTENT_ARGS),
                                 headers=header)
         all_fail_file_list = []
-        for file_content in resp.json.get('resp'):
+        for file_content in resp.json["data"].get('resp'):
             all_fail_file_list.extend(file_content.get("fail_files"))
         expecte_fail_file = ['mock_path3', 'mock_path4']
         self.assertEqual(set(expecte_fail_file), set(all_fail_file_list))
@@ -163,12 +166,14 @@ class TestConfigManage(unittest.TestCase):
 
         mock_get_result.return_value = mock_file_content
 
-        expecte_fail_file = ['mock_path1', 'mock_path2', 'mock_path3', 'mock_path4']
+        expecte_fail_file = ['mock_path1',
+                             'mock_path2', 'mock_path3', 'mock_path4']
         all_fail_file_list = []
         resp = self.client.post('/manage/config/collect',
-                                data=json.dumps(self.MOCK_GET_FILE_CONTENT_ARGS),
+                                data=json.dumps(
+                                    self.MOCK_GET_FILE_CONTENT_ARGS),
                                 headers=header)
-        for file_content in resp.json.get('resp'):
+        for file_content in resp.json["data"].get('resp'):
             all_fail_file_list.extend(file_content.get("fail_files"))
         self.assertEqual(set(expecte_fail_file), set(all_fail_file_list))
 
@@ -192,6 +197,7 @@ class TestConfigManage(unittest.TestCase):
         mock_user.return_value = UserInfo('admin', 'mock', 'mock')
         mock_connect.return_value = None
         response = self.client.post('/manage/config/collect',
-                                    data=json.dumps(self.MOCK_GET_FILE_CONTENT_ARGS),
+                                    data=json.dumps(
+                                        self.MOCK_GET_FILE_CONTENT_ARGS),
                                     headers=header)
-        self.assertEqual(DATABASE_CONNECT_ERROR, response.json.get('code'))
+        self.assertEqual("1101", response.json.get('code'))

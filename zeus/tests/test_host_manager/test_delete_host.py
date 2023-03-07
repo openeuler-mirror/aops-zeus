@@ -17,7 +17,7 @@ from flask import Flask
 
 from zeus import BLUE_POINT
 from zeus.database.proxy.host import HostProxy
-from vulcanus.restful.status import TOKEN_ERROR, DATABASE_CONNECT_ERROR
+from vulcanus.restful.resp.state import TOKEN_ERROR, DATABASE_CONNECT_ERROR
 
 app = Flask("check")
 for blue, api in BLUE_POINT:
@@ -39,7 +39,8 @@ class TestDeleteHost(unittest.TestCase):
 
     def test_delete_host_should_return_token_error_when_part_of_input_with_no_token(self):
         input_data = {'host_list': [1, 2, 3]}
-        resp = client.delete('/manage/host/delete', json=input_data, headers=header)
+        resp = client.delete('/manage/host/delete',
+                             json=input_data, headers=header)
 
         self.assertEqual(TOKEN_ERROR, resp.json.get('code'), resp.json)
 
@@ -52,5 +53,7 @@ class TestDeleteHost(unittest.TestCase):
             self, mock_mysql_connect):
         input_data = {'host_list': [1, 2, 3]}
         mock_mysql_connect.return_value = False
-        resp = client.delete('/manage/host/delete', json=input_data, headers=header_with_token)
-        self.assertEqual(DATABASE_CONNECT_ERROR, resp.json.get('code'), resp.json)
+        resp = client.delete('/manage/host/delete',
+                             json=input_data, headers=header_with_token)
+        self.assertEqual(DATABASE_CONNECT_ERROR,
+                         resp.json.get('label'), resp.json)

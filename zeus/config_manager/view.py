@@ -16,7 +16,7 @@ Author:
 Description: Restful APIs for host
 """
 import json
-from typing import List, Tuple, Dict
+from typing import List, Dict
 
 import requests
 
@@ -27,13 +27,7 @@ from zeus.database import SESSION
 from zeus.function.verify.config import CollectConfigSchema
 from zeus.database.proxy.host import HostProxy
 from vulcanus.log.log import LOGGER
-from vulcanus.restful.status import (
-    StatusCode,
-    SUCCEED,
-    TOKEN_ERROR,
-    HTTP_CONNECT_ERROR,
-    DATABASE_CONNECT_ERROR
-)
+from vulcanus.restful.resp import state, make_response
 from vulcanus.restful.response import BaseResponse
 
 
@@ -74,15 +68,16 @@ def get_file_content(host_info: Dict) -> Dict:
     try:
         response = requests.post(url, data=json.dumps(config_file_list),
                                  headers=headers, timeout=5)
-        if response.status_code == SUCCEED:
+        if response.status_code == requests.status_codes.ok:
             res = json.loads(response.text)
             res['host_id'] = host_id
             return res
+
         LOGGER.warning(f"An unexpected error occurred when visit {url}")
         return {"host_id": host_id, "config_file_list": config_file_list}
     except requests.exceptions.ConnectionError:
         LOGGER.error(f'An error occurred when visit {url},'
-                     f'{StatusCode.make_response(HTTP_CONNECT_ERROR)}')
+                     f'{make_response(label=state.HTTP_CONNECT_ERROR)}')
         return {"host_id": host_id, "config_file_list": config_file_list}
 
 
@@ -197,57 +192,8 @@ class CollectConfig(BaseResponse):
     Restful API: POST
     """
 
-    def _handle(self, args) -> Tuple[int, dict]:
-        """
-            Handle function
-
-        Args:
-            args (dict): request parameter
-
-        Returns:
-            tuple: (status code, result)
-
-        Notes:
-            The current username is set to admin by default.
-        """
-        # Get host id list
-        host_id_with_config_file = {}
-        for host in args.get('infos'):
-            host_id_with_config_file[host.get('host_id')] = host.get('config_list')
-
-        # Generate headers
-        user = UserCache.get('admin') or UserCache.get(args.get('username'))
-        if user is None:
-            file_content = convert_host_id_to_failed_data_format(
-                list(host_id_with_config_file.keys()), host_id_with_config_file)
-            return TOKEN_ERROR, {"resp": file_content}
-        headers = {'content-type': 'application/json', 'access_token': user.token}
-
-        # Query host address from database
-        proxy = HostProxy()
-        if proxy.connect(SESSION) is None:
-            file_content = convert_host_id_to_failed_data_format(
-                list(host_id_with_config_file.keys()), host_id_with_config_file)
-            return DATABASE_CONNECT_ERROR, {"resp": file_content}
-
-        status, host_address_list = proxy.get_host_address(list(host_id_with_config_file.keys()))
-        if status != SUCCEED:
-            file_content = convert_host_id_to_failed_data_format(
-                list(host_id_with_config_file.keys()), host_id_with_config_file)
-            return status, {"resp": file_content}
-
-        # Get file content
-        host_info = make_multi_thread_tasks(host_address_list, host_id_with_config_file, headers)
-        multi_thread = MultiThreadHandler(get_file_content, host_info, None)
-        multi_thread.create_thread()
-        collect_result_list = multi_thread.get_result()
-
-        # Generate target data format
-        file_content = generate_target_data_format(collect_result_list, host_id_with_config_file)
-
-        return SUCCEED, {"resp": file_content}
-
-    def post(self):
+    @BaseResponse.handle(schema=CollectConfigSchema, token=False)
+    def post(self, **param):
         """
         Get config
         Args:
@@ -289,5 +235,44 @@ class CollectConfig(BaseResponse):
                 ]
             }
         """
+        # Get host id list
+        host_id_with_config_file = {}
+        for host in param.get('infos'):
+            host_id_with_config_file[host.get(
+                'host_id')] = host.get('config_list')
 
-        return self.handle_request(CollectConfigSchema, self, need_token=False)
+        # Generate headers
+        user = UserCache.get('admin') or UserCache.get(param.get('username'))
+        if user is None:
+            file_content = convert_host_id_to_failed_data_format(
+                list(host_id_with_config_file.keys()), host_id_with_config_file)
+            return self.response(state.TOKEN_ERROR, data={"resp": file_content})
+
+        headers = {'content-type': 'application/json',
+                   'access_token': user.token}
+
+        # Query host address from database
+        proxy = HostProxy()
+        if proxy.connect(SESSION) is None:
+            file_content = convert_host_id_to_failed_data_format(
+                list(host_id_with_config_file.keys()), host_id_with_config_file)
+            return self.response(code=state.DATABASE_CONNECT_ERROR, data={"resp": file_content})
+
+        status, host_address_list = proxy.get_host_address(
+            list(host_id_with_config_file.keys()))
+        if status != state.SUCCEED:
+            file_content = convert_host_id_to_failed_data_format(
+                list(host_id_with_config_file.keys()), host_id_with_config_file)
+            return self.response(code=status, data={"resp": file_content})
+
+        # Get file content
+        host_info = make_multi_thread_tasks(
+            host_address_list, host_id_with_config_file, headers)
+        multi_thread = MultiThreadHandler(get_file_content, host_info, None)
+        multi_thread.create_thread()
+        collect_result_list = multi_thread.get_result()
+
+        # Generate target data format
+        file_content = generate_target_data_format(
+            collect_result_list, host_id_with_config_file)
+        return self.response(code=state.SUCCEED, data={"resp": file_content})

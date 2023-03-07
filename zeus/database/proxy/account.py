@@ -21,7 +21,7 @@ import sqlalchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from vulcanus.log.log import LOGGER
-from vulcanus.restful.status import DATABASE_INSERT_ERROR, DATABASE_QUERY_ERROR, \
+from vulcanus.restful.resp.state import DATABASE_INSERT_ERROR, DATABASE_QUERY_ERROR, \
     LOGIN_ERROR, REPEAT_PASSWORD, SUCCEED, AUTH_ERROR, AUTH_USERINFO_SYNC_ERROR, NO_BOUND, \
     GENERATION_TOKEN_ERROR, NO_DATA, DATABASE_UPDATE_ERROR, REPEAT_BIND
 from vulcanus.database.proxy import MysqlProxy

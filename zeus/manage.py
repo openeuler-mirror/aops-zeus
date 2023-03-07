@@ -20,7 +20,7 @@ import redis
 from redis import RedisError
 from vulcanus.database.table import User, Base, create_utils_tables
 from vulcanus.log.log import LOGGER
-from vulcanus.restful.status import SUCCEED
+from vulcanus.restful.resp.state import SUCCEED
 from vulcanus.manage import init_app
 from vulcanus.database.proxy import RedisProxy
 from zeus.database import SESSION, ENGINE

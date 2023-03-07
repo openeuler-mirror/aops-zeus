@@ -22,8 +22,7 @@ from werkzeug.security import generate_password_hash
 
 from vulcanus.database.table import Host, User, Base, create_utils_tables
 from vulcanus.database.helper import drop_tables, create_database_engine
-from vulcanus.restful.status import DATA_EXIST, PARTIAL_SUCCEED, SUCCEED, DATA_DEPENDENCY_ERROR, \
-    DATABASE_INSERT_ERROR, NO_DATA
+from vulcanus.restful.resp.state import DATA_EXIST, PARTIAL_SUCCEED, SUCCEED, DATA_DEPENDENCY_ERROR
 from vulcanus.compare import compare_two_object
 from zeus.database.proxy.host import HostProxy
 
@@ -34,7 +33,7 @@ class TestHostDatabase(unittest.TestCase):
         self.proxy = HostProxy()
         mysql_host = "127.0.0.1"
         mysql_port = 3306
-        mysql_url_format = "mysql+pymysql://@%s:%s/%s"
+        mysql_url_format = "mysql+pymysql://%s:%s/%s"
         mysql_database_name = "aops_test"
         engine_url = mysql_url_format % (
             mysql_host, mysql_port, mysql_database_name)
@@ -106,7 +105,7 @@ class TestHostDatabase(unittest.TestCase):
                 "management": False,
                 "os_version": "openEuler 2003",
                 "host_group_id": 2
-            },
+        },
             {
                 "user": "admin",
                 "host_name": "host3",
@@ -116,7 +115,7 @@ class TestHostDatabase(unittest.TestCase):
                 "management": False,
                 "os_version": "openEuler 2109",
                 "host_group_id": 2
-            },
+        },
             {
                 "user": "admin",
                 "host_name": "host4",
@@ -126,7 +125,7 @@ class TestHostDatabase(unittest.TestCase):
                 "management": False,
                 "os_version": "openEuler 2003",
                 "host_group_id": 3
-            }]
+        }]
 
         res = self.proxy.add_host_group(group_data1)
         self.assertEqual(res, SUCCEED)

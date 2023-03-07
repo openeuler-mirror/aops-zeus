@@ -33,13 +33,11 @@ from vulcanus.conf.constant import (
     EXECUTE_REPO_SET,
     GET_GROUP,
     GET_HOST_COUNT,
-    GET_HOST_TEMPLATE_FILE,
+    # GET_HOST_TEMPLATE_FILE,
     GITEE_AUTH_LOGIN,
     HOST_SCENE_GET,
     QUERY_HOST,
     QUERY_HOST_DETAIL,
-    REGISTER_HOST,
-    USER_CERTIFICATE,
     USER_LOGIN
 )
 from zeus.account_manager import view as account_view
@@ -53,7 +51,6 @@ URLS = []
 SPECIFIC_URLS = {
     "ACCOUNT_URLS": [
         (account_view.Login, USER_LOGIN),
-        (account_view.Certificate, USER_CERTIFICATE),
         (account_view.ChangePassword, CHANGE_PASSWORD),
         (account_view.AddUser, ADD_USER),
         (account_view.GiteeAuthLogin, GITEE_AUTH_LOGIN),
@@ -61,13 +58,12 @@ SPECIFIC_URLS = {
         (account_view.BindAuthAccount, BIND_AUTH_ACCOUNT)
     ],
     "HOST_URLS": [
-        (host_view.RegisterHost, REGISTER_HOST),
         (host_view.AddHost, ADD_HOST),
         (host_view.DeleteHost, DELETE_HOST),
         (host_view.GetHost, QUERY_HOST),
         (host_view.GetHostInfo, QUERY_HOST_DETAIL),
         (host_view.GetHostCount, GET_HOST_COUNT),
-        (host_view.GetHostTemplateFile, GET_HOST_TEMPLATE_FILE)
+        # (host_view.GetHostTemplateFile, GET_HOST_TEMPLATE_FILE)
     ],
     "HOST_GROUP_URLS": [
         (host_view.AddHostGroup, ADD_GROUP),

@@ -23,8 +23,8 @@ from vulcanus.multi_thread_handler import MultiThreadHandler
 from zeus import BLUE_POINT
 from zeus.account_manager.cache import UserCache, UserInfo
 from zeus.database.proxy.host import HostProxy
-from vulcanus.restful.status import SUCCEED, TOKEN_ERROR, DATABASE_CONNECT_ERROR, NO_DATA, \
-    PARAM_ERROR, SERVER_ERROR
+from vulcanus.restful.resp.state import SUCCEED, TOKEN_ERROR, DATABASE_CONNECT_ERROR, NO_DATA, \
+    PARAM_ERROR
 from zeus.host_manager.view import GetHostInfo
 
 app = Flask("test")
@@ -98,7 +98,7 @@ class TestGetHostInfo(unittest.TestCase):
         response = client.post(QUERY_HOST_DETAIL,
                                data=json.dumps(self.MOCK_ARGS),
                                headers=header)
-        self.assertEqual(TOKEN_ERROR, response.json.get('code'))
+        self.assertEqual(TOKEN_ERROR, response.json.get('label'))
 
     @mock.patch.object(UserCache, 'get')
     def test_get_host_info_from_ceres_should_return_all_host_info_is_empty_when_token_is_error(
@@ -107,7 +107,7 @@ class TestGetHostInfo(unittest.TestCase):
         response = client.post(QUERY_HOST_DETAIL,
                                data=json.dumps(self.MOCK_ARGS),
                                headers=header)
-        self.assertEqual(TOKEN_ERROR, response.json.get('code'))
+        self.assertEqual(TOKEN_ERROR, response.json.get('label'))
 
     @mock.patch.object(MysqlProxy, 'connect')
     @mock.patch.object(UserCache, 'get')
@@ -118,7 +118,7 @@ class TestGetHostInfo(unittest.TestCase):
         response = client.post(QUERY_HOST_DETAIL,
                                data=json.dumps(self.MOCK_ARGS),
                                headers=header_with_token)
-        self.assertEqual(DATABASE_CONNECT_ERROR, response.json.get('code'))
+        self.assertEqual(DATABASE_CONNECT_ERROR, response.json.get('label'))
 
     @mock.patch.object(HostProxy, 'get_host_address')
     @mock.patch.object(MysqlProxy, 'connect')
@@ -131,7 +131,7 @@ class TestGetHostInfo(unittest.TestCase):
         response = client.post(QUERY_HOST_DETAIL,
                                data=json.dumps(self.MOCK_ARGS),
                                headers=header_with_token)
-        self.assertEqual(NO_DATA, response.json.get('code'))
+        self.assertEqual(NO_DATA, response.json.get('label'))
 
     def test_get_host_info_from_ceres_should_return_param_error_when_input_incorrect_param(
             self, ):
@@ -142,7 +142,7 @@ class TestGetHostInfo(unittest.TestCase):
         response = client.post(QUERY_HOST_DETAIL,
                                data=json.dumps(mock_incorrect_data),
                                headers=header_with_token)
-        self.assertEqual(PARAM_ERROR, response.json.get('code'))
+        self.assertEqual(PARAM_ERROR, response.json.get('label'))
 
     @mock.patch.object(requests, "post")
     def test_get_host_info_should_return_host_info_is_empty_when_http_connect_error(

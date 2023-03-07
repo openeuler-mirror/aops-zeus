@@ -27,7 +27,7 @@ from vulcanus.database.helper import judge_return_code, sort_and_page
 from vulcanus.database.proxy import MysqlProxy
 from vulcanus.database.table import Host, HostGroup, User
 from vulcanus.log.log import LOGGER
-from vulcanus.restful.status import (
+from vulcanus.restful.resp.state import (
     DATABASE_DELETE_ERROR,
     DATABASE_INSERT_ERROR,
     DATABASE_QUERY_ERROR,
@@ -136,7 +136,8 @@ class HostProxy(MysqlProxy):
             LOGGER.error(error)
             LOGGER.error("delete host %s fail", host_list)
             self.session.rollback()
-            result['fail_list'].update(zip(host_list, len(host_list) * ("Connect database fail",)))
+            result['fail_list'].update(
+                zip(host_list, len(host_list) * ("Connect database fail",)))
             return DATABASE_DELETE_ERROR, result
 
     def get_host(self, data):
@@ -313,7 +314,7 @@ class HostProxy(MysqlProxy):
         temp_res = []
         result = {}
         result['host_infos'] = temp_res
-        query_fields = [Host.host_id, Host.host_name, Host.host_ip, Host.os_version,Host.ssh_port,
+        query_fields = [Host.host_id, Host.host_name, Host.host_ip, Host.os_version, Host.ssh_port,
                         Host.host_group_name, Host.management, Host.status, Host.scene]
         filters = {
             Host.user == username
@@ -516,7 +517,8 @@ class HostProxy(MysqlProxy):
             return result
 
         sort_column = self._get_group_column(data.get('sort'))
-        direction, page, per_page = data.get('direction'), data.get('page'), data.get('per_page')
+        direction, page, per_page = data.get(
+            'direction'), data.get('page'), data.get('per_page')
         processed_query, total_page = sort_and_page(host_group_infos, sort_column, direction,
                                                     per_page, page)
         infos = processed_query.all()
@@ -669,7 +671,8 @@ class HostProxy(MysqlProxy):
                 status_code, {group name : group id}
         """
         try:
-            query_list = self.session.query(HostGroup).filter(HostGroup.username == username).all()
+            query_list = self.session.query(HostGroup).filter(
+                HostGroup.username == username).all()
             result = {}
             for group_info in query_list:
                 result[group_info.host_group_name] = group_info.host_group_id

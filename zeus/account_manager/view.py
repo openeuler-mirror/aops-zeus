@@ -15,12 +15,10 @@ Time:
 Author:
 Description: Restful APIs for user
 """
-from flask import jsonify
 from vulcanus.restful.response import BaseResponse
-from vulcanus.restful.status import SUCCEED, DATABASE_CONNECT_ERROR
-from vulcanus.database.helper import operate
 from vulcanus.database.proxy import RedisProxy
 from vulcanus.token import decode_token
+from vulcanus.restful.resp import state
 from zeus.account_manager.cache import UserCache
 from zeus.account_manager.key import HostKey
 from zeus.database import SESSION
@@ -41,12 +39,8 @@ class AddUser(BaseResponse):
     Restful API: post
     """
 
-    @staticmethod
-    def _handle(args):
-        status_code = operate(UserProxy(), args, 'add_user', SESSION)
-        return status_code
-
-    def post(self):
+    @BaseResponse.handle(schema=AddUserSchema, token=False, proxy=UserProxy(), session=SESSION)
+    def post(self, callback: UserProxy, **params):
         """
         Add user
 
@@ -57,10 +51,8 @@ class AddUser(BaseResponse):
         Returns:
             dict: response body
         """
-        return jsonify(self.handle_request(AddUserSchema,
-                                           self,
-                                           need_token=False,
-                                           debug=False))
+        status_code = callback.add_user(params)
+        return self.response(code=status_code)
 
 
 class Login(BaseResponse):
@@ -68,18 +60,9 @@ class Login(BaseResponse):
     Interface for user login.
     Restful API: post
     """
-    @staticmethod
-    def _handle(args):
-        status_code, auth_result = operate(UserProxy(), args, 'login', SESSION)
-        if status_code == SUCCEED:
-            token_info = decode_token(auth_result["token"])
-            RedisProxy.redis_connect.set(
-                "token_" + token_info["key"], auth_result["token"])
-            RedisProxy.redis_connect.set(
-                "refresh_token_" + token_info["key"], auth_result["refresh_token"])
-        return status_code, auth_result
 
-    def post(self):
+    @BaseResponse.handle(schema=LoginSchema, token=False, proxy=UserProxy(), session=SESSION)
+    def post(self, callback: UserProxy, **params):
         """
         User login
 
@@ -90,10 +73,14 @@ class Login(BaseResponse):
         Returns:
             dict: response body
         """
-        return jsonify(self.handle_request(LoginSchema,
-                                           self,
-                                           need_token=False,
-                                           debug=False))
+        status_code, auth_result = callback.login(params)
+        if status_code == state.SUCCEED:
+            token_info = decode_token(auth_result["token"])
+            RedisProxy.redis_connect.set(
+                "token_" + token_info["key"], auth_result["token"])
+            RedisProxy.redis_connect.set(
+                "refresh_token_" + token_info["key"], auth_result["refresh_token"])
+        return self.response(code=status_code, data=auth_result)
 
 
 class AuthRedirectUrl(BaseResponse):
@@ -101,13 +88,8 @@ class AuthRedirectUrl(BaseResponse):
     Forward address of third-party authentication login
     """
 
-    @staticmethod
-    def _handle(args):
-        proxy = UserProxy()
-        redirect_url = proxy.auth_redirect_url()
-        return SUCCEED, redirect_url
-
-    def get(self):
+    @BaseResponse.handle(token=False)
+    def get(self, **params):
         """
         Auth redirect url
 
@@ -121,10 +103,9 @@ class AuthRedirectUrl(BaseResponse):
             }
 
         """
-        return jsonify(self.handle_request(None,
-                                           self,
-                                           need_token=False,
-                                           debug=False))
+        proxy = UserProxy()
+        redirect_url = proxy.auth_redirect_url()
+        return self.response(code=state.SUCCEED, data=redirect_url)
 
 
 class GiteeAuthLogin(BaseResponse):
@@ -133,25 +114,19 @@ class GiteeAuthLogin(BaseResponse):
     Restful API: post
     """
 
-    @staticmethod
-    def _handle(args):
-        proxy = UserProxy()
-        if not proxy.connect(SESSION):
-            return DATABASE_CONNECT_ERROR, {}
-        status_code, auth_result = proxy.gitee_auth_login(code=args["code"])
-        if status_code == SUCCEED:
+    @BaseResponse.handle(schema=GiteeAuthLoginSchema, token=False, proxy=UserProxy(), session=SESSION)
+    def get(self, callback: UserProxy, **params):
+
+        status_code, auth_result = callback.gitee_auth_login(
+            code=params["code"])
+        if status_code == state.SUCCEED:
             token_info = decode_token(auth_result["token"])
             RedisProxy.redis_connect.set(
                 "token_" + token_info["key"], auth_result["token"])
             RedisProxy.redis_connect.set(
                 "refresh_token_" + token_info["key"], auth_result["refresh_token"])
-        return status_code, auth_result
 
-    def get(self):
-        return jsonify(self.handle_request(GiteeAuthLoginSchema,
-                                           self,
-                                           need_token=False,
-                                           debug=False))
+        return self.response(code=status_code, data=auth_result)
 
 
 class BindAuthAccount(BaseResponse):
@@ -159,21 +134,13 @@ class BindAuthAccount(BaseResponse):
     Local users and authorized users are bound to each other
     Restful API: post
     """
-    @staticmethod
-    def _handle(args):
-        proxy = UserProxy()
-        if not proxy.connect(SESSION):
-            return DATABASE_CONNECT_ERROR, {}
-        status_code, auth_result = proxy.bind_auth_account(
-            auth_account=args["auth_account"], username=args["username"], password=args["password"])
 
-        return status_code, auth_result
+    @BaseResponse.handle(schema=BindAuthAccountSchema, token=False, proxy=UserProxy(), session=SESSION)
+    def post(self, callback: UserProxy, **params):
 
-    def post(self):
-        return jsonify(self.handle_request(BindAuthAccountSchema,
-                                           self,
-                                           need_token=False,
-                                           debug=False))
+        status_code, auth_result = callback.bind_auth_account(
+            auth_account=params["auth_account"], username=params["username"], password=params["password"])
+        return self.response(code=status_code, data=auth_result)
 
 
 class ChangePassword(BaseResponse):
@@ -181,19 +148,9 @@ class ChangePassword(BaseResponse):
     Interface for user change password.
     Restful API: post
     """
-    @staticmethod
-    def _handle(args):
-        proxy = UserProxy()
-        if not proxy.connect(SESSION):
-            return DATABASE_CONNECT_ERROR, {}
 
-        status_code, user = proxy.change_password(args)
-        if status_code == SUCCEED:
-            UserCache.update(user.username, user)
-
-        return status_code
-
-    def post(self):
+    @BaseResponse.handle(schema=ChangePasswordSchema, proxy=UserProxy(), session=SESSION)
+    def post(self, callback: UserProxy, **params):
         """
         Change password
 
@@ -203,39 +160,7 @@ class ChangePassword(BaseResponse):
         Returns:
             dict: response body
         """
-        return jsonify(self.handle_request(ChangePasswordSchema,
-                                           self,
-                                           debug=False))
-
-
-class Certificate(BaseResponse):
-    """
-    Interface for user certificate.
-    Restful API: post
-    """
-    @staticmethod
-    def _handle(args):
-        """
-        Handle function
-
-        Args:
-            args (dict)
-
-        Returns:
-            int: status code
-        """
-        HostKey.update(args['username'], args['key'])
-
-        return SUCCEED
-
-    def post(self):
-        """
-        Certificate  user
-
-        Args:
-            key (strs)
-
-        Returns:
-            dict: response body
-        """
-        return jsonify(self.handle_request(CertificateSchema, self, debug=False))
+        status_code, user = callback.change_password(params)
+        if status_code == state.SUCCEED:
+            UserCache.update(user.username, user)
+        return self.response(code=status_code)
