@@ -25,9 +25,11 @@ import requests
 from flask import jsonify, request, send_file
 
 from vulcanus.database.helper import operate
-from vulcanus.database.table import Host, User
+from vulcanus.database.table import Host
 from vulcanus.log.log import LOGGER
 from vulcanus.multi_thread_handler import MultiThreadHandler
+from vulcanus.restful.response import BaseResponse
+from vulcanus.restful.resp import state
 from vulcanus.restful.resp.state import (
     DATABASE_CONNECT_ERROR,
     DATABASE_DELETE_ERROR,
@@ -39,7 +41,7 @@ from vulcanus.restful.resp.state import (
     SUCCEED,
     TOKEN_ERROR
 )
-from vulcanus.restful.response import BaseResponse
+from zeus.database.proxy.host import HostProxy
 from zeus.account_manager.cache import UserCache
 from zeus.conf import configuration
 from zeus.conf.constant import (
@@ -49,7 +51,6 @@ from zeus.conf.constant import (
     HostStatus
 )
 from zeus.database import SESSION
-from zeus.database.proxy.host import HostProxy
 from zeus.function.verify.host import (
     AddHostGroupSchema,
     AddHostSchema,
@@ -63,120 +64,14 @@ from zeus.function.verify.host import (
 from zeus.host_manager.ssh import SSH, generate_key
 
 
-class RegisterHost(BaseResponse):
-    """
-    Interface for add host.
-    Restful API: post
-    """
-    proxy = ""
-
-    def _verify_user(self, username: str, password: str) -> Tuple[int, str]:
-        # query from cache first
-        user = UserCache.get(username)
-        if user is None:
-            LOGGER.error("no such user")
-            return NO_DATA, ""
-
-        res = User.check_hash_password(user.password, password)
-        if not res:
-            LOGGER.error("wrong username or password.")
-            return TOKEN_ERROR, ""
-
-        return SUCCEED, user.token
-
-    def _handle(self, args: Dict) -> Tuple[int, Dict]:
-        self.proxy = HostProxy()
-        if not self.proxy.connect(SESSION):
-            return DATABASE_CONNECT_ERROR, {}
-
-        status_code, token = self._verify_user(
-            args['username'], args.pop('password'))
-        if status_code != SUCCEED:
-            return status_code, {}
-
-        status_code = self.proxy.add_host(args)
-        if status_code == SUCCEED:
-            return status_code, {"token": token}
-
-        return status_code, {}
-
-    def post(self):
-        """
-        Add host
-
-        Args:
-             (list)
-            key (str)
-
-        Returns:
-            dict: response body
-        """
-        return jsonify(self.handle_request(HostSchema, self, need_token=False, debug=False))
-
-
 class DeleteHost(BaseResponse):
     """
     Interface for delete host.
     Restful API: DELETE
     """
 
-    def _handle(self, args):
-        """
-        Handle function
-
-        Args:
-            args (dict)
-
-        Returns:
-            int: status code
-            dict: response body
-        """
-        proxy = HostProxy()
-        if not proxy.connect(SESSION):
-            return DATABASE_CONNECT_ERROR, {}
-
-        args.pop('username')
-        resp = self.get_response(
-            'POST',
-            f'http://{configuration.diana["IP"]}:{configuration.diana["PORT"]}{CHECK_WORKFLOW_HOST_EXIST}',
-            args,
-            {'content-type': 'application/json',
-             'access_token': request.headers.get('access_token')}
-        )
-
-        res = {
-            'succeed_list': [],
-            'fail_list': {}
-        }
-
-        if resp.get('code') != SUCCEED:
-            LOGGER.error('No valid information can be obtained when query'
-                         'whether the host is running in the workflow')
-            res['fail_list'].update(zip(args['host_list'],
-                                        len(args['host_list']) * ("query workflow fail",)))
-            return DATABASE_DELETE_ERROR, res
-
-        host_id_in_workflow = []
-        host_id_not_in_workflow = []
-        for host_id in resp.get('result'):
-            if resp.get('result')[host_id]:
-                host_id_in_workflow.append(host_id)
-            else:
-                host_id_not_in_workflow.append(host_id)
-
-        res['fail_list'].update(zip(host_id_in_workflow,
-                                    len(host_id_in_workflow) * ("There are workflow in check",)))
-
-        if len(host_id_not_in_workflow) == 0:
-            return DATABASE_DELETE_ERROR, res
-
-        args['host_list'] = host_id_not_in_workflow
-        status_code, result = proxy.delete_host(args)
-        result['fail_list'].update(res['fail_list'])
-        result.pop('host_info')
-        return status_code, result
-
-    def delete(self):
+    @BaseResponse.handle(schema=DeleteHostSchema, proxy=HostProxy(), session=SESSION)
+    def delete(self, callback: HostProxy, **params):
         """
         Delete host
 
@@ -186,10 +81,8 @@ class DeleteHost(BaseResponse):
         Returns:
             dict: response body
         """
-        return jsonify(self.handle_request_db(DeleteHostSchema,
-                                              HostProxy(),
-                                              'delete_host',
-                                              SESSION))
+        status_code, result = callback.delete_host(params)
+        return self.response(code=status_code, data=result)
 
 
 class GetHost(BaseResponse):
@@ -198,7 +91,8 @@ class GetHost(BaseResponse):
     Restful API: POST
     """
 
-    def post(self):
+    @BaseResponse.handle(schema=GetHostSchema, proxy=HostProxy(), session=SESSION)
+    def post(self, callback: HostProxy, **params):
         """
         Get host
 
@@ -213,10 +107,8 @@ class GetHost(BaseResponse):
         Returns:
             dict: response body
         """
-        return jsonify(self.handle_request_db(GetHostSchema,
-                                              HostProxy(),
-                                              'get_host',
-                                              SESSION))
+        status_code, result = callback.get_host(params)
+        return self.response(code=status_code, data=result)
 
 
 class GetHostCount(BaseResponse):
@@ -224,8 +116,8 @@ class GetHostCount(BaseResponse):
     Interface for get host count.
     Restful API: POST
     """
-
-    def post(self):
+    @BaseResponse.handle(proxy=HostProxy(), session=SESSION)
+    def post(self, callback: HostProxy, **params):
         """
         Get host
 
@@ -234,10 +126,8 @@ class GetHostCount(BaseResponse):
         Returns:
             dict: response body
         """
-        return jsonify(self.handle_request_db(None,
-                                              HostProxy(),
-                                              'get_host_count',
-                                              SESSION))
+        status_code, result = callback.get_host_count(params)
+        return self.response(code=status_code, data=result)
 
 
 class AddHostGroup(BaseResponse):
@@ -246,7 +136,8 @@ class AddHostGroup(BaseResponse):
     Restful API: POST
     """
 
-    def post(self):
+    @BaseResponse.handle(schema=AddHostGroupSchema, proxy=HostProxy(), session=SESSION)
+    def post(self, callback: HostProxy, **params):
         """
         Add host group
 
@@ -257,10 +148,8 @@ class AddHostGroup(BaseResponse):
         Returns:
             dict: response body
         """
-        return jsonify(self.handle_request_db(AddHostGroupSchema,
-                                              HostProxy(),
-                                              'add_host_group',
-                                              SESSION))
+        status_code = callback.add_host_group(params)
+        return self.response(code=status_code)
 
 
 class DeleteHostGroup(BaseResponse):
@@ -269,7 +158,8 @@ class DeleteHostGroup(BaseResponse):
     Restful API: DELETE
     """
 
-    def delete(self):
+    @BaseResponse.handle(schema=DeleteHostGroupSchema, proxy=HostProxy(), session=SESSION)
+    def delete(self, callback: HostProxy, **params):
         """
         Delete host group
 
@@ -279,10 +169,9 @@ class DeleteHostGroup(BaseResponse):
         Returns:
             dict: response body
         """
-        return jsonify(self.handle_request_db(DeleteHostGroupSchema,
-                                              HostProxy(),
-                                              'delete_host_group',
-                                              SESSION))
+
+        status_code, result = callback.delete_host_group(params)
+        return self.response(code=status_code, data=result)
 
 
 class GetHostGroup(BaseResponse):
@@ -291,7 +180,8 @@ class GetHostGroup(BaseResponse):
     Restful API: POST
     """
 
-    def post(self):
+    @BaseResponse.handle(schema=GetHostGroupSchema, proxy=HostProxy(), session=SESSION)
+    def post(self, callback: HostProxy, **params):
         """
         Get host group
 
@@ -304,10 +194,8 @@ class GetHostGroup(BaseResponse):
         Returns:
             dict: response body
         """
-        return jsonify(self.handle_request_db(GetHostGroupSchema,
-                                              HostProxy(),
-                                              'get_host_group',
-                                              SESSION))
+        status_code, result = callback.get_host_group(params)
+        return self.response(code=status_code, data=result)
 
 
 class GetHostInfo(BaseResponse):
@@ -315,54 +203,6 @@ class GetHostInfo(BaseResponse):
     Interface for get host info.
     Restful API: POST
     """
-
-    def _handle(self, args) -> tuple:
-        """
-        Handle function
-
-        Args:
-            args (dict): request parameter
-
-        Returns:
-            tuple: (status code, result)
-        """
-        basic = args.get('basic')
-        if basic:
-            return operate(HostProxy(), args, 'get_host_info', SESSION)
-        user = UserCache.get(args.get('username'))
-        error_host_infos = self.generate_fail_data(args.get('host_list'))
-        if user is None:
-            return TOKEN_ERROR, {"host_infos": error_host_infos}
-
-        # query host address from database
-        proxy = HostProxy()
-        if proxy.connect(SESSION) is None:
-            LOGGER.error("connect to database error")
-            return DATABASE_CONNECT_ERROR, {"host_infos": error_host_infos}
-
-        status, host_address_list = proxy.get_host_address(args.get('host_list'))
-        if len(host_address_list) == 0:
-            LOGGER.warning("database has no such host id.")
-            return NO_DATA, {"host_infos": error_host_infos}
-
-        # generate tasks
-        tasks = []
-        for host_id, address in host_address_list.items():
-            tasks.append({
-                'host_id': host_id,
-                'info_type': [],
-                'address': address,
-                "headers": {'content-type': 'application/json',
-                            'access_token': user.token}
-            })
-        # execute multi threading
-        multi_thread_handler = MultiThreadHandler(self.get_host_info, tasks, None)
-        multi_thread_handler.create_thread()
-        result_list = multi_thread_handler.get_result()
-
-        # analyse execute result and generate target data format
-        host_infos = self.analyse_query_result(args.get('host_list'), result_list)
-        return SUCCEED, {"host_infos": host_infos}
 
     @staticmethod
     def get_host_info(data: Dict) -> Dict:
@@ -406,7 +246,7 @@ class GetHostInfo(BaseResponse):
             LOGGER.error(error)
             return res
 
-        if response.status_code == SUCCEED:
+        if response.status_code == requests.status_codes.ok:
             res['host_info'] = response.json().get('resp', {})
             return res
         LOGGER.warning('Failed to get host info!')
@@ -492,7 +332,8 @@ class GetHostInfo(BaseResponse):
         host_infos.extend(self.generate_fail_data(fail_host))
         return host_infos
 
-    def post(self):
+    @BaseResponse.handle(schema=GetHostInfoSchema)
+    def post(self, **params):
         """
         Get host info
 
@@ -503,7 +344,48 @@ class GetHostInfo(BaseResponse):
         Returns:
             dict: response body
         """
-        return jsonify(self.handle_request(GetHostInfoSchema, self))
+        basic = params.get('basic')
+        proxy = HostProxy()
+        if proxy.connect(SESSION) is None:
+            LOGGER.error("connect to database error")
+            return self.response(code=state.DATABASE_CONNECT_ERROR, data={"host_infos": error_host_infos})
+
+        if basic:
+            status_code, result = proxy.get_host_info(params)
+            return self.response(code=status_code, data=result)
+        user = UserCache.get(params.get('username'))
+        error_host_infos = self.generate_fail_data(params.get('host_list'))
+        if user is None:
+            return self.response(code=state.TOKEN_ERROR, data={"host_infos": error_host_infos})
+
+        # query host address from database
+
+        _, host_address_list = proxy.get_host_address(
+            params.get('host_list'))
+        if len(host_address_list) == 0:
+            LOGGER.warning("database has no such host id.")
+            return self.response(code=state.NO_DATA, data={"host_infos": error_host_infos})
+
+        # generate tasks
+        tasks = []
+        for host_id, address in host_address_list.items():
+            tasks.append({
+                'host_id': host_id,
+                'info_type': [],
+                'address': address,
+                "headers": {'content-type': 'application/json',
+                            'access_token': user.token}
+            })
+        # execute multi threading
+        multi_thread_handler = MultiThreadHandler(
+            self.get_host_info, tasks, None)
+        multi_thread_handler.create_thread()
+        result_list = multi_thread_handler.get_result()
+
+        # analyse execute result and generate target data format
+        host_infos = self.analyse_query_result(
+            params.get('host_list'), result_list)
+        return self.response(code=state.SUCCEED, data={"host_infos": host_infos})
 
 
 class AddHost(BaseResponse):
@@ -511,43 +393,6 @@ class AddHost(BaseResponse):
     Interface for add host from web.
     Restful API: POST
     """
-
-    def _handle(self, args):
-        """
-        Handle function
-
-        Args:
-            args (dict): e.g
-            {
-                "host_name":"host name",
-                "ssh_user":"root",
-                "password":"password",
-                "host_group_name":"host_group_name",
-                "host_ip":"127.0.0.1",
-                "ssh_port":"22",
-                "management":false,
-                "username": "admin"
-            }
-
-        Returns:
-            int: status code
-        """
-        self.proxy = HostProxy()
-        if not self.proxy.connect(SESSION):
-            LOGGER.error("connect to database error")
-            return DATABASE_CONNECT_ERROR
-
-        status, host = self.validate_host_info(args)
-        if status != SUCCEED:
-            return status
-
-        status, private_key = save_ssh_public_key_to_client(
-            args.get('host_ip'), args.get('ssh_port'), args.get('ssh_user'), args.get('password'))
-        if status == SUCCEED:
-            host.pkey = private_key
-            host.status = HostStatus.ONLINE
-
-        return self.proxy.add_host(host)
 
     def validate_host_info(self, host_info: dict) -> Tuple[int, Host]:
         """
@@ -571,8 +416,9 @@ class AddHost(BaseResponse):
             tuple:
                 status code, host object
         """
-        status, hosts, groups = self.proxy.get_hosts_and_groups(host_info.get('username'))
-        if status != SUCCEED:
+        status, hosts, groups = self.proxy.get_hosts_and_groups(
+            host_info.get('username'))
+        if status != state.SUCCEED:
             return status, Host()
 
         group_id = None
@@ -583,7 +429,7 @@ class AddHost(BaseResponse):
         if group_id is None:
             LOGGER.warning(f"host group doesn't exist "
                            f"which named {host_info.get('host_group_name')} !")
-            return PARAM_ERROR, Host()
+            return state.PARAM_ERROR, Host()
 
         host = Host(**{
             "host_name": host_info.get("host_name"),
@@ -596,20 +442,45 @@ class AddHost(BaseResponse):
             "management": host_info.get("management"),
         })
         if host in hosts:
-            return DATA_EXIST, Host()
-        return SUCCEED, host
+            return state.DATA_EXIST, Host()
+        return state.SUCCEED, host
 
-    def post(self):
+    @BaseResponse.handle(schema=AddHostSchema)
+    def post(self, **params):
         """
         Get host info
 
         Args:
-            dict: host info
+            args (dict): e.g
+            {
+                "host_name":"host name",
+                "ssh_user":"root",
+                "password":"password",
+                "host_group_name":"host_group_name",
+                "host_ip":"127.0.0.1",
+                "ssh_port":"22",
+                "management":false,
+                "username": "admin"
+            }
 
         Returns:
             dict: response body
         """
-        return jsonify(self.handle_request(schema=AddHostSchema, obj=self, debug=False))
+        self.proxy = HostProxy()
+        if not self.proxy.connect(SESSION):
+            LOGGER.error("connect to database error")
+            return self.response(code=state.DATABASE_CONNECT_ERROR)
+
+        status, host = self.validate_host_info(params)
+        if status != state.SUCCEED:
+            return self.response(code=status)
+
+        status, private_key = save_ssh_public_key_to_client(
+            params.get('host_ip'), params.get('ssh_port'), params.get('ssh_user'), params.get('password'))
+        if status == state.SUCCEED:
+            host.pkey = private_key
+            host.status = HostStatus.ONLINE
+        return self.response(code=self.proxy.add_host(host))
 
 
 def save_ssh_public_key_to_client(hostname: str, port: int, username: str, password: str) -> tuple:
@@ -631,20 +502,21 @@ def save_ssh_public_key_to_client(hostname: str, port: int, username: str, passw
               f"&& echo {public_key!r} >> ~/.ssh/authorized_keys" \
               f"&& chmod 600 ~/.ssh/authorized_keys"
     try:
-        client = SSH(hostname=hostname, username=username, port=port, password=password)
-        stdin, stdout, stderr = client.execute_command(command)
+        client = SSH(hostname=hostname, username=username,
+                     port=port, password=password)
+        _, _, stderr = client.execute_command(command)
     except socket.error as error:
         LOGGER.error(error)
-        return SSH_CONNECTION_ERROR, ""
+        return state.SSH_CONNECTION_ERROR, ""
     except paramiko.ssh_exception.SSHException as error:
         LOGGER.error(error)
-        return SSH_AUTHENTICATION_ERROR, ""
+        return state.SSH_AUTHENTICATION_ERROR, ""
 
     if stderr.read().decode("utf8"):
         LOGGER.error(f"save public key on host failed, host ip is {hostname}!")
-        return EXECUTE_COMMAND_ERROR, ""
+        return state.EXECUTE_COMMAND_ERROR, ""
 
-    return SUCCEED, private_key
+    return state.SUCCEED, private_key
 
 
 class GetHostTemplateFile(BaseResponse):
