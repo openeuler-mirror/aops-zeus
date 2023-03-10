@@ -18,6 +18,7 @@ Description: url set
 from vulcanus.conf.constant import (
     ADD_GROUP,
     ADD_HOST,
+    ADD_HOST_BATCH,
     ADD_USER,
     AGENT_METRIC_SET,
     AGENT_PLUGIN_INFO,
@@ -59,6 +60,7 @@ SPECIFIC_URLS = {
     ],
     "HOST_URLS": [
         (host_view.AddHost, ADD_HOST),
+        (host_view.AddHostBatch, ADD_HOST_BATCH),
         (host_view.DeleteHost, DELETE_HOST),
         (host_view.GetHost, QUERY_HOST),
         (host_view.GetHostInfo, QUERY_HOST_DETAIL),
