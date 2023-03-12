@@ -18,17 +18,18 @@ Description: Restful APIs for host
 import json
 import socket
 from io import BytesIO
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, Iterable, List, Tuple, Union
 
 import paramiko
 import requests
 from flask import jsonify, request, send_file
+from marshmallow import Schema
+from marshmallow.fields import Boolean
 
 from vulcanus.database.helper import operate
 from vulcanus.database.table import Host
 from vulcanus.log.log import LOGGER
 from vulcanus.multi_thread_handler import MultiThreadHandler
-from vulcanus.restful.response import BaseResponse
 from vulcanus.restful.resp import state
 from vulcanus.restful.resp.state import (
     DATABASE_CONNECT_ERROR,
@@ -41,6 +42,8 @@ from vulcanus.restful.resp.state import (
     SUCCEED,
     TOKEN_ERROR
 )
+from vulcanus.restful.response import BaseResponse
+from vulcanus.restful.serialize.validate import validate
 from zeus.database.proxy.host import HostProxy
 from zeus.account_manager.cache import UserCache
 from zeus.conf import configuration
@@ -52,6 +55,7 @@ from zeus.conf.constant import (
 )
 from zeus.database import SESSION
 from zeus.function.verify.host import (
+    AddHostBatchSchema,
     AddHostGroupSchema,
     AddHostSchema,
     DeleteHostGroupSchema,
@@ -116,6 +120,7 @@ class GetHostCount(BaseResponse):
     Interface for get host count.
     Restful API: POST
     """
+
     @BaseResponse.handle(proxy=HostProxy(), session=SESSION)
     def post(self, callback: HostProxy, **params):
         """
@@ -348,7 +353,8 @@ class GetHostInfo(BaseResponse):
         proxy = HostProxy()
         if proxy.connect(SESSION) is None:
             LOGGER.error("connect to database error")
-            return self.response(code=state.DATABASE_CONNECT_ERROR, data={"host_infos": error_host_infos})
+            return self.response(code=state.DATABASE_CONNECT_ERROR,
+                                 data={"host_infos": error_host_infos})
 
         if basic:
             status_code, result = proxy.get_host_info(params)
@@ -476,7 +482,8 @@ class AddHost(BaseResponse):
             return self.response(code=status)
 
         status, private_key = save_ssh_public_key_to_client(
-            params.get('host_ip'), params.get('ssh_port'), params.get('ssh_user'), params.get('password'))
+            params.get('host_ip'), params.get('ssh_port'), params.get('ssh_user'),
+            params.get('password'))
         if status == state.SUCCEED:
             host.pkey = private_key
             host.status = HostStatus.ONLINE
@@ -541,3 +548,298 @@ class GetHostTemplateFile(BaseResponse):
         file.seek(0)
 
         return send_file(file, as_attachment=True, attachment_filename="template.csv")
+
+
+class AddHostBatch(BaseResponse):
+    """
+    Interface for add host batch from web.
+    Restful API: POST
+    """
+
+    add_succeed = "succeed"
+    add_failed = "failed"
+
+    def post(self):
+        """
+        Handle function
+
+        Returns:
+            tuple:
+                status code, message, data
+        """
+        self.add_result = []
+        # Validate request
+        status, args = self.verify_request(AddHostBatchSchema)
+        if status != state.SUCCEED:
+            return self.response(code=status, data=self.add_result)
+
+        # Connect database
+        proxy = HostProxy()
+        if not proxy.connect(SESSION):
+            LOGGER.error("connect to database error")
+            self.update_add_result(
+                args["host_list"],
+                {"result": self.add_failed, "reason": "connect to database error"})
+            return self.response(code=state.DATABASE_CONNECT_ERROR, data=self.add_result)
+
+        # Query hosts with groups, validate hostname or host address
+        status, hosts, groups = proxy.get_hosts_and_groups(args.get('username'))
+        if status != state.SUCCEED:
+            self.update_add_result(
+                args["host_list"],
+                {"result": self.add_failed, "reason": "query data from database fail"})
+            return self.response(code=status, data=self.add_result)
+
+        valid_hosts = self.validate_host_info(args, hosts, groups)
+        if len(valid_hosts) == 0:
+            return self.response(code=state.ADD_HOST_FAILED,
+                                 message="invalid host info or all hosts has been added",
+                                 data=self.add_result)
+
+        # Generate Rsa-key pair and save public_key on host
+        multi_thread = MultiThreadHandler(lambda data: self.update_rsa_key_to_host(*data),
+                                          valid_hosts, None)
+        multi_thread.create_thread()
+        result = multi_thread.get_result()
+
+        # Add host
+        status = proxy.add_host_batch(result)
+        if status != state.SUCCEED:
+            self.update_add_result(valid_hosts,
+                                   {"result": self.add_failed, "reason": "Insert Database error"})
+            return self.response(code=status, data=self.add_result)
+        self.update_add_result(valid_hosts, {"result": self.add_succeed})
+
+        # Judge the returned status code
+        if len(valid_hosts) < len(args["host_list"]):
+            return self.response(code=state.PARTIAL_SUCCEED, data=self.add_result)
+        return self.response(code=status, data=self.add_result)
+
+    def validate_host_info(self, data: dict, hosts: list, groups: list) -> list:
+        """
+        Check whether the data is repeated, and generate a list of valid data
+
+        Args:
+            data(dict): e.g
+                {
+                    "host_list":[{
+                        "host_ip": "127.0.0.1,
+                        "ssh_port": 22,
+                        "ssh_user": "root",
+                        "password": "password",
+                        "host_name": "test_host",
+                        "host_group_name": "test_group",
+                        "management": False,
+                    }],
+                    "username": "admin"
+                }
+            hosts(list): list of host object
+            groups(list): list of host group object
+        Returns:
+            list: e.g
+            [{
+                "host_ip": "127.0.0.1,
+                "ssh_port": 22,
+                "ssh_user": "root",
+                "password": "password",
+                "host_name": "test_host",
+                "host_group_name": "test_group",
+                "management": False,
+            }]
+        """
+        valid_host = []
+        group_id_info = {}
+        for group in groups:
+            group_id_info[group.host_group_name] = group.host_group_id
+
+        for host_info in data["host_list"]:
+            if host_info.get("host_group_name") not in group_id_info:
+                LOGGER.warning(f"invalid host group when add host {host_info['host_name']}")
+                self.update_add_result(
+                    [host_info], {"result": self.add_failed, "reason": "invalid host group name"})
+                continue
+
+            password = host_info.pop("password")
+            host_info.update({
+                "host_group_id": group_id_info.get(host_info['host_group_name']),
+                "user": data["username"]}
+            )
+            host = Host(**host_info)
+            if host in hosts:
+                LOGGER.warning(
+                    f"host name or host ip is existed when add host {host_info['host_name']}.")
+                self.update_add_result([host_info], {
+                    "result": self.add_failed,
+                    "reason": "host name or host ip is existed!"
+                })
+                continue
+
+            valid_host.append((host, password))
+        return valid_host
+
+    @staticmethod
+    def update_rsa_key_to_host(host: Host, password: str) -> Host:
+        """
+        save ssh public key to client and update its private key in host
+
+        Args:
+            host(Host): host object
+            password(str): password for ssh login
+
+        Returns:
+            host object
+        """
+        status, pkey = save_ssh_public_key_to_client(
+            host.host_ip, host.ssh_port, host.ssh_user, password)
+        if status == state.SUCCEED:
+            host.status = HostStatus.ONLINE
+            host.pkey = pkey
+        return host
+
+    def update_add_result(self, hosts: list, update_info: dict) -> None:
+        """
+        update result of add host
+
+        Args:
+            hosts: list of host info
+            update_info(dict): info which needs to be updated
+
+        """
+        if len(hosts) == 0:
+            return
+
+        if isinstance(hosts[0], dict):
+            for host in hosts:
+                new_host = {
+                    "host_ip": host.get("host_ip"),
+                    "ssh_port": host.get("ssh_port"),
+                    "ssh_user": host.get("ssh_user"),
+                    "host_name": host.get("host_name"),
+                    "host_group_name": host.get("host_group_name"),
+                    "management": host.get("management")
+                }
+                new_host.update(update_info)
+                self.add_result.append(new_host)
+        else:
+            for host, _ in hosts:
+                new_host = {
+                    "host_ip": host.host_ip,
+                    "ssh_port": host.ssh_port,
+                    "ssh_user": host.ssh_user,
+                    "host_name": host.host_name,
+                    "host_group_name": host.host_group_name,
+                    "management": host.management,
+                }
+                new_host.update(update_info)
+                self.add_result.append(new_host)
+
+    def verify_request(self, schema: Schema) -> tuple:
+        """
+        Verify args and token
+
+        Args:
+            schema(object): the class of the validator
+
+        Returns:
+            tuple:
+                status code, dict
+        """
+        args = request.get_json() or {}
+        args, errors = validate(schema, args)
+
+        if errors:
+            LOGGER.error(errors)
+            self.parse_validate_error(args.get("host_list"), errors.get("host_list"))
+            return state.PARAM_ERROR, {}
+
+        if self.validate_host_repeated(args.get("host_list")):
+            return state.PARAM_ERROR, {}
+
+        if self.verify_token(request.headers.get('access_token'), args) != state.SUCCEED:
+            self.update_add_result(
+                args.get("host_list"), {"result": self.add_failed, "reason": state.TOKEN_ERROR})
+            return state.TOKEN_ERROR, {}
+
+        for host in args.get('host_list'):
+            if host["management"] in Boolean.truthy:
+                host["management"] = True
+            else:
+                host["management"] = False
+
+        return state.SUCCEED, args
+
+    def parse_validate_error(self, host_list: list, errors: Union[list, dict]) -> None:
+        """
+        Parse the error and update it to add result
+
+        Args:
+            host_list(list): host info list
+            errors(dict or list): validation log,
+            if the host list is in the wrong format, errors data format will be a list;
+            e.g
+                ['Not a valid list.']
+            if part of the host list is in the wrong format, errors data will be a dict.
+            e.g
+                {0: {'host_name': ['Not a valid string.']}}
+
+        Return:
+           No Return
+        """
+        if not host_list or not isinstance(host_list, list):
+            self.add_result.append(errors[0])
+            return
+
+        if not isinstance(errors, dict):
+            return self.update_add_result(
+                host_list, {"result": self.add_failed, "reason": errors[0]})
+
+        index_list = list(errors.keys())
+        index_list.sort(reverse=True)
+        for index in index_list:
+            self.update_add_result(
+                [host_list.pop(int(index))], {
+                    "result": self.add_failed, "reason": errors[index].__str__()
+                })
+
+        self.update_add_result(host_list, {"result": self.add_failed})
+
+    def validate_host_repeated(self, host_list: list) -> bool:
+        """
+        Determine  host name ro ssh host address  is duplicated
+
+        Args:
+            host_list(list): host info list
+
+        returns:
+            bool: True or False
+
+        """
+        host_name_dict = {}
+        host_ssh_address_dict = {}
+        errors = {}
+        for index, host in enumerate(host_list):
+            host_ssh_address = f'{host["host_ip"]}:{host["ssh_port"]}'
+            if host["host_name"] in host_name_dict:
+                errors.update({
+                    host_name_dict[host["host_name"]]: "there is a duplicate host name "
+                                                       "or host address!"
+                })
+
+                errors.update({index: "there is a duplicate host name or host address!"})
+                host_ssh_address_dict.update({host_ssh_address: index})
+            elif host_ssh_address in host_ssh_address_dict:
+                errors.update({
+                    host_ssh_address_dict[host_ssh_address]: "there is a duplicate host name "
+                                                             "or host address!"
+                })
+
+                errors.update({index: "there is a duplicate host name or host address!"})
+                host_name_dict.update({host["host_name"]: index})
+            else:
+                host_name_dict.update({host["host_name"]: index})
+                host_ssh_address_dict.update({host_ssh_address: index})
+
+        if errors:
+            self.parse_validate_error(host_list, errors)
+            return True
+        return False

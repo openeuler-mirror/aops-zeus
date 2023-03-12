@@ -733,3 +733,23 @@ class HostProxy(MysqlProxy):
         except sqlalchemy.exc.SQLAlchemyError as error:
             LOGGER.error(error)
             return DATABASE_QUERY_ERROR, InstrumentedList(), InstrumentedList()
+
+    def add_host_batch(self, host_list: list) -> str:
+        """
+        Add host to the table in batches
+
+        Args:
+            host_list(list): list of host object
+
+        Returns:
+            str: SUCCEED or DATABASE_INSERT_ERROR
+        """
+        try:
+            self.session.bulk_save_objects(host_list)
+            self.session.commit()
+            LOGGER.info(f"add host {[host.host_ip for host in host_list]}succeed")
+            return SUCCEED
+        except sqlalchemy.exc.SQLAlchemyError as error:
+            LOGGER.error(error)
+            self.session.rollback()
+            return DATABASE_INSERT_ERROR
