@@ -12,10 +12,9 @@
 # ******************************************************************************/
 from typing import Optional, Tuple
 import requests
-from flask import json, Response, request
+from flask import json, Response, request, g
 
 from zeus.account_manager.cache import UserCache
-from zeus.database import SESSION
 from zeus.database.proxy.host import HostProxy
 from zeus.function.verify.agent import (
     AgentPluginInfoSchema,
@@ -56,7 +55,7 @@ class AgentUtil:
             tuple: host ip, status code
         """
         proxy = HostProxy()
-        if proxy.connect(SESSION):
+        if proxy.connect(g.session):
             query_res = proxy.session.query(
                 Host).filter_by(host_id=host_id).all()
             if len(query_res) == 0:
@@ -312,7 +311,7 @@ class GetHostScene(BaseResponse):
 
         # save scene to database
         save_args = {"host_id": host_id, "scene": scene_ret}
-        status_code = operate(HostProxy(), save_args, 'save_scene', SESSION)
+        status_code = operate(HostProxy(), save_args, 'save_scene', g.session)
         if status_code != state.SUCCEED:
             LOGGER.error("save scene of host %s failed.", host_id)
             return self.response(code=status_code)

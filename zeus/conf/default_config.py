@@ -25,7 +25,7 @@ mysql = {
     "PORT": 3306,
     "DATABASE_NAME": "aops",
     "ENGINE_FORMAT": "mysql+pymysql://@%s:%s/%s",
-    "POOL_SIZE": 10000,
+    "POOL_SIZE": 100,
     "POOL_RECYCLE": 7200
 }
 
