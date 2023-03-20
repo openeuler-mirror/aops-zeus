@@ -17,13 +17,12 @@ Description: Restful APIs for host
 """
 import json
 from typing import List, Dict
-
+from flask import g
 import requests
 
 from zeus.account_manager.cache import UserCache
 from zeus.conf.constant import CERES_COLLECT_FILE
 from vulcanus.multi_thread_handler import MultiThreadHandler
-from zeus.database import SESSION
 from zeus.function.verify.config import CollectConfigSchema
 from zeus.database.proxy.host import HostProxy
 from vulcanus.log.log import LOGGER
@@ -253,7 +252,7 @@ class CollectConfig(BaseResponse):
 
         # Query host address from database
         proxy = HostProxy()
-        if proxy.connect(SESSION) is None:
+        if proxy.connect(g.session) is None:
             file_content = convert_host_id_to_failed_data_format(
                 list(host_id_with_config_file.keys()), host_id_with_config_file)
             return self.response(code=state.DATABASE_CONNECT_ERROR, data={"resp": file_content})

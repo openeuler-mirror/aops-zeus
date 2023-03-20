@@ -15,6 +15,7 @@ Time:
 Author:
 Description: Store key related to user
 """
+from flask import g
 import threading
 from typing import NoReturn
 from dataclasses import dataclass
@@ -22,7 +23,6 @@ from dataclasses import dataclass
 from vulcanus.database.table import User
 from vulcanus.log.log import LOGGER
 from zeus.database.proxy.account import UserProxy
-from zeus.database import SESSION
 
 
 @dataclass
@@ -97,7 +97,7 @@ class UserCache:
         # need to query from database, and update cache
         if user is None:
             proxy = UserProxy()
-            if proxy.connect(SESSION):
+            if proxy.connect(g.session):
                 query_res = proxy.session.query(
                     User).filter_by(username=key).all()
                 if len(query_res) == 0:
@@ -109,7 +109,8 @@ class UserCache:
                     user.username, user.password, user.token)
                 proxy.close()
             else:
-                LOGGER.error("connect to database error, cannot get user token")
+                LOGGER.error(
+                    "connect to database error, cannot get user token")
 
         UserCache.mutex.release()
         return user

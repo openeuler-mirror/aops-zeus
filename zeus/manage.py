@@ -15,7 +15,10 @@ Time:
 Author:
 Description: Manager that start aops-zeus
 """
+from flask import g
 import sqlalchemy
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.scoping import scoped_session
 import redis
 from redis import RedisError
 from vulcanus.database.table import User, Base, create_utils_tables
@@ -23,7 +26,7 @@ from vulcanus.log.log import LOGGER
 from vulcanus.restful.resp.state import SUCCEED
 from vulcanus.manage import init_app
 from vulcanus.database.proxy import RedisProxy
-from zeus.database import SESSION, ENGINE
+from zeus.database import ENGINE
 from zeus.database.proxy.account import UserProxy
 from zeus.conf import configuration
 
@@ -38,7 +41,7 @@ def init_user():
         raise sqlalchemy.exc.SQLAlchemyError("create tables fail")
 
     proxy = UserProxy()
-    if not proxy.connect(SESSION):
+    if not proxy.connect(g.session):
         raise ValueError("connect to mysql fail")
 
     data = {
@@ -75,11 +78,29 @@ def init_redis_connect():
         raise RedisError("redis connect error.")
 
 
-init_database()
-init_redis_connect()
-app, config = init_app('zeus')
+def main():
 
-if __name__ == "__main__":
+    app, config = init_app('zeus')
+
+    @app.before_request
+    def create_dbsession():
+        g.session = scoped_session(sessionmaker(bind=ENGINE))
+
+    @app.teardown_request
+    def remove_dbsession(response):
+        g.session.remove()
+        return response
+
+    @app.before_first_request
+    def init_service():
+        g.session = scoped_session(sessionmaker(bind=ENGINE))
+        init_database()
+        init_redis_connect()
+
     ip = config.get('IP')
     port = config.get('PORT')
     app.run(host=ip, port=port)
+
+
+if __name__ == "__main__":
+    main()

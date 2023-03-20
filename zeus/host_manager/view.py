@@ -22,7 +22,7 @@ from typing import Dict, Iterable, List, Tuple, Union
 
 import paramiko
 import requests
-from flask import jsonify, request, send_file
+from flask import jsonify, request, send_file, g
 from marshmallow import Schema
 from marshmallow.fields import Boolean
 
@@ -53,7 +53,6 @@ from zeus.conf.constant import (
     HOST_TEMPLATE_FILE_CONTENT,
     HostStatus
 )
-from zeus.database import SESSION
 from zeus.function.verify.host import (
     AddHostBatchSchema,
     AddHostGroupSchema,
@@ -74,7 +73,7 @@ class DeleteHost(BaseResponse):
     Restful API: DELETE
     """
 
-    @BaseResponse.handle(schema=DeleteHostSchema, proxy=HostProxy(), session=SESSION)
+    @BaseResponse.handle(schema=DeleteHostSchema, proxy=HostProxy())
     def delete(self, callback: HostProxy, **params):
         """
         Delete host
@@ -95,7 +94,7 @@ class GetHost(BaseResponse):
     Restful API: POST
     """
 
-    @BaseResponse.handle(schema=GetHostSchema, proxy=HostProxy(), session=SESSION)
+    @BaseResponse.handle(schema=GetHostSchema, proxy=HostProxy())
     def post(self, callback: HostProxy, **params):
         """
         Get host
@@ -120,8 +119,7 @@ class GetHostCount(BaseResponse):
     Interface for get host count.
     Restful API: POST
     """
-
-    @BaseResponse.handle(proxy=HostProxy(), session=SESSION)
+    @BaseResponse.handle(proxy=HostProxy())
     def post(self, callback: HostProxy, **params):
         """
         Get host
@@ -141,7 +139,7 @@ class AddHostGroup(BaseResponse):
     Restful API: POST
     """
 
-    @BaseResponse.handle(schema=AddHostGroupSchema, proxy=HostProxy(), session=SESSION)
+    @BaseResponse.handle(schema=AddHostGroupSchema, proxy=HostProxy())
     def post(self, callback: HostProxy, **params):
         """
         Add host group
@@ -163,7 +161,7 @@ class DeleteHostGroup(BaseResponse):
     Restful API: DELETE
     """
 
-    @BaseResponse.handle(schema=DeleteHostGroupSchema, proxy=HostProxy(), session=SESSION)
+    @BaseResponse.handle(schema=DeleteHostGroupSchema, proxy=HostProxy())
     def delete(self, callback: HostProxy, **params):
         """
         Delete host group
@@ -185,7 +183,7 @@ class GetHostGroup(BaseResponse):
     Restful API: POST
     """
 
-    @BaseResponse.handle(schema=GetHostGroupSchema, proxy=HostProxy(), session=SESSION)
+    @BaseResponse.handle(schema=GetHostGroupSchema, proxy=HostProxy())
     def post(self, callback: HostProxy, **params):
         """
         Get host group
@@ -351,7 +349,7 @@ class GetHostInfo(BaseResponse):
         """
         basic = params.get('basic')
         proxy = HostProxy()
-        if proxy.connect(SESSION) is None:
+        if proxy.connect(g.session) is None:
             LOGGER.error("connect to database error")
             return self.response(code=state.DATABASE_CONNECT_ERROR,
                                  data={"host_infos": error_host_infos})
@@ -473,7 +471,7 @@ class AddHost(BaseResponse):
             dict: response body
         """
         self.proxy = HostProxy()
-        if not self.proxy.connect(SESSION):
+        if not self.proxy.connect(g.session):
             LOGGER.error("connect to database error")
             return self.response(code=state.DATABASE_CONNECT_ERROR)
 
