@@ -18,41 +18,26 @@ Description: Restful APIs for host
 import json
 import socket
 from io import BytesIO
-from typing import Dict, Iterable, List, Tuple, Union
+from typing import Iterable, List, Tuple, Union
 
 import paramiko
-import requests
-from flask import jsonify, request, send_file, g
+from flask import g, request, send_file
 from marshmallow import Schema
 from marshmallow.fields import Boolean
 
-from vulcanus.database.helper import operate
 from vulcanus.database.table import Host
 from vulcanus.log.log import LOGGER
 from vulcanus.multi_thread_handler import MultiThreadHandler
 from vulcanus.restful.resp import state
-from vulcanus.restful.resp.state import (
-    DATABASE_CONNECT_ERROR,
-    DATABASE_DELETE_ERROR,
-    DATA_EXIST,
-    EXECUTE_COMMAND_ERROR,
-    NO_DATA, PARAM_ERROR,
-    SSH_AUTHENTICATION_ERROR,
-    SSH_CONNECTION_ERROR,
-    SUCCEED,
-    TOKEN_ERROR
-)
 from vulcanus.restful.response import BaseResponse
 from vulcanus.restful.serialize.validate import validate
-from zeus.database.proxy.host import HostProxy
-from zeus.account_manager.cache import UserCache
-from zeus.conf import configuration
 from zeus.conf.constant import (
     CERES_HOST_INFO,
-    CHECK_WORKFLOW_HOST_EXIST,
     HOST_TEMPLATE_FILE_CONTENT,
     HostStatus
 )
+from zeus.database.proxy.host import HostProxy
+from zeus.function.model import ClientConnectArgs
 from zeus.function.verify.host import (
     AddHostBatchSchema,
     AddHostGroupSchema,
@@ -61,10 +46,9 @@ from zeus.function.verify.host import (
     DeleteHostSchema,
     GetHostGroupSchema,
     GetHostInfoSchema,
-    GetHostSchema,
-    HostSchema
+    GetHostSchema
 )
-from zeus.host_manager.ssh import SSH, generate_key
+from zeus.host_manager.ssh import SSH, execute_command_and_parse_its_result, generate_key
 
 
 class DeleteHost(BaseResponse):
@@ -208,51 +192,14 @@ class GetHostInfo(BaseResponse):
     """
 
     @staticmethod
-    def get_host_info(data: Dict) -> Dict:
-        """
-        Get host info from ceres.
-
-        Args:
-            data(dict): e.g
-                {
-                    "host_id": xx,
-                    "info_type": ["cpu", "os", "memory", "disk"],
-                    "address": "ip:port",
-                    "headers": {
-                        "content-type": "application/json",
-                        "access_token": "host token"
-                    }
-                }
-
-        Returns:
-            dict: e.g
-            {
-                "host_id":"host id",
-                "host_info": {
-                    "cpu": {...},
-                    "os":  {...},
-                    "memory": {...},
-                    "disk": [{...}]
-                }
-            }
-        """
-        headers = data.pop('headers')
-        url = f'http://{data.pop("address")}{CERES_HOST_INFO}'
-        res = {'host_id': data.get('host_id'), 'host_info': {}}
-        info_type = data.get('info_type')
-        try:
-            response = requests.post(url,
-                                     data=json.dumps(info_type),
-                                     headers=headers,
-                                     timeout=5)
-        except requests.exceptions.ConnectionError as error:
-            LOGGER.error(error)
-            return res
-
-        if response.status_code == requests.status_codes.ok:
-            res['host_info'] = response.json().get('resp', {})
-            return res
-        LOGGER.warning('Failed to get host info!')
+    def get_host_info(host: dict, info_type) -> dict:
+        res = {'host_id': host.get('host_id'), 'host_info': {}}
+        command = CERES_HOST_INFO % json.dumps(info_type)
+        status, host_info = execute_command_and_parse_its_result(
+            ClientConnectArgs(host.get("host_ip"), host.get("ssh_port"),
+                              host.get("ssh_user"), host.get("pkey")), command)
+        if status == state.SUCCEED:
+            res["host_info"] = json.loads(host_info)
         return res
 
     @staticmethod
@@ -274,13 +221,7 @@ class GetHostInfo(BaseResponse):
                     ...
                 ]
         """
-        res = []
-        for host_id in host_list:
-            res.append({
-                "host_id": host_id,
-                "host_info": {}
-            })
-        return res
+        return [{"host_id": host_id, "host_info": {}} for host_id in host_list]
 
     def analyse_query_result(self, all_host: List[str],
                              multithreading_execute_result: List) -> List:
@@ -347,48 +288,31 @@ class GetHostInfo(BaseResponse):
         Returns:
             dict: response body
         """
-        basic = params.get('basic')
-        proxy = HostProxy()
-        if proxy.connect(g.session) is None:
-            LOGGER.error("connect to database error")
-            return self.response(code=state.DATABASE_CONNECT_ERROR,
-                                 data={"host_infos": error_host_infos})
-
-        if basic:
-            status_code, result = proxy.get_host_info(params)
-            return self.response(code=status_code, data=result)
-        user = UserCache.get(params.get('username'))
         error_host_infos = self.generate_fail_data(params.get('host_list'))
-        if user is None:
-            return self.response(code=state.TOKEN_ERROR, data={"host_infos": error_host_infos})
 
-        # query host address from database
+        # query host info from database
+        proxy = HostProxy()
+        if not proxy.connect(g.session):
+            LOGGER.error("connect to database error")
+            return self.response(code=state.DATABASE_CONNECT_ERROR)
+        status, host_list = proxy.get_host_info(params)
+        if params.get('basic'):
+            for host in host_list:
+                host.pop("pkey", None)
+            return self.response(status, None, {"host_infos": host_list})
 
-        _, host_address_list = proxy.get_host_address(
-            params.get('host_list'))
-        if len(host_address_list) == 0:
-            LOGGER.warning("database has no such host id.")
-            return self.response(code=state.NO_DATA, data={"host_infos": error_host_infos})
+        if status != state.SUCCEED:
+            return self.response(code=status, data={"host_infos": error_host_infos})
 
         # generate tasks
-        tasks = []
-        for host_id, address in host_address_list.items():
-            tasks.append({
-                'host_id': host_id,
-                'info_type': [],
-                'address': address,
-                "headers": {'content-type': 'application/json',
-                            'access_token': user.token}
-            })
+        tasks = [(host, []) for host in host_list]
         # execute multi threading
-        multi_thread_handler = MultiThreadHandler(
-            self.get_host_info, tasks, None)
+        multi_thread_handler = MultiThreadHandler(lambda p: self.get_host_info(*p), tasks, None)
         multi_thread_handler.create_thread()
         result_list = multi_thread_handler.get_result()
 
         # analyse execute result and generate target data format
-        host_infos = self.analyse_query_result(
-            params.get('host_list'), result_list)
+        host_infos = self.analyse_query_result(params.get('host_list'), result_list)
         return self.response(code=state.SUCCEED, data={"host_infos": host_infos})
 
 
@@ -488,12 +412,12 @@ class AddHost(BaseResponse):
         return self.response(code=self.proxy.add_host(host))
 
 
-def save_ssh_public_key_to_client(hostname: str, port: int, username: str, password: str) -> tuple:
+def save_ssh_public_key_to_client(ip: str, port: int, username: str, password: str) -> tuple:
     """
     generate RSA key pair,save public key to the target host machine
 
     Args:
-        hostname(str):   host ip address
+        ip(str):   host ip address
         username(str):   remote login user
         port(int):   remote login port
         password(str)
@@ -507,9 +431,9 @@ def save_ssh_public_key_to_client(hostname: str, port: int, username: str, passw
               f"&& echo {public_key!r} >> ~/.ssh/authorized_keys" \
               f"&& chmod 600 ~/.ssh/authorized_keys"
     try:
-        client = SSH(hostname=hostname, username=username,
+        client = SSH(ip=ip, username=username,
                      port=port, password=password)
-        _, _, stderr = client.execute_command(command)
+        status, _, stderr = client.execute_command(command)
     except socket.error as error:
         LOGGER.error(error)
         return state.SSH_CONNECTION_ERROR, ""
@@ -517,10 +441,13 @@ def save_ssh_public_key_to_client(hostname: str, port: int, username: str, passw
         LOGGER.error(error)
         return state.SSH_AUTHENTICATION_ERROR, ""
 
-    if stderr.read().decode("utf8"):
-        LOGGER.error(f"save public key on host failed, host ip is {hostname}!")
+    if status != 0:
+        LOGGER.error(stderr)
+        LOGGER.error(f"save public key on host failed, host ip is {ip}!")
+        client.close()
         return state.EXECUTE_COMMAND_ERROR, ""
 
+    client.close()
     return state.SUCCEED, private_key
 
 
@@ -538,14 +465,15 @@ class GetHostTemplateFile(BaseResponse):
             BytesIO
         """
         args, verify_code = self.verify_request()
-        if verify_code != SUCCEED:
-            return self.response(code=TOKEN_ERROR)
+        if verify_code != state.SUCCEED:
+            return self.response(code=state.TOKEN_ERROR)
 
         file = BytesIO()
         file.write(HOST_TEMPLATE_FILE_CONTENT.encode('utf-8'))
         file.seek(0)
 
-        return send_file(file, as_attachment=True, attachment_filename="template.csv")
+        return send_file(file, as_attachment=True, attachment_filename="template.csv",
+                         mimetype="application/octet-stream")
 
 
 class AddHostBatch(BaseResponse):
@@ -573,7 +501,7 @@ class AddHostBatch(BaseResponse):
 
         # Connect database
         proxy = HostProxy()
-        if not proxy.connect(SESSION):
+        if not proxy.connect(g.session):
             LOGGER.error("connect to database error")
             self.update_add_result(
                 args["host_list"],

@@ -294,7 +294,7 @@ class HostProxy(MysqlProxy):
 
         return result
 
-    def get_host_info(self, data):
+    def get_host_info(self, data, is_collect_file: bool = False):
         """
         Get host basic info according to host id from table
 
@@ -304,21 +304,19 @@ class HostProxy(MysqlProxy):
                     "username": "admin"
                     "host_list": ["id1", "id2"]
                 }
+            is_collect_file (bool)
 
         Returns:
             int: status code
             dict: query result
         """
-        username = data['username']
+        username = data.get('username')
         host_list = data.get('host_list')
-        temp_res = []
-        result = {}
-        result['host_infos'] = temp_res
+        result = []
         query_fields = [Host.host_id, Host.host_name, Host.host_ip, Host.os_version, Host.ssh_port,
-                        Host.host_group_name, Host.management, Host.status, Host.scene]
-        filters = {
-            Host.user == username
-        }
+                        Host.host_group_name, Host.management, Host.status, Host.scene, Host.pkey,
+                        Host.ssh_user]
+        filters = {Host.user == username} if not is_collect_file else set()
         if host_list:
             filters.add(Host.host_id.in_(host_list))
         try:
@@ -334,8 +332,10 @@ class HostProxy(MysqlProxy):
                     "scene": host.scene,
                     "os_version": host.os_version,
                     "ssh_port": host.ssh_port,
+                    "pkey": host.pkey,
+                    "ssh_user": host.ssh_user
                 }
-                temp_res.append(host_info)
+                result.append(host_info)
             self.session.commit()
             LOGGER.debug("query host %s basic info succeed", host_list)
             return SUCCEED, result
