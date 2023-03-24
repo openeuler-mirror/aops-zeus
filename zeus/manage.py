@@ -26,7 +26,7 @@ from vulcanus.log.log import LOGGER
 from vulcanus.restful.resp.state import SUCCEED
 from vulcanus.manage import init_app
 from vulcanus.database.proxy import RedisProxy
-from zeus.database import ENGINE
+from zeus.database import ENGINE, session_maker
 from zeus.database.proxy.account import UserProxy
 from zeus.conf import configuration
 
@@ -41,7 +41,7 @@ def init_user():
         raise sqlalchemy.exc.SQLAlchemyError("create tables fail")
 
     proxy = UserProxy()
-    if not proxy.connect(g.session):
+    if not proxy.connect(session_maker()):
         raise ValueError("connect to mysql fail")
 
     data = {
@@ -80,6 +80,8 @@ def init_redis_connect():
 
 def main():
 
+    init_database()
+    init_redis_connect()
     app, config = init_app('zeus')
 
     @app.before_request
@@ -91,16 +93,13 @@ def main():
         g.session.remove()
         return response
 
-    @app.before_first_request
-    def init_service():
-        g.session = scoped_session(sessionmaker(bind=ENGINE))
-        init_database()
-        init_redis_connect()
+    return app, config
 
-    ip = config.get('IP')
-    port = config.get('PORT')
-    app.run(host=ip, port=port)
+
+app, config = main()
 
 
 if __name__ == "__main__":
-    main()
+    ip = config.get('IP')
+    port = config.get('PORT')
+    app.run(host=ip, port=port)

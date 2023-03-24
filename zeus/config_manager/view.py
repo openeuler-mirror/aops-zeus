@@ -16,17 +16,16 @@ Author:
 Description: Restful APIs for host
 """
 import json
-from typing import Dict, List
-
-from flask import g
+from typing import List, Dict
 
 from vulcanus.multi_thread_handler import MultiThreadHandler
 from vulcanus.restful.resp import state
 from vulcanus.restful.response import BaseResponse
 from zeus.conf.constant import CERES_COLLECT_FILE
-from zeus.database.proxy.host import HostProxy
 from zeus.function.model import ClientConnectArgs
 from zeus.function.verify.config import CollectConfigSchema
+from zeus.database import session_maker
+from zeus.database.proxy.host import HostProxy
 from zeus.host_manager.ssh import execute_command_and_parse_its_result
 
 
@@ -202,7 +201,7 @@ class CollectConfig(BaseResponse):
 
         # Query host address from database
         proxy = HostProxy()
-        if proxy.connect(g.session) is None:
+        if not proxy.connect(session_maker()):
             file_content = self.convert_host_id_to_failed_data_format(
                 list(host_id_with_config_file.keys()), host_id_with_config_file)
             return self.response(code=state.DATABASE_CONNECT_ERROR, data={"resp": file_content})
@@ -214,11 +213,14 @@ class CollectConfig(BaseResponse):
                 list(host_id_with_config_file.keys()), host_id_with_config_file)
             return self.response(code=status, data={"resp": file_content})
         # Get file content
-        tasks = [(host, host_id_with_config_file[host["host_id"]]) for host in host_list]
-        multi_thread = MultiThreadHandler(lambda data: self.get_file_content(*data), tasks, None)
+        tasks = [(host, host_id_with_config_file[host["host_id"]])
+                 for host in host_list]
+        multi_thread = MultiThreadHandler(
+            lambda data: self.get_file_content(*data), tasks, None)
         multi_thread.create_thread()
 
         return self.response(
             state.SUCCEED, None,
-            self.generate_target_data_format(multi_thread.get_result(), host_id_with_config_file)
+            self.generate_target_data_format(
+                multi_thread.get_result(), host_id_with_config_file)
         )

@@ -11,14 +11,15 @@
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
 from typing import Tuple
+from flask import json, Response, request
 
-from flask import Response, json, request, g
+from flask import Response, json, request
 
-from vulcanus.database.helper import operate, judge_return_code
+from vulcanus.database.helper import judge_return_code
 from vulcanus.log.log import LOGGER
 from vulcanus.restful.resp import state
 from vulcanus.restful.response import BaseResponse
-from zeus.account_manager.cache import UserCache
+from zeus.database import session_maker
 from zeus.database.proxy.host import HostProxy
 from zeus.function.model import ClientConnectArgs
 from zeus.function.verify.agent import (
@@ -53,7 +54,7 @@ class AgentPluginInfo(BaseResponse):
             Response: response body
         """
         proxy = HostProxy()
-        if not proxy.connect(g.session):
+        if not proxy.connect(session_maker()):
             return self.response(state.DATABASE_CONNECT_ERROR)
         status, host = proxy.get_host_info(
             {"username": params["username"], "host_list": [params["host_id"]]})
@@ -133,7 +134,7 @@ class GetHostScene(BaseResponse):
             dict: response body
         """
         proxy = HostProxy()
-        if not proxy.connect(g.session):
+        if not proxy.connect(session_maker()):
             return self.response(state.DATABASE_CONNECT_ERROR)
 
         status, host_list = proxy.get_host_info(
@@ -147,16 +148,20 @@ class GetHostScene(BaseResponse):
         host_scene_info = self.__get_scene_data_from_ceres(host_list[0])
 
         # get scene and recommend collect items from check
-        check_url_get_scene, check_header = self.__get_check_url(CHECK_IDENTIFY_SCENE)
+        check_url_get_scene, check_header = self.__get_check_url(
+            CHECK_IDENTIFY_SCENE)
         check_header['access_token'] = request.headers.get("access_token")
-        response = self.get_response("post", check_url_get_scene, host_scene_info, check_header)
+        response = self.get_response(
+            "post", check_url_get_scene, host_scene_info, check_header)
         status_code = response.get("label")
         if status_code != state.SUCCEED:
-            LOGGER.error("Get scene of host %s from check failed.", params["host_id"])
+            LOGGER.error("Get scene of host %s from check failed.",
+                         params["host_id"])
             return self.response(code=status_code)
 
         scene_ret = response.get("data", dict()).get("scene_name")
-        status_code = proxy.save_scene({"host_id": params["host_id"], "scene": scene_ret})
+        status_code = proxy.save_scene(
+            {"host_id": params["host_id"], "scene": scene_ret})
         if status_code != state.SUCCEED:
             LOGGER.error("save scene of host %s failed.", params["host_id"])
             return self.response(code=status_code)
@@ -186,7 +191,7 @@ class SetAgentPluginStatus(BaseResponse):
         """
         ret = {"failed_list": [], "succeed_list": []}
         proxy = HostProxy()
-        if not proxy.connect(g.session):
+        if not proxy.connect(session_maker()):
             return self.response(state.DATABASE_CONNECT_ERROR)
 
         status, host = proxy.get_host_info(
@@ -234,7 +239,7 @@ class SetAgentMetricStatus(BaseResponse):
             dict: response body
         """
         proxy = HostProxy()
-        if not proxy.connect(g.session):
+        if not proxy.connect(session_maker()):
             return self.response(state.DATABASE_CONNECT_ERROR)
 
         status, host = proxy.get_host_info(
@@ -245,7 +250,8 @@ class SetAgentMetricStatus(BaseResponse):
         if len(host) == 0:
             return self.response(state.NO_DATA)
 
-        command = CERES_COLLECT_ITEMS_CHANGE % json.dumps(params.get("plugins"))
+        command = CERES_COLLECT_ITEMS_CHANGE % json.dumps(
+            params.get("plugins"))
         status, result = execute_command_and_parse_its_result(
             ClientConnectArgs(host[0].get("host_ip"), host[0].get("ssh_port"),
                               host[0].get("ssh_user"), host[0].get("pkey")), command)
