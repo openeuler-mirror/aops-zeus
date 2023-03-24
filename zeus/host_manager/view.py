@@ -21,7 +21,7 @@ from io import BytesIO
 from typing import Iterable, List, Tuple, Union
 
 import paramiko
-from flask import g, request, send_file
+from flask import request, send_file
 from marshmallow import Schema
 from marshmallow.fields import Boolean
 
@@ -31,6 +31,8 @@ from vulcanus.multi_thread_handler import MultiThreadHandler
 from vulcanus.restful.resp import state
 from vulcanus.restful.response import BaseResponse
 from vulcanus.restful.serialize.validate import validate
+from zeus.database import session_maker
+from zeus.database.proxy.host import HostProxy
 from zeus.conf.constant import (
     CERES_HOST_INFO,
     HOST_TEMPLATE_FILE_CONTENT,
@@ -292,7 +294,7 @@ class GetHostInfo(BaseResponse):
 
         # query host info from database
         proxy = HostProxy()
-        if not proxy.connect(g.session):
+        if not proxy.connect(session_maker()):
             LOGGER.error("connect to database error")
             return self.response(code=state.DATABASE_CONNECT_ERROR)
         status, host_list = proxy.get_host_info(params)
@@ -307,12 +309,14 @@ class GetHostInfo(BaseResponse):
         # generate tasks
         tasks = [(host, []) for host in host_list]
         # execute multi threading
-        multi_thread_handler = MultiThreadHandler(lambda p: self.get_host_info(*p), tasks, None)
+        multi_thread_handler = MultiThreadHandler(
+            lambda p: self.get_host_info(*p), tasks, None)
         multi_thread_handler.create_thread()
         result_list = multi_thread_handler.get_result()
 
         # analyse execute result and generate target data format
-        host_infos = self.analyse_query_result(params.get('host_list'), result_list)
+        host_infos = self.analyse_query_result(
+            params.get('host_list'), result_list)
         return self.response(code=state.SUCCEED, data={"host_infos": host_infos})
 
 
@@ -395,7 +399,7 @@ class AddHost(BaseResponse):
             dict: response body
         """
         self.proxy = HostProxy()
-        if not self.proxy.connect(g.session):
+        if not self.proxy.connect(session_maker()):
             LOGGER.error("connect to database error")
             return self.response(code=state.DATABASE_CONNECT_ERROR)
 
@@ -404,7 +408,8 @@ class AddHost(BaseResponse):
             return self.response(code=status)
 
         status, private_key = save_ssh_public_key_to_client(
-            params.get('host_ip'), params.get('ssh_port'), params.get('ssh_user'),
+            params.get('host_ip'), params.get(
+                'ssh_port'), params.get('ssh_user'),
             params.get('password'))
         if status == state.SUCCEED:
             host.pkey = private_key
@@ -501,7 +506,7 @@ class AddHostBatch(BaseResponse):
 
         # Connect database
         proxy = HostProxy()
-        if not proxy.connect(g.session):
+        if not proxy.connect(session_maker()):
             LOGGER.error("connect to database error")
             self.update_add_result(
                 args["host_list"],
@@ -509,7 +514,8 @@ class AddHostBatch(BaseResponse):
             return self.response(code=state.DATABASE_CONNECT_ERROR, data=self.add_result)
 
         # Query hosts with groups, validate hostname or host address
-        status, hosts, groups = proxy.get_hosts_and_groups(args.get('username'))
+        status, hosts, groups = proxy.get_hosts_and_groups(
+            args.get('username'))
         if status != state.SUCCEED:
             self.update_add_result(
                 args["host_list"],
@@ -580,7 +586,8 @@ class AddHostBatch(BaseResponse):
 
         for host_info in data["host_list"]:
             if host_info.get("host_group_name") not in group_id_info:
-                LOGGER.warning(f"invalid host group when add host {host_info['host_name']}")
+                LOGGER.warning(
+                    f"invalid host group when add host {host_info['host_name']}")
                 self.update_add_result(
                     [host_info], {"result": self.add_failed, "reason": "invalid host group name"})
                 continue
@@ -675,7 +682,8 @@ class AddHostBatch(BaseResponse):
 
         if errors:
             LOGGER.error(errors)
-            self.parse_validate_error(args.get("host_list"), errors.get("host_list"))
+            self.parse_validate_error(
+                args.get("host_list"), errors.get("host_list"))
             return state.PARAM_ERROR, {}
 
         if self.validate_host_repeated(args.get("host_list")):
@@ -747,11 +755,13 @@ class AddHostBatch(BaseResponse):
             host_ssh_address = f'{host["host_ip"]}:{host["ssh_port"]}'
             if host["host_name"] in host_name_dict:
                 errors.update({
-                    host_name_dict[host["host_name"]]: "there is a duplicate host name "
-                                                       "or host address!"
+                    host_name_dict[host["host_name"]
+                                   ]: "there is a duplicate host name "
+                    "or host address!"
                 })
 
-                errors.update({index: "there is a duplicate host name or host address!"})
+                errors.update(
+                    {index: "there is a duplicate host name or host address!"})
                 host_ssh_address_dict.update({host_ssh_address: index})
             elif host_ssh_address in host_ssh_address_dict:
                 errors.update({
@@ -759,7 +769,8 @@ class AddHostBatch(BaseResponse):
                                                              "or host address!"
                 })
 
-                errors.update({index: "there is a duplicate host name or host address!"})
+                errors.update(
+                    {index: "there is a duplicate host name or host address!"})
                 host_name_dict.update({host["host_name"]: index})
             else:
                 host_name_dict.update({host["host_name"]: index})

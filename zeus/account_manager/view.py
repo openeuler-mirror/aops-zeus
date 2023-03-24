@@ -15,7 +15,6 @@ Time:
 Author:
 Description: Restful APIs for user
 """
-from flask import g
 from vulcanus.restful.response import BaseResponse
 from vulcanus.database.proxy import RedisProxy
 from vulcanus.token import decode_token

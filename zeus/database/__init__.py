@@ -15,6 +15,9 @@ Time:
 Author:
 Description:
 """
+from flask import g
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.scoping import scoped_session
 from vulcanus.database.helper import make_mysql_engine_url
 from vulcanus.database.helper import create_database_engine
 from zeus.conf import configuration
@@ -25,3 +28,10 @@ ENGINE = create_database_engine(engine_url,
                                 configuration.mysql.get(
                                     "POOL_SIZE"),  # pylint: disable=E1101
                                 configuration.mysql.get("POOL_RECYCLE"))  # pylint: disable=E1101
+
+
+def session_maker():
+    """
+    The session object of the database link
+    """
+    return scoped_session(sessionmaker(bind=ENGINE))
