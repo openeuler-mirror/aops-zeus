@@ -1,5 +1,5 @@
 Name:		aops-zeus
-Version:	v2.0.0
+Version:	v1.2.0
 Release:	1
 Summary:	A host and user manager service which is the foundation of aops.
 License:	MulanPSL2
@@ -8,7 +8,7 @@ Source0:	%{name}-%{version}.tar.gz
 
 
 BuildRequires:  python3-setuptools
-Requires:   aops-vulcanus = %{version}-%{release}
+Requires:   aops-vulcanus >= v1.0.0
 Requires:   python3-marshmallow >= 3.13.0 python3-flask python3-flask-restful
 Requires:   python3-requests python3-uWSGI python3-sqlalchemy python3-werkzeug python3-PyMySQL
 Requires:   python3-paramiko python3-redis
@@ -42,5 +42,25 @@ A host and user manager service which is the foundation of aops.
 
 
 %changelog
-* Sun Oct 9 2022 zhuyuncheng<zhuyuncheng@huawei.com> - v2.0.0-1
+* Fri Mar 24 2023 wenixn<shusheng.wen@outlook.com> - v1.2.0-1
+- update the call method of ceres; add function how to add host from web
+
+* Tue Dec 27 2022 wenxin<shusheng.wen@outlook.com> - v1.1.1-4
+- Modify uwsgi configuration file fields
+
+* Wed Dec 21 2022 gongzhengtang<gong_zhengtang@163.com> - v1.1.1-3
+- disabled mysql installed checked
+
+* Tue Dec 06 2022 wenxin<shusheng.wen@outlook.com> - v1.1.1-2
+- update delete host, remove the judgment about the workflow
+
+* Fri Dec 02 2022 wenxin<shusheng.wen@outlook.com> - v1.1.1-1
+- set timeout for cve scan,cve fix ,repo set
+
+* Fri Nov 25 2022 wenxin<shusheng.wen@outlook.com> - v1.1.0-1
+- remove test cases that use the responses module
+- remove check_es_installed
+- add cve cve fix, add cve cve scan
+
+* Tue Nov 22 2022 zhuyuncheng<zhuyuncheng@huawei.com> - v1.0.0-1
 - Package init
