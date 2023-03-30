@@ -18,8 +18,9 @@ setup(
         'SQLAlchemy',
         'Werkzeug',
         'paramiko',
-        "redis"
-        ],
+        "redis",
+        'prometheus_api_client'
+    ],
     author='cmd-lsw-yyy-zyc',
     data_files=[
         ('/etc/aops', ['conf/zeus.ini']),
