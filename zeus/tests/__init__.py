@@ -10,3 +10,32 @@
 # PURPOSE.
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
+from unittest import TestCase
+
+from flask import Flask, g
+from sqlalchemy.orm import scoping, sessionmaker
+
+import zeus
+
+
+class BaseTestCase(TestCase):
+
+    @staticmethod
+    def create_app():
+        app = Flask("test")
+
+        @app.before_request
+        def create_dbsession():
+            g.session = scoping.scoped_session(sessionmaker())
+
+        @app.teardown_request
+        def remove_dbsession(response):
+            g.session.remove()
+            return response
+
+        for blue, api in zeus.BLUE_POINT:
+            api.init_app(app)
+            app.register_blueprint(blue)
+
+        app.testing = True
+        return app.test_client()

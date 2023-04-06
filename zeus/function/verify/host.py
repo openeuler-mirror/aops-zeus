@@ -113,3 +113,16 @@ class AddHostBatchSchema(Schema):
     """
     host_list = fields.List(fields.Nested(AddHostSchema(), required=True), required=True,
                             validate=lambda s: len(s) > 0)
+
+
+class UpdateHostSchema(Schema):
+    """
+    validators for parameter of /manage/host/update
+    """
+    host_id = fields.Integer(required=True, validate=lambda s: s > 0)
+    ssh_user = fields.String(required=False, validate=lambda s: len(s) > 0)
+    password = fields.String(required=False, validate=lambda s: len(s) > 0)
+    ssh_port = fields.Integer(required=False, validate=lambda s: 65535 >= s > 0)
+    host_name = fields.String(required=False, validate=lambda s: len(s) > 0)
+    host_group_name = fields.String(required=False, validate=lambda s: len(s) > 0)
+    management = fields.Boolean(required=False)

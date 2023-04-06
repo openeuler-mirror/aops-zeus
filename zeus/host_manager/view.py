@@ -24,6 +24,7 @@ import paramiko
 from flask import request, send_file
 from marshmallow import Schema
 from marshmallow.fields import Boolean
+from sqlalchemy.orm.collections import InstrumentedList
 
 from vulcanus.database.table import Host
 from vulcanus.log.log import LOGGER
@@ -32,7 +33,6 @@ from vulcanus.restful.resp import state
 from vulcanus.restful.response import BaseResponse
 from vulcanus.restful.serialize.validate import validate
 from zeus.database import session_maker
-from zeus.database.proxy.host import HostProxy
 from zeus.conf.constant import (
     CERES_HOST_INFO,
     HOST_TEMPLATE_FILE_CONTENT,
@@ -48,7 +48,8 @@ from zeus.function.verify.host import (
     DeleteHostSchema,
     GetHostGroupSchema,
     GetHostInfoSchema,
-    GetHostSchema
+    GetHostSchema,
+    UpdateHostSchema
 )
 from zeus.host_manager.ssh import SSH, execute_command_and_parse_its_result, generate_key
 
@@ -105,6 +106,7 @@ class GetHostCount(BaseResponse):
     Interface for get host count.
     Restful API: POST
     """
+
     @BaseResponse.handle(proxy=HostProxy())
     def post(self, callback: HostProxy, **params):
         """
@@ -739,7 +741,7 @@ class AddHostBatch(BaseResponse):
 
     def validate_host_repeated(self, host_list: list) -> bool:
         """
-        Determine  host name ro ssh host address  is duplicated
+        Determine host name or ssh host address is duplicated
 
         Args:
             host_list(list): host info list
@@ -780,3 +782,117 @@ class AddHostBatch(BaseResponse):
             self.parse_validate_error(host_list, errors)
             return True
         return False
+
+
+class UpdateHost(BaseResponse):
+    """
+        update host info
+    """
+
+    def _save_ssh_key(self, params: dict) -> None:
+        """
+        generate Rsa key-pair and save public key on host
+
+        Args:
+            params(dict): update host info
+
+        Returns:
+            No return
+
+        """
+        ssh_user = params.get("ssh_user") or self.host.ssh_user
+        ssh_port = params.get("ssh_port") or self.host.ssh_port
+        status, private_key = save_ssh_public_key_to_client(
+            self.host.host_ip, ssh_port, ssh_user, params.pop("password")
+        )
+        params.update({
+            "ssh_user": ssh_user,
+            "ssh_port": ssh_port,
+            "pkey": private_key or None,
+            "status": HostStatus.ONLINE if status == state.SUCCEED else HostStatus.UNESTABLISHED
+        })
+
+    def _validate_host_exist(self, host_id: int, host_name: str,
+                             host_infos: InstrumentedList) -> tuple:
+        """
+        generate ssh address list, determines whether the host exists and
+        determines whether the host name is repeated in database
+
+        Args:
+            host_id(int): host_id
+            host_name(str): update host name
+            host_infos(InstrumentedList): all hosts
+
+        Returns:
+            status, error message
+
+        """
+        key = False
+        self.host_ssh_address = []
+        for host_info in host_infos:
+            self.host_ssh_address.append(f"{host_info.host_ip}:{host_info.ssh_port}")
+            if host_id == host_info.host_id:
+                self.host = host_info
+                key = True
+            if host_name == host_info.host_name:
+                return state.PARAM_ERROR, "there is a duplicate host name in database!"
+
+        if not key:
+            return state.NO_DATA, f"host id {host_id} is not in database!"
+
+        return state.SUCCEED, ""
+
+    @BaseResponse.handle(schema=UpdateHostSchema, proxy=HostProxy(), debug=False)
+    def post(self, callback: HostProxy, **params: dict):
+        """
+        update host info
+
+        Args:
+            callback(MysqlProxy): HostProxy
+            **params(dict): host info which needs to update, e.g
+                {
+                    host_id: host_id,
+                    host_name: host_name,
+                    host_group_name: host_group_name,
+                    ssh_user: root,
+                    ssh_port: 22,
+                    password: pwd,
+                    management: True
+                }
+
+
+        Returns:
+            Response
+        """
+        status, host_infos, host_group_infos = callback.get_hosts_and_groups(params.pop("username"))
+        if status != state.SUCCEED:
+            return self.response(status)
+
+        status, message = self._validate_host_exist(
+            params.get("host_id"), params.get("host_name"), host_infos)
+        if status != state.SUCCEED:
+            return self.response(code=status, message=message)
+
+        if params.get("host_group_name"):
+            for group in host_group_infos:
+                if params.get("host_group_name") == group.host_group_name:
+                    params.update({"host_group_id": group.host_group_id})
+            if params.get("host_group_id") is None:
+                return self.response(
+                    code=state.PARAM_ERROR,
+                    message=f"there is no host group name {params.get('host_group_name')} "
+                            f"in database when update host {self.host.host_id}!"
+                )
+
+        if params.get("ssh_port") and \
+                f"{self.host.host_ip}:{params.get('ssh_port')}" in self.host_ssh_address:
+            LOGGER.warning(f"there is a duplicate host address in database "
+                           f"when update host {self.host.host_id}!")
+            return self.response(
+                code=state.PARAM_ERROR,
+                message="there is a duplicate host ssh address in database!"
+            )
+
+        if params.get("password"):
+            self._save_ssh_key(params)
+        return self.response(callback.update_host_info(params.pop("host_id"), params))
