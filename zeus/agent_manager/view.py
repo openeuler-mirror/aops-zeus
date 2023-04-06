@@ -122,7 +122,9 @@ class GetHostScene(BaseResponse):
         status, collect_items = execute_command_and_parse_its_result(client_connect_args,
                                                                      CERES_PLUGIN_INFO)
         if status == state.SUCCEED:
-            host_scene_info["collect_items"] = json.loads(collect_items)
+            for plugin_data in json.loads(collect_items):
+                host_scene_info["collect_items"][plugin_data.get("plugin_name")] = plugin_data.get(
+                    "collect_items")
         return host_scene_info
 
     @BaseResponse.handle(schema=GetHostSceneSchema)
