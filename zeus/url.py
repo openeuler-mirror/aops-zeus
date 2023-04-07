@@ -42,7 +42,8 @@ from vulcanus.conf.constant import (
     USER_LOGIN,
     QUERY_METRIC_NAMES,
     QUERY_METRIC_DATA,
-    QUERY_METRIC_LIST
+    QUERY_METRIC_LIST,
+    REFRESH_TOKEN
 )
 from zeus.account_manager import view as account_view
 from zeus.agent_manager import view as agent_view
@@ -60,7 +61,8 @@ SPECIFIC_URLS = {
         (account_view.AddUser, ADD_USER),
         (account_view.GiteeAuthLogin, GITEE_AUTH_LOGIN),
         (account_view.AuthRedirectUrl, AUTH_REDIRECT_URL),
-        (account_view.BindAuthAccount, BIND_AUTH_ACCOUNT)
+        (account_view.BindAuthAccount, BIND_AUTH_ACCOUNT),
+        (account_view.RefreshToken, REFRESH_TOKEN),
     ],
     "HOST_URLS": [
         (host_view.AddHost, ADD_HOST),

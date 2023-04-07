@@ -63,3 +63,10 @@ class GiteeAuthLoginSchema(Schema):
     validators for parameter of /manage/account/gitee/login
     """
     code = fields.String(required=True, validate=lambda s: len(s) > 0)
+
+
+class RefreshTokenSchema(Schema):
+    """
+    validators for parameter of /manage/account/refreshtoken
+    """
+    refresh_token = fields.String(required=True, validate=lambda s: len(s) > 0)

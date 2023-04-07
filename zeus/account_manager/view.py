@@ -17,18 +17,19 @@ Description: Restful APIs for user
 """
 from vulcanus.restful.response import BaseResponse
 from vulcanus.database.proxy import RedisProxy
-from vulcanus.token import decode_token
+from vulcanus.conf.constant import REFRESH_TOKEN_EXP
+from vulcanus.log.log import LOGGER
+from vulcanus.token import decode_token, generate_token
 from vulcanus.restful.resp import state
 from zeus.account_manager.cache import UserCache
-from zeus.account_manager.key import HostKey
 from zeus.database.proxy.account import UserProxy
 from zeus.function.verify.acount import (
     BindAuthAccountSchema,
     GiteeAuthLoginSchema,
     LoginSchema,
-    CertificateSchema,
     ChangePasswordSchema,
-    AddUserSchema
+    AddUserSchema,
+    RefreshTokenSchema
 )
 
 
@@ -163,3 +164,36 @@ class ChangePassword(BaseResponse):
         if status_code == state.SUCCEED:
             UserCache.update(user.username, user)
         return self.response(code=status_code)
+
+
+class RefreshToken(BaseResponse):
+    """
+    Interface for refresh token.
+    Restful API: post
+    """
+
+    @BaseResponse.handle(schema=RefreshTokenSchema, token=False)
+    def post(self, **params):
+        """
+        Refresh token
+
+        Returns:
+            dict: response body
+        """
+        status = self.verify_token(params.get("refresh_token"), params)
+        if status != state.SUCCEED:
+            return self.response(code=status, message="token refreshing failure.")
+        try:
+            username = decode_token(params.get("refresh_token"))["key"]
+            token = generate_token(unique_iden=username)
+            refresh_token = generate_token(
+                unique_iden=username, minutes=REFRESH_TOKEN_EXP)
+        except ValueError:
+            LOGGER.error("Token generation failed,token refreshing failure.")
+            return self.response(code=state.GENERATION_TOKEN_ERROR)
+
+        RedisProxy.redis_connect.set("token_" + username, token)
+        RedisProxy.redis_connect.set(
+            "refresh_token_" + username, refresh_token)
+
+        return self.response(code=state.SUCCEED, data=dict(token=token, refresh_token=refresh_token))
