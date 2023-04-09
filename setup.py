@@ -17,7 +17,7 @@ setup(
         'requests',
         'SQLAlchemy',
         'Werkzeug',
-        'paramiko',
+        'paramiko>=2.11.0',
         "redis",
         'prometheus_api_client'
     ],
