@@ -31,6 +31,7 @@ from vulcanus.restful.resp.state import (
     DATABASE_DELETE_ERROR,
     DATABASE_INSERT_ERROR,
     DATABASE_QUERY_ERROR,
+    DATABASE_UPDATE_ERROR,
     DATA_DEPENDENCY_ERROR,
     DATA_EXIST,
     NO_DATA,
@@ -753,3 +754,28 @@ class HostProxy(MysqlProxy):
             LOGGER.error(error)
             self.session.rollback()
             return DATABASE_INSERT_ERROR
+
+    def update_host_info(self, host_id: str, update_info: dict) -> str:
+        """
+        update host info to host table
+        
+        Args:
+            update_info(dict): e.g
+                {
+                    "host_id": host_id,
+                    "host_name": "new_host_name",
+                    "management": True,
+                    ...
+                }
+        
+        Returns:
+            str: SUCCEED or DATABASE_UPDATE_ERROR
+        """
+        try:
+            self.session.query(Host).filter(Host.host_id == host_id).update(update_info)
+            self.session.commit()
+            return SUCCEED
+        except sqlalchemy.exc.SQLAlchemyError as error:
+            LOGGER.error(error)
+            self.session.rollback()
+            return DATABASE_UPDATE_ERROR
