@@ -229,6 +229,8 @@ class HostProxy(MysqlProxy):
             filters.add(Host.host_group_name.in_(host_group_list))
         if management is not None:
             filters.add(Host.management == management)
+        if data.get('status'):
+            filters.add(Host.status.in_(data.get('status')))
 
         return filters
 

@@ -49,6 +49,7 @@ class GetHostSchema(Schema):
     """
     host_group_list = fields.List(fields.String(), required=True)
     management = fields.Boolean(required=False)
+    status = fields.List(fields.Integer(validate=lambda s: s >= 0), required=False)
     sort = fields.String(required=False, validate=validate.OneOf(
         ["host_name", "host_group_name", ""]))
     direction = fields.String(
