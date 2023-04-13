@@ -47,6 +47,7 @@ class AddUser(BaseResponse):
         Args:
             username (str)
             password (str)
+            email (str)
 
         Returns:
             dict: response body
