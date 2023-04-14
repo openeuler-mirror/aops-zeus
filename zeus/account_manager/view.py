@@ -15,13 +15,14 @@ Time:
 Author:
 Description: Restful APIs for user
 """
-from vulcanus.restful.response import BaseResponse
-from vulcanus.database.proxy import RedisProxy
 from vulcanus.conf.constant import REFRESH_TOKEN_EXP
+from vulcanus.database.proxy import RedisProxy
 from vulcanus.log.log import LOGGER
-from vulcanus.token import decode_token, generate_token
 from vulcanus.restful.resp import state
+from vulcanus.restful.response import BaseResponse
+from vulcanus.token import decode_token, generate_token
 from zeus.account_manager.cache import UserCache
+from zeus.conf import configuration
 from zeus.database.proxy.account import UserProxy
 from zeus.function.verify.acount import (
     BindAuthAccountSchema,
@@ -39,7 +40,7 @@ class AddUser(BaseResponse):
     Restful API: post
     """
 
-    @BaseResponse.handle(schema=AddUserSchema, token=False, proxy=UserProxy())
+    @BaseResponse.handle(schema=AddUserSchema, token=False, proxy=UserProxy, config=configuration)
     def post(self, callback: UserProxy, **params):
         """
         Add user
@@ -62,7 +63,7 @@ class Login(BaseResponse):
     Restful API: post
     """
 
-    @BaseResponse.handle(schema=LoginSchema, token=False, proxy=UserProxy())
+    @BaseResponse.handle(schema=LoginSchema, token=False, proxy=UserProxy, config=configuration)
     def post(self, callback: UserProxy, **params):
         """
         User login
@@ -104,7 +105,7 @@ class AuthRedirectUrl(BaseResponse):
             }
 
         """
-        proxy = UserProxy()
+        proxy = UserProxy(configuration)
         redirect_url = proxy.auth_redirect_url()
         return self.response(code=state.SUCCEED, data=redirect_url)
 
@@ -115,8 +116,8 @@ class GiteeAuthLogin(BaseResponse):
     Restful API: post
     """
 
-    @BaseResponse.handle(schema=GiteeAuthLoginSchema, token=False, proxy=UserProxy())
-    def get(self, callback: UserProxy, **params):
+    @BaseResponse.handle(schema=GiteeAuthLoginSchema, token=False, proxy=UserProxy, config=configuration)
+    def get(self, callback: UserProxy, **params:dict):
 
         status_code, auth_result = callback.gitee_auth_login(
             code=params["code"])
@@ -136,8 +137,8 @@ class BindAuthAccount(BaseResponse):
     Restful API: post
     """
 
-    @BaseResponse.handle(schema=BindAuthAccountSchema, token=False, proxy=UserProxy())
-    def post(self, callback: UserProxy, **params):
+    @BaseResponse.handle(schema=BindAuthAccountSchema, token=False, proxy=UserProxy, config=configuration)
+    def post(self, callback: UserProxy, **params:dict):
 
         status_code, auth_result = callback.bind_auth_account(
             auth_account=params["auth_account"], username=params["username"], password=params["password"])
@@ -150,8 +151,8 @@ class ChangePassword(BaseResponse):
     Restful API: post
     """
 
-    @BaseResponse.handle(schema=ChangePasswordSchema, proxy=UserProxy())
-    def post(self, callback: UserProxy, **params):
+    @BaseResponse.handle(schema=ChangePasswordSchema, proxy=UserProxy, config=configuration)
+    def post(self, callback: UserProxy, **params:dict):
         """
         Change password
 

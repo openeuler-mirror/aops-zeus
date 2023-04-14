@@ -21,11 +21,11 @@ from typing import List, Dict
 from vulcanus.multi_thread_handler import MultiThreadHandler
 from vulcanus.restful.resp import state
 from vulcanus.restful.response import BaseResponse
+from zeus.conf import configuration
 from zeus.conf.constant import CERES_COLLECT_FILE
+from zeus.database.proxy.host import HostProxy
 from zeus.function.model import ClientConnectArgs
 from zeus.function.verify.config import CollectConfigSchema
-from zeus.database import session_maker
-from zeus.database.proxy.host import HostProxy
 from zeus.host_manager.ssh import execute_command_and_parse_its_result
 
 
@@ -200,8 +200,8 @@ class CollectConfig(BaseResponse):
                 'host_id')] = host.get('config_list')
 
         # Query host address from database
-        proxy = HostProxy()
-        if not proxy.connect(session_maker()):
+        proxy = HostProxy(configuration)
+        if not proxy.connect():
             file_content = self.convert_host_id_to_failed_data_format(
                 list(host_id_with_config_file.keys()), host_id_with_config_file)
             return self.response(code=state.DATABASE_CONNECT_ERROR, data={"resp": file_content})

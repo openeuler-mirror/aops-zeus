@@ -11,7 +11,6 @@
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
 from typing import Tuple
-from flask import json, Response, request
 
 from flask import Response, json, request
 
@@ -19,15 +18,7 @@ from vulcanus.database.helper import judge_return_code
 from vulcanus.log.log import LOGGER
 from vulcanus.restful.resp import state
 from vulcanus.restful.response import BaseResponse
-from zeus.database import session_maker
-from zeus.database.proxy.host import HostProxy
-from zeus.function.model import ClientConnectArgs
-from zeus.function.verify.agent import (
-    AgentPluginInfoSchema,
-    GetHostSceneSchema,
-    SetAgentMetricStatusSchema,
-    SetAgentPluginStatusSchema
-)
+from zeus.conf import configuration
 from zeus.conf.constant import (
     CERES_PLUGIN_INFO,
     CERES_PLUGIN_START,
@@ -36,7 +27,14 @@ from zeus.conf.constant import (
     CERES_COLLECT_ITEMS_CHANGE,
     CHECK_IDENTIFY_SCENE
 )
-from zeus.conf import configuration
+from zeus.database.proxy.host import HostProxy
+from zeus.function.model import ClientConnectArgs
+from zeus.function.verify.agent import (
+    AgentPluginInfoSchema,
+    GetHostSceneSchema,
+    SetAgentMetricStatusSchema,
+    SetAgentPluginStatusSchema
+)
 from zeus.host_manager.ssh import execute_command_and_parse_its_result
 
 
@@ -45,18 +43,15 @@ class AgentPluginInfo(BaseResponse):
     Interface for user get agent plugin info
     """
 
-    @BaseResponse.handle(schema=AgentPluginInfoSchema)
-    def get(self, **params) -> Response:
+    @BaseResponse.handle(schema=AgentPluginInfoSchema, proxy=HostProxy, config=configuration)
+    def get(self, callback: HostProxy, **params: dict) -> Response:
         """
         Interface for get agent plugin info
 
         Returns:
             Response: response body
         """
-        proxy = HostProxy()
-        if not proxy.connect(session_maker()):
-            return self.response(state.DATABASE_CONNECT_ERROR)
-        status, host = proxy.get_host_info(
+        status, host = callback.get_host_info(
             {"username": params["username"], "host_list": [params["host_id"]]})
         if status != state.SUCCEED:
             LOGGER.error(f"query host {params['host_id']} info failed.")
@@ -127,19 +122,15 @@ class GetHostScene(BaseResponse):
                     "collect_items")
         return host_scene_info
 
-    @BaseResponse.handle(schema=GetHostSceneSchema)
-    def get(self, **params) -> Response:
+    @BaseResponse.handle(schema=GetHostSceneSchema, proxy=HostProxy, config=configuration)
+    def get(self, callback: HostProxy, **params: dict) -> Response:
         """
         Get host scene
 
         Returns:
             dict: response body
         """
-        proxy = HostProxy()
-        if not proxy.connect(session_maker()):
-            return self.response(state.DATABASE_CONNECT_ERROR)
-
-        status, host_list = proxy.get_host_info(
+        status, host_list = callback.get_host_info(
             {"username": params["username"], "host_list": [params["host_id"]]})
         if status != state.SUCCEED:
             LOGGER.error(f"query host {params['host_id']} info failed.")
@@ -162,7 +153,7 @@ class GetHostScene(BaseResponse):
             return self.response(code=status_code)
 
         scene_ret = response.get("data", dict()).get("scene_name")
-        status_code = proxy.save_scene(
+        status_code = callback.save_scene(
             {"host_id": params["host_id"], "scene": scene_ret})
         if status_code != state.SUCCEED:
             LOGGER.error("save scene of host %s failed.", params["host_id"])
@@ -183,8 +174,8 @@ class SetAgentPluginStatus(BaseResponse):
         "inactive": CERES_PLUGIN_STOP
     }
 
-    @BaseResponse.handle(schema=SetAgentPluginStatusSchema)
-    def post(self, **params) -> Response:
+    @BaseResponse.handle(schema=SetAgentPluginStatusSchema, proxy=HostProxy, config=configuration)
+    def post(self, callback: HostProxy, **params: dict) -> Response:
         """
         Get host scene
 
@@ -192,11 +183,7 @@ class SetAgentPluginStatus(BaseResponse):
             dict: response body
         """
         ret = {"failed_list": [], "succeed_list": []}
-        proxy = HostProxy()
-        if not proxy.connect(session_maker()):
-            return self.response(state.DATABASE_CONNECT_ERROR)
-
-        status, host = proxy.get_host_info(
+        status, host = callback.get_host_info(
             {"username": params["username"], "host_list": [params["host_id"]]})
         if status != state.SUCCEED:
             LOGGER.error(f"query host {params['host_id']} info failed.")
@@ -232,19 +219,15 @@ class SetAgentMetricStatus(BaseResponse):
     Restful API: POST
     """
 
-    @BaseResponse.handle(schema=SetAgentMetricStatusSchema)
-    def post(self, **params) -> Response:
+    @BaseResponse.handle(schema=SetAgentMetricStatusSchema, proxy=HostProxy, config=configuration)
+    def post(self, callback: HostProxy, **params: dict) -> Response:
         """
         Set agent metric status
 
         Returns:
             dict: response body
         """
-        proxy = HostProxy()
-        if not proxy.connect(session_maker()):
-            return self.response(state.DATABASE_CONNECT_ERROR)
-
-        status, host = proxy.get_host_info(
+        status, host = callback.get_host_info(
             {"username": params["username"], "host_list": [params["host_id"]]})
         if status != state.SUCCEED:
             LOGGER.error(f"query host {params['host_id']} info failed.")

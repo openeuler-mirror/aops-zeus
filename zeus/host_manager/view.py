@@ -32,7 +32,7 @@ from vulcanus.multi_thread_handler import MultiThreadHandler
 from vulcanus.restful.resp import state
 from vulcanus.restful.response import BaseResponse
 from vulcanus.restful.serialize.validate import validate
-from zeus.database import session_maker
+from zeus.conf import configuration
 from zeus.conf.constant import (
     CERES_HOST_INFO,
     HOST_TEMPLATE_FILE_CONTENT,
@@ -60,8 +60,8 @@ class DeleteHost(BaseResponse):
     Restful API: DELETE
     """
 
-    @BaseResponse.handle(schema=DeleteHostSchema, proxy=HostProxy())
-    def delete(self, callback: HostProxy, **params):
+    @BaseResponse.handle(schema=DeleteHostSchema, proxy=HostProxy, config=configuration)
+    def delete(self, callback: HostProxy, **params: dict):
         """
         Delete host
 
@@ -81,7 +81,7 @@ class GetHost(BaseResponse):
     Restful API: POST
     """
 
-    @BaseResponse.handle(schema=GetHostSchema, proxy=HostProxy())
+    @BaseResponse.handle(schema=GetHostSchema, proxy=HostProxy, config=configuration)
     def post(self, callback: HostProxy, **params):
         """
         Get host
@@ -107,7 +107,7 @@ class GetHostCount(BaseResponse):
     Restful API: POST
     """
 
-    @BaseResponse.handle(proxy=HostProxy())
+    @BaseResponse.handle(proxy=HostProxy, config=configuration)
     def post(self, callback: HostProxy, **params):
         """
         Get host
@@ -127,7 +127,7 @@ class AddHostGroup(BaseResponse):
     Restful API: POST
     """
 
-    @BaseResponse.handle(schema=AddHostGroupSchema, proxy=HostProxy())
+    @BaseResponse.handle(schema=AddHostGroupSchema, proxy=HostProxy, config=configuration)
     def post(self, callback: HostProxy, **params):
         """
         Add host group
@@ -149,7 +149,7 @@ class DeleteHostGroup(BaseResponse):
     Restful API: DELETE
     """
 
-    @BaseResponse.handle(schema=DeleteHostGroupSchema, proxy=HostProxy())
+    @BaseResponse.handle(schema=DeleteHostGroupSchema, proxy=HostProxy, config=configuration)
     def delete(self, callback: HostProxy, **params):
         """
         Delete host group
@@ -171,7 +171,7 @@ class GetHostGroup(BaseResponse):
     Restful API: POST
     """
 
-    @BaseResponse.handle(schema=GetHostGroupSchema, proxy=HostProxy())
+    @BaseResponse.handle(schema=GetHostGroupSchema, proxy=HostProxy, config=configuration)
     def post(self, callback: HostProxy, **params):
         """
         Get host group
@@ -280,8 +280,8 @@ class GetHostInfo(BaseResponse):
         host_infos.extend(self.generate_fail_data(fail_host))
         return host_infos
 
-    @BaseResponse.handle(schema=GetHostInfoSchema)
-    def post(self, **params):
+    @BaseResponse.handle(schema=GetHostInfoSchema, proxy=HostProxy, config=configuration)
+    def post(self, callback: HostProxy,  **params):
         """
         Get host info
 
@@ -295,11 +295,7 @@ class GetHostInfo(BaseResponse):
         error_host_infos = self.generate_fail_data(params.get('host_list'))
 
         # query host info from database
-        proxy = HostProxy()
-        if not proxy.connect(session_maker()):
-            LOGGER.error("connect to database error")
-            return self.response(code=state.DATABASE_CONNECT_ERROR)
-        status, host_list = proxy.get_host_info(params)
+        status, host_list = callback.get_host_info(params)
         if params.get('basic'):
             for host in host_list:
                 host.pop("pkey", None)
@@ -379,8 +375,8 @@ class AddHost(BaseResponse):
             return state.DATA_EXIST, Host()
         return state.SUCCEED, host
 
-    @BaseResponse.handle(schema=AddHostSchema)
-    def post(self, **params):
+    @BaseResponse.handle(schema=AddHostSchema, proxy=HostProxy, config=configuration)
+    def post(self, callback: HostProxy, **params):
         """
         Get host info
 
@@ -400,10 +396,7 @@ class AddHost(BaseResponse):
         Returns:
             dict: response body
         """
-        self.proxy = HostProxy()
-        if not self.proxy.connect(session_maker()):
-            LOGGER.error("connect to database error")
-            return self.response(code=state.DATABASE_CONNECT_ERROR)
+        self.proxy = callback
 
         status, host = self.validate_host_info(params)
         if status != state.SUCCEED:
@@ -507,8 +500,8 @@ class AddHostBatch(BaseResponse):
             return self.response(code=status, data=self.add_result)
 
         # Connect database
-        proxy = HostProxy()
-        if not proxy.connect(session_maker()):
+        proxy = HostProxy(configuration)
+        if not proxy.connect():
             LOGGER.error("connect to database error")
             self.update_add_result(
                 args["host_list"],
@@ -830,7 +823,8 @@ class UpdateHost(BaseResponse):
         key = False
         self.host_ssh_address = []
         for host_info in host_infos:
-            self.host_ssh_address.append(f"{host_info.host_ip}:{host_info.ssh_port}")
+            self.host_ssh_address.append(
+                f"{host_info.host_ip}:{host_info.ssh_port}")
             if host_id == host_info.host_id:
                 self.host = host_info
                 key = True
@@ -842,7 +836,7 @@ class UpdateHost(BaseResponse):
 
         return state.SUCCEED, ""
 
-    @BaseResponse.handle(schema=UpdateHostSchema, proxy=HostProxy(), debug=False)
+    @BaseResponse.handle(schema=UpdateHostSchema, proxy=HostProxy, config=configuration, debug=False)
     def post(self, callback: HostProxy, **params: dict):
         """
         update host info
@@ -864,7 +858,8 @@ class UpdateHost(BaseResponse):
         Returns:
             Response
         """
-        status, host_infos, host_group_infos = callback.get_hosts_and_groups(params.pop("username"))
+        status, host_infos, host_group_infos = callback.get_hosts_and_groups(
+            params.pop("username"))
         if status != state.SUCCEED:
             return self.response(status)
 

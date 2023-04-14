@@ -15,21 +15,33 @@ Time: 2021-12-22 10:37:56
 Author: peixiaochao
 Description:
 """
-import uuid
 import secrets
+import uuid
+
 import sqlalchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from vulcanus.log.log import LOGGER
-from vulcanus.restful.resp.state import DATABASE_INSERT_ERROR, DATABASE_QUERY_ERROR, \
-    LOGIN_ERROR, REPEAT_PASSWORD, SUCCEED, AUTH_ERROR, AUTH_USERINFO_SYNC_ERROR, NO_BOUND, \
-    GENERATION_TOKEN_ERROR, NO_DATA, DATABASE_UPDATE_ERROR, REPEAT_BIND
+from vulcanus.conf.constant import GITEE_OAUTH, GITEE_TOKEN, GITEE_USERINFO, REFRESH_TOKEN_EXP
 from vulcanus.database.proxy import MysqlProxy
 from vulcanus.database.table import User, Auth
-from vulcanus.conf.constant import GITEE_CLIENT_ID, GITEE_OAUTH,  GITEE_TOKEN, \
-    GITEE_CLIENT_SECRET, GITEE_USERINFO, REFRESH_TOKEN_EXP, REDIRECT_URL
+from vulcanus.log.log import LOGGER
+from vulcanus.restful.resp.state import (
+    DATABASE_INSERT_ERROR,
+    DATABASE_QUERY_ERROR,
+    LOGIN_ERROR,
+    REPEAT_PASSWORD,
+    SUCCEED,
+    AUTH_ERROR,
+    AUTH_USERINFO_SYNC_ERROR,
+    NO_BOUND,
+    GENERATION_TOKEN_ERROR,
+    NO_DATA,
+    DATABASE_UPDATE_ERROR,
+    REPEAT_BIND
+)
 from vulcanus.restful.response import BaseResponse
 from vulcanus.token import generate_token
+from zeus.conf import configuration
 
 
 class UserProxy(MysqlProxy):
@@ -57,7 +69,7 @@ class UserProxy(MysqlProxy):
         token = secrets.token_hex(16)
         password_hash = User.hash_password(password)
         user = User(username=username, password=password_hash, token=token,
-                    email= data.get("email"))
+                    email=data.get("email"))
 
         try:
             self.session.add(user)
@@ -175,7 +187,13 @@ class UserProxy(MysqlProxy):
 
     @property
     def _gitee_auth_redirect_url(self):
-        return f"{GITEE_OAUTH}?client_id={GITEE_CLIENT_ID}&scope=user_info&response_type=code&redirect_uri={REDIRECT_URL}"
+        client_id = configuration.individuation.get('GITEE_CLIENT_ID', "")
+        redirect_url = configuration.individuation.get('REDIRECT_URL', "")
+        if not all([client_id, redirect_url]):
+            LOGGER.error(
+                "The 'GITEE_CLIENT_ID' 'REDIRECT_URL' configuration is missing.")
+
+        return f"{GITEE_OAUTH}?client_id={client_id}&scope=user_info&response_type=code&redirect_uri={redirect_url}"
 
     def gitee_auth_login(self, code: str):
         """
@@ -259,11 +277,20 @@ class UserProxy(MysqlProxy):
             return SUCCEED, dict(bind_local_user=bind_local_user, userinfo=auth_userinfo)
         except sqlalchemy.exc.SQLAlchemyError as error:
             LOGGER.error(error)
-            return DATABASE_QUERY_ERROR, dict(bind_local_user=bind_local_user, userinfo=auth_userinfo)
+            return DATABASE_QUERY_ERROR, dict(bind_local_user=bind_local_user,
+                                              userinfo=auth_userinfo)
 
     def _get_gitee_auth_token(self, code: str):
-        auth_url = f"{GITEE_TOKEN}&client_id={GITEE_CLIENT_ID}&code={code}&redirect_uri={REDIRECT_URL}"
-        request_body = dict(client_secret=GITEE_CLIENT_SECRET)
+        client_id = configuration.individuation.get('GITEE_CLIENT_ID')
+        redirect_url = configuration.individuation.get('REDIRECT_URL')
+        if not all([client_id, redirect_url]):
+            LOGGER.error(
+                "The 'GITEE_CLIENT_ID' 'REDIRECT_URL' configuration is missing.")
+            return None
+
+        auth_url = f"{GITEE_TOKEN}&client_id={client_id}&code={code}&redirect_uri={redirect_url}"
+        request_body = dict(
+            client_secret=configuration.individuation.get('GITEE_CLIENT_SECRET'))
         response = BaseResponse.get_response('POST', auth_url, request_body)
         if "access_token" not in response:
             LOGGER.error("Gitee authentication failed to get token.")
@@ -306,7 +333,8 @@ class UserProxy(MysqlProxy):
             return LOGIN_ERROR, auth_result
         try:
             exists_bind_relation_auth = self.session.query(Auth).filter(
-                Auth.username == username, Auth.auth_type == auth_type, Auth.auth_account != auth_account).count()
+                Auth.username == username, Auth.auth_type == auth_type,
+                Auth.auth_account != auth_account).count()
             if exists_bind_relation_auth:
                 return REPEAT_BIND, auth_result
             bind_account = self.session.query(Auth).filter(
