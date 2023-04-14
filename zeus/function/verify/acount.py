@@ -31,7 +31,7 @@ class AddUserSchema(LoginSchema):
     """
     validators for parameter of /manage/account/add
     """
-    pass
+    email = fields.Email(required=True)
 
 
 class ChangePasswordSchema(Schema):

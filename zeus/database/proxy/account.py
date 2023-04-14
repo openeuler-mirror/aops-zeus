@@ -45,7 +45,8 @@ class UserProxy(MysqlProxy):
             data(dict): parameter, e.g.
                 {
                     "username": "xxx",
-                    "password": "xxxxx
+                    "password": "xxx",
+                    "email": "xxx@xxx.com"
                 }
 
         Returns:
@@ -55,7 +56,8 @@ class UserProxy(MysqlProxy):
         password = data.get('password')
         token = secrets.token_hex(16)
         password_hash = User.hash_password(password)
-        user = User(username=username, password=password_hash, token=token)
+        user = User(username=username, password=password_hash, token=token,
+                    email= data.get("email"))
 
         try:
             self.session.add(user)
