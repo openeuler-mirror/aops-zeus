@@ -15,20 +15,18 @@ Time:
 Author:
 Description: Manager that start aops-zeus
 """
-from flask import g
-import sqlalchemy
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm.scoping import scoped_session
 import redis
+import sqlalchemy
 from redis import RedisError
+from vulcanus.database.proxy import RedisProxy
 from vulcanus.database.table import User, Base, create_utils_tables
 from vulcanus.log.log import LOGGER
-from vulcanus.restful.resp.state import SUCCEED
 from vulcanus.manage import init_app
-from vulcanus.database.proxy import RedisProxy
-from zeus.database import ENGINE, session_maker
-from zeus.database.proxy.account import UserProxy
+from vulcanus.restful.resp.state import SUCCEED
+
 from zeus.conf import configuration
+from zeus.database import ENGINE
+from zeus.database.proxy.account import UserProxy
 
 
 def init_user():
@@ -40,8 +38,8 @@ def init_user():
     except sqlalchemy.exc.SQLAlchemyError:
         raise sqlalchemy.exc.SQLAlchemyError("create tables fail")
 
-    proxy = UserProxy()
-    if not proxy.connect(session_maker()):
+    proxy = UserProxy(configuration)
+    if not proxy.connect():
         raise ValueError("connect to mysql fail")
 
     data = {
@@ -79,25 +77,12 @@ def init_redis_connect():
 
 
 def main():
-
     init_database()
     init_redis_connect()
-    app, config = init_app('zeus')
-
-    @app.before_request
-    def create_dbsession():
-        g.session = scoped_session(sessionmaker(bind=ENGINE))
-
-    @app.teardown_request
-    def remove_dbsession(response):
-        g.session.remove()
-        return response
-
-    return app, config
+    return init_app('zeus')
 
 
 app, config = main()
-
 
 if __name__ == "__main__":
     ip = config.get('IP')

@@ -15,18 +15,30 @@ Time: 2021-12-22 10:37:56
 Author: peixiaochao
 Description:
 """
-import uuid
 import secrets
+import uuid
+
 import sqlalchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from vulcanus.log.log import LOGGER
-from vulcanus.restful.resp.state import DATABASE_INSERT_ERROR, DATABASE_QUERY_ERROR, \
-    LOGIN_ERROR, REPEAT_PASSWORD, SUCCEED, AUTH_ERROR, AUTH_USERINFO_SYNC_ERROR, NO_BOUND, \
-    GENERATION_TOKEN_ERROR, NO_DATA, DATABASE_UPDATE_ERROR, REPEAT_BIND
+from vulcanus.conf.constant import GITEE_OAUTH, GITEE_TOKEN, GITEE_USERINFO, REFRESH_TOKEN_EXP
 from vulcanus.database.proxy import MysqlProxy
 from vulcanus.database.table import User, Auth
-from vulcanus.conf.constant import GITEE_OAUTH,  GITEE_TOKEN, GITEE_USERINFO, REFRESH_TOKEN_EXP
+from vulcanus.log.log import LOGGER
+from vulcanus.restful.resp.state import (
+    DATABASE_INSERT_ERROR,
+    DATABASE_QUERY_ERROR,
+    LOGIN_ERROR,
+    REPEAT_PASSWORD,
+    SUCCEED,
+    AUTH_ERROR,
+    AUTH_USERINFO_SYNC_ERROR,
+    NO_BOUND,
+    GENERATION_TOKEN_ERROR,
+    NO_DATA,
+    DATABASE_UPDATE_ERROR,
+    REPEAT_BIND
+)
 from vulcanus.restful.response import BaseResponse
 from vulcanus.token import generate_token
 from zeus.conf import configuration
@@ -57,7 +69,7 @@ class UserProxy(MysqlProxy):
         token = secrets.token_hex(16)
         password_hash = User.hash_password(password)
         user = User(username=username, password=password_hash, token=token,
-                    email= data.get("email"))
+                    email=data.get("email"))
 
         try:
             self.session.add(user)
@@ -265,7 +277,8 @@ class UserProxy(MysqlProxy):
             return SUCCEED, dict(bind_local_user=bind_local_user, userinfo=auth_userinfo)
         except sqlalchemy.exc.SQLAlchemyError as error:
             LOGGER.error(error)
-            return DATABASE_QUERY_ERROR, dict(bind_local_user=bind_local_user, userinfo=auth_userinfo)
+            return DATABASE_QUERY_ERROR, dict(bind_local_user=bind_local_user,
+                                              userinfo=auth_userinfo)
 
     def _get_gitee_auth_token(self, code: str):
         client_id = configuration.individuation.get('GITEE_CLIENT_ID')
@@ -320,7 +333,8 @@ class UserProxy(MysqlProxy):
             return LOGIN_ERROR, auth_result
         try:
             exists_bind_relation_auth = self.session.query(Auth).filter(
-                Auth.username == username, Auth.auth_type == auth_type, Auth.auth_account != auth_account).count()
+                Auth.username == username, Auth.auth_type == auth_type,
+                Auth.auth_account != auth_account).count()
             if exists_bind_relation_auth:
                 return REPEAT_BIND, auth_result
             bind_account = self.session.query(Auth).filter(

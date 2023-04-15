@@ -22,7 +22,7 @@ class QueryHostMetricNames(BaseResponse):
     Restful API: GET
     """
 
-    @BaseResponse.handle(schema=QueryHostMetricNamesSchema, proxy=MetricProxy(configuration))
+    @BaseResponse.handle(schema=QueryHostMetricNamesSchema, proxy=MetricProxy, config=configuration)
     def get(self, callback: MetricProxy, **params):
         status_code, result = callback.query_metric_names(params)
         return self.response(code=status_code, data=result)
@@ -34,7 +34,7 @@ class QueryHostMetricData(BaseResponse):
     Restful API: POST
     """
 
-    @BaseResponse.handle(schema=QueryHostMetricDataSchema, proxy=MetricProxy(configuration))
+    @BaseResponse.handle(schema=QueryHostMetricDataSchema, proxy=MetricProxy, config=configuration)
     def post(self, callback: MetricProxy, **params):
         status_code, result = callback.query_metric_data(params)
         return self.response(code=status_code, data=result)
@@ -46,7 +46,7 @@ class QueryHostMetricList(BaseResponse):
     Restful API: POST
     """
 
-    @BaseResponse.handle(schema=QueryHostMetricListSchema, proxy=MetricProxy(configuration))
+    @BaseResponse.handle(schema=QueryHostMetricListSchema, proxy=MetricProxy, config=configuration)
     def post(self, callback: MetricProxy, **params):
         status_code, result = callback.query_metric_list(params)
         return self.response(code=status_code, data=result)
