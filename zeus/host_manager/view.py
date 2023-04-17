@@ -796,7 +796,7 @@ class UpdateHost(BaseResponse):
         ssh_user = params.get("ssh_user") or self.host.ssh_user
         ssh_port = params.get("ssh_port") or self.host.ssh_port
         status, private_key = save_ssh_public_key_to_client(
-            self.host.host_ip, ssh_port, ssh_user, params.pop("password")
+            self.host.host_ip, ssh_port, ssh_user, params.pop("password", None)
         )
         params.update({
             "ssh_user": ssh_user,
@@ -888,6 +888,11 @@ class UpdateHost(BaseResponse):
                 message="there is a duplicate host ssh address in database!"
             )
 
-        if params.get("password"):
+        if params.get("ssh_user") or params.get("ssh_port"):
+            if not params.get("password"):
+                return self.response(code=state.PARAM_ERROR, message="please update password")
             self._save_ssh_key(params)
+        elif params.get("password"):
+            self._save_ssh_key(params)
+
         return self.response(callback.update_host_info(params.pop("host_id"), params))
