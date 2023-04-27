@@ -15,6 +15,7 @@ Time:
 Author:
 Description: For host related interfaces
 """
+from vulcanus.restful.serialize.validate import ValidateRules
 from marshmallow import Schema
 from marshmallow import fields
 from marshmallow import validate
@@ -101,7 +102,8 @@ class AddHostSchema(Schema):
     """
     ssh_user = fields.String(required=True, validate=lambda s: len(s) > 0)
     password = fields.String(required=True, validate=lambda s: len(s) > 0)
-    host_name = fields.String(required=True, validate=lambda s: len(s) > 0)
+    host_name = fields.String(required=True,
+                              validate=[validate.Length(min=1, max=50), ValidateRules.space_character_check])
     host_ip = fields.IP(required=True)
     ssh_port = fields.Integer(required=True, validate=lambda s: 65535 >= s > 0)
     host_group_name = fields.String(required=True, validate=lambda s: len(s) > 0)

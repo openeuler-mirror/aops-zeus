@@ -9,7 +9,7 @@ Source0:	%{name}-%{version}.tar.gz
 
 BuildRequires:  python3-setuptools
 Requires:   aops-vulcanus >= v1.2.0
-Requires:   python3-marshmallow >= 3.13.0 python3-flask python3-flask-restful
+Requires:   python3-marshmallow >= 3.13.0 python3-flask python3-flask-restful python3-gevent
 Requires:   python3-requests python3-uWSGI python3-sqlalchemy python3-werkzeug python3-PyMySQL
 Requires:   python3-paramiko >= 2.11.0 python3-redis python3-prometheus-api-client
 Provides:   aops-zeus

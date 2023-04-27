@@ -19,7 +19,8 @@ setup(
         'Werkzeug',
         'paramiko>=2.11.0',
         "redis",
-        'prometheus_api_client'
+        'prometheus_api_client',
+        'gevent'
     ],
     author='cmd-lsw-yyy-zyc',
     data_files=[

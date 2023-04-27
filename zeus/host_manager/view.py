@@ -16,10 +16,12 @@ Author:
 Description: Restful APIs for host
 """
 import json
-import socket
 from io import BytesIO
 from typing import Iterable, List, Tuple, Union
+from gevent import monkey; monkey.patch_all(ssl=False)
+import socket
 
+import gevent
 import paramiko
 from flask import request, send_file
 from marshmallow import Schema
@@ -523,14 +525,8 @@ class AddHostBatch(BaseResponse):
                                  message="invalid host info or all hosts has been added",
                                  data=self.add_result)
 
-        # Generate Rsa-key pair and save public_key on host
-        multi_thread = MultiThreadHandler(lambda data: self.update_rsa_key_to_host(*data),
-                                          valid_hosts, None)
-        multi_thread.create_thread()
-        result = multi_thread.get_result()
-
-        # Add host
-        status = proxy.add_host_batch(result)
+        # save public_key on host and add host to database
+        status = proxy.add_host_batch(self.save_key_to_client(valid_hosts))
         if status != state.SUCCEED:
             self.update_add_result(valid_hosts,
                                    {"result": self.add_failed, "reason": "Insert Database error"})
@@ -604,6 +600,30 @@ class AddHostBatch(BaseResponse):
 
             valid_host.append((host, password))
         return valid_host
+
+    def save_key_to_client(self, host_connect_infos: List[tuple]) -> list:
+        """
+        save key to client
+
+        Args:
+            host_connect_infos (list): client connect info
+
+        Returns:
+            host object list
+        """
+        # 30 connections are created at a time.
+        tasks = [host_connect_infos[index:index + 30] for index in range(0, len(host_connect_infos), 30)]
+        result = []
+
+        for task in tasks:
+            jobs = [gevent.spawn(self.update_rsa_key_to_host, *host_connect_info)
+                    for host_connect_info in task]
+
+            gevent.joinall(jobs)
+            for job in jobs:
+                result.append(job.value)
+
+        return result
 
     @staticmethod
     def update_rsa_key_to_host(host: Host, password: str) -> Host:

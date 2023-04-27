@@ -15,6 +15,7 @@ Time:
 Author:
 Description: For host related interfaces
 """
+from vulcanus.restful.serialize.validate import ValidateRules
 from marshmallow import Schema
 from marshmallow import fields
 
@@ -23,8 +24,8 @@ class LoginSchema(Schema):
     """
     validators for parameter of /manage/account/login
     """
-    username = fields.String(required=True, validate=lambda s: len(s) > 0)
-    password = fields.String(required=True, validate=lambda s: len(s) > 0)
+    username = fields.String(required=True, validate=ValidateRules.account_name_check)
+    password = fields.String(required=True, validate=ValidateRules.account_password_check)
 
 
 class AddUserSchema(LoginSchema):
