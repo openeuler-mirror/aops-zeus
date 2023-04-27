@@ -15,6 +15,8 @@ Time:
 Author:
 Description: Restful APIs for user
 """
+from jwt.exceptions import ExpiredSignatureError
+
 from vulcanus.conf.constant import REFRESH_TOKEN_EXP
 from vulcanus.database.proxy import RedisProxy
 from vulcanus.log.log import LOGGER
@@ -182,20 +184,49 @@ class RefreshToken(BaseResponse):
         Returns:
             dict: response body
         """
-        status = self.verify_token(params.get("refresh_token"), params)
-        if status != state.SUCCEED:
-            return self.response(code=status, message="token refreshing failure.")
         try:
-            username = decode_token(params.get("refresh_token"))["key"]
+            refresh_token_info = decode_token(params.get("refresh_token"))
+        except ExpiredSignatureError:
+            return self.response(code=state.TOKEN_EXPIRE)
+        except ValueError:
+            self.response(code=state.TOKEN_ERROR, message="token refreshing failure.")
+        
+        username = refresh_token_info["key"]
+        old_refresh_token = RedisProxy.redis_connect.get("refresh_token_" + username)
+        if not old_refresh_token or old_refresh_token != params.get("refresh_token"):
+            return self.response(code=state.TOKEN_ERROR, message="Invalid token.")
+        
+        try:
             token = generate_token(unique_iden=username)
-            refresh_token = generate_token(
-                unique_iden=username, minutes=REFRESH_TOKEN_EXP)
+            refresh_token = generate_token(unique_iden=username, minutes=REFRESH_TOKEN_EXP)
         except ValueError:
             LOGGER.error("Token generation failed,token refreshing failure.")
             return self.response(code=state.GENERATION_TOKEN_ERROR)
-
+        # Remove an expired token
+        RedisProxy.redis_connect.delete("token_" + username)
+        RedisProxy.redis_connect.delete("refresh_token_" + username)
+        # Set a new token value
         RedisProxy.redis_connect.set("token_" + username, token)
-        RedisProxy.redis_connect.set(
-            "refresh_token_" + username, refresh_token)
+        RedisProxy.redis_connect.set("refresh_token_" + username, refresh_token)
 
         return self.response(code=state.SUCCEED, data=dict(token=token, refresh_token=refresh_token))
+
+
+class Logout(BaseResponse):
+    """
+    Interface for logout.
+    Restful API: post
+    """
+
+    @BaseResponse.handle()
+    def post(self, **params):
+        """
+        Refresh token
+
+        Returns:
+            dict: response body
+        """
+        username = params.get("username")
+        RedisProxy.redis_connect.delete("token_" + username)
+        RedisProxy.redis_connect.delete("refresh_token_" + username)
+        return self.response(code=state.SUCCEED)
