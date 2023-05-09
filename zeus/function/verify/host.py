@@ -29,7 +29,7 @@ class HostSchema(Schema):
         required=True, validate=lambda s: len(s) > 0)
     host_ip = fields.IP(required=True)
     management = fields.Boolean(required=True)
-    username = fields.String(required=True, validate=lambda s: len(s) > 0)
+    username = fields.String(required=True, validate=lambda s: 32 >= len(s) > 0)
     password = fields.String(required=True, validate=lambda s: len(s) > 0)
     agent_port = fields.Integer(required=True, validate=lambda s: 65535 >= s >= 0)
     os_version = fields.String(required=True, validate=lambda s: len(s) > 0)
