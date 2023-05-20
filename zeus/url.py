@@ -45,7 +45,8 @@ from vulcanus.conf.constant import (
     QUERY_METRIC_DATA,
     QUERY_METRIC_LIST,
     REFRESH_TOKEN,
-    LOGOUT
+    LOGOUT,
+    EXECUTE_CVE_ROLLBACK
 )
 from zeus.account_manager import view as account_view
 from zeus.agent_manager import view as agent_view
@@ -94,7 +95,8 @@ SPECIFIC_URLS = {
     'CVE_URLS': [
         (vulnerability_view.ExecuteRepoSetTask, EXECUTE_REPO_SET),
         (vulnerability_view.ExecuteCveScanTask, EXECUTE_CVE_SCAN),
-        (vulnerability_view.ExecuteCveFixTask, EXECUTE_CVE_FIX)
+        (vulnerability_view.ExecuteCveFixTask, EXECUTE_CVE_FIX),
+        (vulnerability_view.ExecuteCveRollbackTask,EXECUTE_CVE_ROLLBACK)
     ],
     'METRIC': [
         (metric_view.QueryHostMetricNames, QUERY_METRIC_NAMES),

@@ -32,6 +32,7 @@ CERES_HOST_INFO = "aops-ceres collect --host '%s'"
 CERES_CVE_REPO_SET = "aops-ceres apollo --set-repo '%s'"
 CERES_CVE_SCAN = "aops-ceres apollo --scan '%s'"
 CERES_CVE_FIX = "aops-ceres apollo --fix '%s'"
+CERES_CVE_ROLLBACK = "aops-ceres apollo --rollback '%s'"
 
 # check
 CHECK_IDENTIFY_SCENE = "/check/scene/identify"

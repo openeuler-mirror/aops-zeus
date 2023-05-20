@@ -18,7 +18,6 @@ Description: Restful APIs for host
 import json
 from io import BytesIO
 from typing import Iterable, List, Tuple, Union
-from gevent import monkey; monkey.patch_all(ssl=False)
 import socket
 
 import gevent
