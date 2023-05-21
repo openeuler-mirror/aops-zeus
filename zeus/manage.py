@@ -15,6 +15,11 @@ Time:
 Author:
 Description: Manager that start aops-zeus
 """
+try:
+    from gevent import monkey
+    monkey.patch_all(ssl=False)
+except:
+    pass
 import redis
 import sqlalchemy
 from redis import RedisError
