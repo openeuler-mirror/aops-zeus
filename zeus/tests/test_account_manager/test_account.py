@@ -16,19 +16,18 @@ Author:
 Description:
 """
 import unittest
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm.scoping import scoped_session
 
 from vulcanus.database.table import User, Base, create_utils_tables
 from vulcanus.database.helper import drop_tables, create_database_engine
 from vulcanus.restful.resp.state import LOGIN_ERROR, REPEAT_PASSWORD, SUCCEED
 from zeus.database.proxy.account import UserProxy
+from zeus.conf import configuration
 
 
 class TestAccountDatabase(unittest.TestCase):
     def setUp(self):
         # create engine to database
-        self.proxy = UserProxy()
+        self.proxy = UserProxy(configuration)
         mysql_host = "127.0.0.1"
         mysql_port = 3306
         mysql_url_format = "mysql+pymysql://%s:%s/%s"
@@ -36,13 +35,13 @@ class TestAccountDatabase(unittest.TestCase):
         engine_url = mysql_url_format % (
             mysql_host, mysql_port, mysql_database_name)
         self.engine = create_database_engine(engine_url, 100, 7200)
-        session = scoped_session(sessionmaker(bind=self.engine))
-        self.proxy.connect(session)
+        self.proxy.engine = self.engine
+        self.proxy.connect()
         # create all tables
-        create_utils_tables(Base, self.engine)
+        create_utils_tables(Base, self.proxy.engine)
 
     def tearDown(self):
-        self.proxy.close()
+        del self.proxy
         drop_tables(Base, self.engine)
 
     def test_api_user(self):

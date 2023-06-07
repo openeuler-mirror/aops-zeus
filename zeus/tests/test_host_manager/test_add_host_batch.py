@@ -11,27 +11,20 @@
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
 import json
-import unittest
 from unittest import mock
 
-from flask import Flask
 from sqlalchemy.orm.collections import InstrumentedList
 
 from vulcanus.conf.constant import ADD_HOST_BATCH
+from vulcanus.database.proxy import MysqlProxy
 from vulcanus.database.table import Host, HostGroup
 from vulcanus.multi_thread_handler import MultiThreadHandler
 from vulcanus.restful.resp import state
-from zeus import BLUE_POINT
 from zeus.database.proxy.host import HostProxy
 from zeus.host_manager.view import AddHostBatch
+from zeus.tests import BaseTestCase
 
-app = Flask("check")
-for blue, api in BLUE_POINT:
-    api.init_app(blue)
-    app.register_blueprint(blue)
-
-app.testing = True
-client = app.test_client()
+client = BaseTestCase.create_app()
 header = {
     "Content-Type": "application/json; charset=UTF-8"
 }
@@ -41,7 +34,8 @@ header_with_token = {
 }
 
 
-class TestAddHostBatch(unittest.TestCase):
+class TestAddHostBatch(BaseTestCase):
+
     def setUp(self):
         self.mock_host_list = [
             {

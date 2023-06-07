@@ -16,8 +16,6 @@ Author:
 Description:
 """
 import unittest
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm.scoping import scoped_session
 from werkzeug.security import generate_password_hash
 
 from vulcanus.database.table import Host, User, Base, create_utils_tables
@@ -25,23 +23,24 @@ from vulcanus.database.helper import drop_tables, create_database_engine
 from vulcanus.restful.resp.state import DATA_EXIST, PARTIAL_SUCCEED, SUCCEED, DATA_DEPENDENCY_ERROR
 from vulcanus.compare import compare_two_object
 from zeus.database.proxy.host import HostProxy
+from zeus.conf import configuration
 
 
 class TestHostDatabase(unittest.TestCase):
     def setUp(self):
         # create engine to database
-        self.proxy = HostProxy()
-        mysql_host = "127.0.0.1"
+        self.proxy = HostProxy(configuration)
+        mysql_host = "10.50.180.47"
         mysql_port = 3306
-        mysql_url_format = "mysql+pymysql://%s:%s/%s"
+        mysql_url_format = "mysql+pymysql://root:123456@%s:%s/%s"
         mysql_database_name = "aops_test"
         engine_url = mysql_url_format % (
             mysql_host, mysql_port, mysql_database_name)
         self.engine = create_database_engine(engine_url, 100, 7200)
-        session = scoped_session(sessionmaker(bind=self.engine))
-        self.proxy.connect(session)
+        self.proxy.engine = self.engine
+        self.proxy.connect()
         # create all tables
-        create_utils_tables(Base, self.engine)
+        create_utils_tables(Base, self.proxy.engine)
         # create user
         data = {
             "username": "admin",
@@ -55,8 +54,7 @@ class TestHostDatabase(unittest.TestCase):
         self.proxy.session.commit()
 
     def tearDown(self):
-        self.proxy.close()
-        drop_tables(Base, self.engine)
+        drop_tables(Base, self.proxy.engine)
 
     def test_api_host_group(self):
         # ==============add host group===================
@@ -95,7 +93,7 @@ class TestHostDatabase(unittest.TestCase):
             "management": False,
             "os_version": "openEuler 2203",
             "host_group_id": 2
-        },
+            },
             {
                 "user": "admin",
                 "host_name": "host2",
@@ -105,7 +103,7 @@ class TestHostDatabase(unittest.TestCase):
                 "management": False,
                 "os_version": "openEuler 2003",
                 "host_group_id": 2
-        },
+            },
             {
                 "user": "admin",
                 "host_name": "host3",
@@ -115,7 +113,7 @@ class TestHostDatabase(unittest.TestCase):
                 "management": False,
                 "os_version": "openEuler 2109",
                 "host_group_id": 2
-        },
+            },
             {
                 "user": "admin",
                 "host_name": "host4",
@@ -125,7 +123,7 @@ class TestHostDatabase(unittest.TestCase):
                 "management": False,
                 "os_version": "openEuler 2003",
                 "host_group_id": 3
-        }]
+            }]
 
         res = self.proxy.add_host_group(group_data1)
         self.assertEqual(res, SUCCEED)
@@ -418,7 +416,9 @@ class TestHostDatabase(unittest.TestCase):
                 "status": 2,
                 "scene": None,
                 "os_version": "openEuler2003",
-                "ssh_port": 22
+                "ssh_port": 22,
+                "pkey": None,
+                "ssh_user": "root"
             },
             {
                 "host_name": "host2",
@@ -429,11 +429,13 @@ class TestHostDatabase(unittest.TestCase):
                 "status": 2,
                 "scene": None,
                 "os_version": "openEuler2109",
-                "ssh_port": 22
+                "ssh_port": 22,
+                "pkey": None,
+                "ssh_user": "root"
             }
         ]
         res = self.proxy.get_host_info(args)
-        self.assertTrue(compare_two_object(expected_res, res[1]['host_infos']))
+        self.assertTrue(compare_two_object(expected_res, res[1]))
 
         # =====================get host info by user===============
         args = {

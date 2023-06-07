@@ -14,26 +14,23 @@ import json
 import unittest
 from unittest import mock
 
-import requests
-from flask import Flask
+import sqlalchemy
 
 from vulcanus.conf.constant import QUERY_HOST_DETAIL
 from vulcanus.database.proxy import MysqlProxy
 from vulcanus.multi_thread_handler import MultiThreadHandler
-from zeus import BLUE_POINT
-from zeus.account_manager.cache import UserCache, UserInfo
+from vulcanus.restful.resp.state import (
+    SUCCEED,
+    TOKEN_ERROR,
+    DATABASE_CONNECT_ERROR,
+    PARAM_ERROR, SSH_CONNECTION_ERROR
+)
+from vulcanus.restful.response import BaseResponse
 from zeus.database.proxy.host import HostProxy
-from vulcanus.restful.resp.state import SUCCEED, TOKEN_ERROR, DATABASE_CONNECT_ERROR, NO_DATA, \
-    PARAM_ERROR
 from zeus.host_manager.view import GetHostInfo
+from zeus.tests import BaseTestCase
 
-app = Flask("test")
-for blue, api in BLUE_POINT:
-    api.init_app(blue)
-    app.register_blueprint(blue)
-
-app.testing = True
-client = app.test_client()
+client = BaseTestCase.create_app()
 header = {
     "Content-Type": "application/json; charset=UTF-8"
 }
@@ -44,26 +41,40 @@ header_with_token = {
 
 
 class TestGetHostInfo(unittest.TestCase):
-    MOCK_ARGS = {
-        "host_list": [1, 2],
-        "basic": False
-    }
+    def setUp(self) -> None:
+        self.mock_args = {
+            "host_list": [1, 2],
+            "basic": False
+        }
+        self.mock_host_basic_info = [
+            {
+                "host_id": 1,
+                "host_ip": "host_ip_1",
+                "pkey": "rsa-pkey-1",
+                "ssh_user": "root",
+                "ssh_port": 22
+            },
+            {
+                "host_id": 2,
+                "host_ip": "host_ip_2",
+                "pkey": "rsa-pkey-2",
+                "ssh_user": "root",
+                "ssh_port": 22
+            }
+        ]
 
+    @mock.patch.object(HostProxy, "__exit__")
     @mock.patch.object(MultiThreadHandler, "get_result")
     @mock.patch.object(MultiThreadHandler, "create_thread")
-    @mock.patch.object(HostProxy, 'get_host_address')
-    @mock.patch.object(MysqlProxy, 'connect')
-    @mock.patch.object(UserCache, 'get')
+    @mock.patch.object(HostProxy, 'get_host_info')
+    @mock.patch.object(MysqlProxy, '_create_session')
+    @mock.patch.object(BaseResponse, 'verify_request')
     def test_get_host_info_from_ceres_should_return_host_info_when_all_is_right(
-            self, mock_user, mock_connect, mock_host_address, mock_create_thread, mock_get_result):
-        mock_connect.return_value = ''
+            self, mock_verify_request, mock_connect, mock_host_basic_info, mock_create_thread, mock_get_result, mock_close):
+        mock_verify_request.return_value = self.mock_args, SUCCEED
         mock_create_thread.return_value = None
-        mock_user.return_value = UserInfo('admin', 'mock', 'mock')
-        mock_host_address.return_value = SUCCEED, {
-            1: "mock_address1",
-            2: "mock_address2"
-        }
-
+        mock_connect.return_value = None
+        mock_host_basic_info.return_value = SUCCEED, self.mock_host_basic_info
         mock_get_result.return_value = [
             {
                 "host_id": 1,
@@ -84,78 +95,57 @@ class TestGetHostInfo(unittest.TestCase):
                 }
             }
         ]
-        response = client.post(QUERY_HOST_DETAIL,
-                               data=json.dumps(self.MOCK_ARGS),
-                               headers=header_with_token)
+        mock_close.return_value = None
+        response = client.post(QUERY_HOST_DETAIL, data=json.dumps(self.mock_args), headers=header_with_token)
         fail_host_list = []
-        for res in response.json.get("host_infos"):
+        for res in response.json.get("data").get("host_infos"):
             if res.get('host_info') is {}:
                 fail_host_list.append(res.get('host_id'))
         self.assertEqual([], fail_host_list)
 
-    def test_get_host_info_from_ceres_should_return_token_error_data_when_request_with_no_token(
-            self):
-        response = client.post(QUERY_HOST_DETAIL,
-                               data=json.dumps(self.MOCK_ARGS),
-                               headers=header)
+    def test_get_host_info_from_ceres_should_return_token_error_data_when_request_with_no_token(self):
+        response = client.post(QUERY_HOST_DETAIL, data=json.dumps(self.mock_args), headers=header)
         self.assertEqual(TOKEN_ERROR, response.json.get('label'))
 
-    @mock.patch.object(UserCache, 'get')
-    def test_get_host_info_from_ceres_should_return_all_host_info_is_empty_when_token_is_error(
-            self, mock_user):
-        mock_user.return_value = None
-        response = client.post(QUERY_HOST_DETAIL,
-                               data=json.dumps(self.MOCK_ARGS),
-                               headers=header)
+    @mock.patch.object(BaseResponse, 'verify_token')
+    def test_get_host_info_from_ceres_should_return_all_host_info_is_empty_when_token_is_error(self, mock_token):
+        mock_token.return_value = TOKEN_ERROR
+        response = client.post(QUERY_HOST_DETAIL, data=json.dumps(self.mock_args), headers=header)
         self.assertEqual(TOKEN_ERROR, response.json.get('label'))
 
-    @mock.patch.object(MysqlProxy, 'connect')
-    @mock.patch.object(UserCache, 'get')
+    @mock.patch.object(MysqlProxy, '_create_session')
+    @mock.patch.object(BaseResponse, 'verify_request')
     def test_get_host_info_from_ceres_should_return_connect_error_when_cannot_connect_database(
-            self, mock_user, mock_connect):
-        mock_user.return_value = UserInfo('admin', 'mock', 'mock')
-        mock_connect.return_value = None
-        response = client.post(QUERY_HOST_DETAIL,
-                               data=json.dumps(self.MOCK_ARGS),
-                               headers=header_with_token)
+            self, mock_verify_request, mock_connect):
+        mock_verify_request.return_value = self.mock_args, SUCCEED
+        mock_connect.side_effect = mock_connect.side_effect = sqlalchemy.exc.SQLAlchemyError("Connection error")
+        response = client.post(QUERY_HOST_DETAIL, data=json.dumps(self.mock_args), headers=header_with_token)
         self.assertEqual(DATABASE_CONNECT_ERROR, response.json.get('label'))
 
-    @mock.patch.object(HostProxy, 'get_host_address')
-    @mock.patch.object(MysqlProxy, 'connect')
-    @mock.patch.object(UserCache, 'get')
-    def test_get_host_info_from_ceres_should_return_no_data_when_input_host_id_is_not_in_database(
-            self, mock_user, mock_connect, mock_host_address):
-        mock_user.return_value = UserInfo('admin', 'mock', 'mock')
-        mock_connect.return_value = ''
-        mock_host_address.return_value = SUCCEED, {}
-        response = client.post(QUERY_HOST_DETAIL,
-                               data=json.dumps(self.MOCK_ARGS),
-                               headers=header_with_token)
-        self.assertEqual(NO_DATA, response.json.get('label'))
+    @mock.patch.object(HostProxy, "__exit__")
+    @mock.patch.object(HostProxy, 'get_host_info')
+    @mock.patch.object(MysqlProxy, '_create_session')
+    @mock.patch.object(BaseResponse, 'verify_token')
+    def test_get_host_info_from_ceres_should_return_all_host_info_is_empty_when_input_host_id_is_not_in_database(
+            self, mock_token, mock_connect, mock_host_basic_info, mock_close):
+        mock_token.return_value = SUCCEED
+        mock_connect.return_value = None
+        mock_host_basic_info.return_value = SUCCEED, []
+        mock_close.return_value = None
+        response = client.post(QUERY_HOST_DETAIL, data=json.dumps(self.mock_args), headers=header_with_token)
+        host_info_list = []
+        for host_info in response.json.get("data").get("host_infos"):
+            if host_info.get("host_info"):
+                host_info_list.append(host_info)
+        self.assertEqual([], host_info_list, response.json)
 
-    def test_get_host_info_from_ceres_should_return_param_error_when_input_incorrect_param(
-            self, ):
-        mock_incorrect_data = {
-            "host_list": {},
-            "basic": False
-        }
-        response = client.post(QUERY_HOST_DETAIL,
-                               data=json.dumps(mock_incorrect_data),
-                               headers=header_with_token)
+    def test_get_host_info_from_ceres_should_return_param_error_when_input_incorrect_param(self):
+        mock_incorrect_data = {"host_list": {}, "basic": False}
+        response = client.post(QUERY_HOST_DETAIL, data=json.dumps(mock_incorrect_data), headers=header_with_token)
         self.assertEqual(PARAM_ERROR, response.json.get('label'))
 
-    @mock.patch.object(requests, "post")
-    def test_get_host_info_should_return_host_info_is_empty_when_http_connect_error(
-            self, mock_request):
-        mock_request.side_effect = requests.exceptions.ConnectionError()
-        mock_args = {
-            "host_id": 1,
-            "info_type": ["cpu", "os", "memory", "disk"],
-            "address": "mock_address",
-            "headers": {
-                "content-type": "application/json",
-                "access_token": "host token"
-            }
-        }
-        result = GetHostInfo.get_host_info(mock_args)
+    @mock.patch("zeus.host_manager.view.execute_command_and_parse_its_result")
+    def test_get_host_info_should_return_host_info_is_empty_when_connect_host_failed(self, mock_execute_command):
+        mock_execute_command.return_value = SSH_CONNECTION_ERROR, "SSH.Connection.Error"
+        result = GetHostInfo.get_host_info(self.mock_host_basic_info[0], [])
         self.assertEqual({"host_id": 1, "host_info": {}}, result)

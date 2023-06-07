@@ -13,19 +13,15 @@
 import unittest
 from unittest import mock
 
-from flask import Flask
+import sqlalchemy
 
-from zeus import BLUE_POINT
+from vulcanus.restful.resp import state
+from vulcanus.restful.response import BaseResponse
+from vulcanus.conf.constant import DELETE_HOST
 from zeus.database.proxy.host import HostProxy
-from vulcanus.restful.resp.state import TOKEN_ERROR, DATABASE_CONNECT_ERROR
+from zeus.tests import BaseTestCase
 
-app = Flask("check")
-for blue, api in BLUE_POINT:
-    api.init_app(blue)
-    app.register_blueprint(blue)
-
-app.testing = True
-client = app.test_client()
+client = BaseTestCase.create_app()
 header = {
     "Content-Type": "application/json; charset=UTF-8"
 }
@@ -35,25 +31,50 @@ header_with_token = {
 }
 
 
-class TestDeleteHost(unittest.TestCase):
+class TestDeleteHost(BaseTestCase):
+
+    def setUp(self) -> None:
+        self.mock_args = {'host_list': [1, 2, 3]}
 
     def test_delete_host_should_return_token_error_when_part_of_input_with_no_token(self):
-        input_data = {'host_list': [1, 2, 3]}
-        resp = client.delete('/manage/host/delete',
-                             json=input_data, headers=header)
-
-        self.assertEqual(TOKEN_ERROR, resp.json.get('code'), resp.json)
+        resp = client.delete(DELETE_HOST, json=self.mock_args, headers=header)
+        self.assertEqual(state.TOKEN_ERROR, resp.json.get('label'), resp.json)
 
     def test_delete_host_should_return_400_when_no_input(self):
-        resp = client.delete('/manage/host/delete', headers=header_with_token)
+        resp = client.delete(DELETE_HOST, headers=header_with_token)
         self.assertEqual(400, resp.status_code, resp.json)
 
-    @mock.patch.object(HostProxy, 'connect')
+    @mock.patch.object(BaseResponse, "verify_request")
+    @mock.patch.object(HostProxy, '_create_session')
     def test_delete_host_should_return_database_error_when_database_cannot_connect(
-            self, mock_mysql_connect):
-        input_data = {'host_list': [1, 2, 3]}
-        mock_mysql_connect.return_value = False
-        resp = client.delete('/manage/host/delete',
-                             json=input_data, headers=header_with_token)
-        self.assertEqual(DATABASE_CONNECT_ERROR,
-                         resp.json.get('label'), resp.json)
+            self, mock_mysql_connect, mock_verify_request):
+        mock_verify_request.return_value = self.mock_args, state.SUCCEED
+        mock_mysql_connect.side_effect = sqlalchemy.exc.SQLAlchemyError("Connection error")
+        resp = client.delete(DELETE_HOST, json=self.mock_args, headers=header_with_token)
+        self.assertEqual(state.DATABASE_CONNECT_ERROR, resp.json.get('label'), resp.json)
+
+    @mock.patch.object(HostProxy, "__exit__")
+    @mock.patch.object(HostProxy, "delete_host")
+    @mock.patch.object(BaseResponse, "verify_request")
+    @mock.patch.object(HostProxy, '_create_session')
+    def test_delete_host_should_return_database_delete_error_when_database_query_error_or_delete_error(
+            self, mock_mysql_connect, mock_verify_request, mock_delete_host, mock_close):
+        mock_verify_request.return_value = self.mock_args, state.SUCCEED
+        mock_mysql_connect.return_value = None
+        mock_delete_host.return_value = state.DATABASE_DELETE_ERROR, {}
+        mock_close.return_value = None
+        resp = client.delete(DELETE_HOST, json=self.mock_args, headers=header_with_token)
+        self.assertEqual(state.DATABASE_DELETE_ERROR, resp.json.get("label"), resp.json)
+
+    @mock.patch.object(HostProxy, "__exit__")
+    @mock.patch.object(HostProxy, "delete_host")
+    @mock.patch.object(BaseResponse, "verify_request")
+    @mock.patch.object(HostProxy, '_create_session')
+    def test_delete_host_should_return_succeed_error_when_delete_successfully(
+            self, mock_mysql_connect, mock_verify_request, mock_delete_host, mock_close):
+        mock_verify_request.return_value = self.mock_args, state.SUCCEED
+        mock_mysql_connect.return_value = None
+        mock_delete_host.return_value = state.DATABASE_DELETE_ERROR, {}
+        mock_close.return_value = None
+        resp = client.delete(DELETE_HOST, json=self.mock_args, headers=header_with_token)
+        self.assertEqual(state.DATABASE_DELETE_ERROR, resp.json.get("label"), resp.json)
