@@ -17,7 +17,7 @@ from io import BytesIO
 from unittest import mock
 
 import paramiko
-from flask import Flask
+import sqlalchemy
 from paramiko import AuthenticationException
 from sqlalchemy.orm.collections import InstrumentedList
 
@@ -25,7 +25,6 @@ from vulcanus.conf.constant import ADD_HOST
 from vulcanus.database.table import Host, HostGroup
 from vulcanus.restful.response import BaseResponse
 from vulcanus.restful.resp.state import (
-    DATABASE_CONNECT_ERROR,
     DATABASE_INSERT_ERROR,
     DATABASE_QUERY_ERROR,
     DATA_EXIST,
@@ -36,18 +35,13 @@ from vulcanus.restful.resp.state import (
     SUCCEED,
     TOKEN_ERROR
 )
-from zeus import BLUE_POINT
+from zeus.conf import configuration
 from zeus.database.proxy.host import HostProxy
 from zeus.host_manager.ssh import SSH
 from zeus.host_manager.view import AddHost, save_ssh_public_key_to_client
+from zeus.tests import BaseTestCase
 
-app = Flask("check")
-for blue, api in BLUE_POINT:
-    api.init_app(blue)
-    app.register_blueprint(blue)
-
-app.testing = True
-client = app.test_client()
+client = BaseTestCase.create_app()
 header = {
     "Content-Type": "application/json; charset=UTF-8"
 }
@@ -58,13 +52,14 @@ header_with_token = {
 
 
 class TestAddHost(unittest.TestCase):
+    @mock.patch.object(HostProxy, "__exit__")
     @mock.patch("zeus.host_manager.view.save_ssh_public_key_to_client")
     @mock.patch.object(BaseResponse, 'verify_token')
     @mock.patch.object(HostProxy, 'add_host')
     @mock.patch.object(AddHost, 'validate_host_info')
-    @mock.patch.object(HostProxy, 'connect')
+    @mock.patch.object(HostProxy, '_create_session')
     def test_add_host_should_add_host_succeed_when_input_valid_data_with_token(
-            self, mock_connect, mock_validate_host_info, add_host, mock_token, mock_save_key):
+            self, mock_connect, mock_validate_host_info, add_host, mock_token, mock_save_key, mock_close):
         host_data = {
             "ssh_user": "test_user",
             "password": "test_password",
@@ -74,11 +69,12 @@ class TestAddHost(unittest.TestCase):
             "ssh_port": 22,
             "management": False,
         }
-        mock_connect.return_value = True
+        mock_connect.return_value = None
         mock_validate_host_info.return_value = SUCCEED, Host()
         add_host.return_value = SUCCEED
         mock_token.return_value = SUCCEED
         mock_save_key.return_value = SUCCEED, {"pkey": "private_key"}
+        mock_close.return_value = None
         response = client.post(ADD_HOST, data=json.dumps(
             host_data), headers=header_with_token)
         self.assertEqual("Succeed", response.json.get('label'))
@@ -114,7 +110,7 @@ class TestAddHost(unittest.TestCase):
             host_data), headers=header_with_token)
         self.assertEqual("Token.Error", response.json.get('label'))
 
-    @mock.patch.object(HostProxy, 'connect')
+    @mock.patch.object(HostProxy, '_create_session')
     @mock.patch.object(BaseResponse, 'verify_token')
     def test_add_host_should_return_database_connect_error_when_all_input_is_right_but_cannot_connect_database(
             self, mock_token, mock_connect):
@@ -128,16 +124,17 @@ class TestAddHost(unittest.TestCase):
             "management": False,
         }
         mock_token.return_value = SUCCEED
-        mock_connect.return_value = False
+        mock_connect.side_effect = sqlalchemy.exc.SQLAlchemyError("Connection error")
         response = client.post(ADD_HOST, data=json.dumps(
             host_data), headers=header_with_token)
         self.assertEqual("Database.Connect.Error", response.json.get('label'))
 
+    @mock.patch.object(HostProxy, "__exit__")
     @mock.patch.object(AddHost, 'validate_host_info')
-    @mock.patch.object(HostProxy, 'connect')
+    @mock.patch.object(HostProxy, '_create_session')
     @mock.patch.object(BaseResponse, 'verify_token')
     def test_add_host_should_return_database_query_error_when_input_all_is_right_but_query_hosts_failed(
-            self, mock_token, mock_connect, mock_hosts):
+            self, mock_token, mock_connect, mock_hosts, mock_close):
         host_data = {
             "ssh_user": "test_user",
             "password": "test_password",
@@ -148,18 +145,20 @@ class TestAddHost(unittest.TestCase):
             "management": False,
         }
         mock_token.return_value = SUCCEED
-        mock_connect.return_value = True
+        mock_connect.return_value = None
         mock_hosts.return_value = DATABASE_QUERY_ERROR, InstrumentedList([])
+        mock_close.return_value = None
         response = client.post(ADD_HOST, data=json.dumps(
             host_data), headers=header_with_token)
         self.assertEqual("Database.Query.Error", response.json.get('label'))
 
+    @mock.patch.object(HostProxy, "__exit__")
     @mock.patch.object(HostProxy, 'add_host')
     @mock.patch.object(AddHost, 'validate_host_info')
-    @mock.patch.object(HostProxy, 'connect')
+    @mock.patch.object(HostProxy, '_create_session')
     @mock.patch.object(BaseResponse, 'verify_token')
     def test_add_host_should_add_host_failed_when_input_valid_data_with_token_but_add_host_to_database_failed(
-            self, mock_token, mock_connect, mock_validate_host, mock_add_host):
+            self, mock_token, mock_connect, mock_validate_host, mock_add_host, mock_close):
         host_data = {
             "ssh_user": "test_user",
             "password": "test_password",
@@ -170,19 +169,21 @@ class TestAddHost(unittest.TestCase):
             "management": False,
         }
         mock_token.return_value = SUCCEED
-        mock_connect.return_value = True
+        mock_connect.return_value = None
         mock_validate_host.return_value = SUCCEED, Host()
         mock_add_host.return_value = DATABASE_INSERT_ERROR
+        mock_close.return_value = None
         response = client.post(ADD_HOST, data=json.dumps(
             host_data), headers=header_with_token)
         self.assertEqual("Database.Insert.Error", response.json.get('label'))
 
+    @mock.patch.object(HostProxy, "__exit__")
     @mock.patch.object(AddHost, 'validate_host_info')
-    @mock.patch.object(HostProxy, 'connect')
+    @mock.patch.object(HostProxy, '_create_session')
     @mock.patch.object(BaseResponse, 'verify_request')
     @mock.patch.object(BaseResponse, 'verify_token')
     def test_add_host_should_host_existed_when_host_is_in_database(
-            self, mock_token, mcok_request, mock_connect, mock_validate_host_info):
+            self, mock_token, mcok_request, mock_connect, mock_validate_host_info, mock_close):
         host_data = {
             "ssh_user": "test_user",
             "password": "test_password",
@@ -196,17 +197,19 @@ class TestAddHost(unittest.TestCase):
 
         mock_token.return_value = SUCCEED
         mcok_request.return_value = host_data, SUCCEED
-        mock_connect.return_value = True
+        mock_connect.return_value = None
         mock_validate_host_info.return_value = DATA_EXIST, Host()
+        mock_close.return_value = None
         response = client.post(ADD_HOST, data=json.dumps(
             host_data), headers=header_with_token)
         self.assertEqual("Data.Exist", response.json.get('label'))
 
+    @mock.patch.object(HostProxy, "__exit__")
     @mock.patch.object(AddHost, 'validate_host_info')
-    @mock.patch.object(HostProxy, 'connect')
+    @mock.patch.object(HostProxy, '_create_session')
     @mock.patch.object(BaseResponse, 'verify_token')
     def test_add_host_should_param_error_when_host_group_is_not_in_database(
-            self, mock_token, mock_connect, mock_validate_host_info):
+            self, mock_token, mock_connect, mock_validate_host_info, mock_close):
         host_data = {
             "ssh_user": "test_user",
             "password": "test_password",
@@ -217,8 +220,9 @@ class TestAddHost(unittest.TestCase):
             "management": False,
         }
         mock_token.return_value = SUCCEED
-        mock_connect.return_value = True
+        mock_connect.return_value = None
         mock_validate_host_info.return_value = PARAM_ERROR, Host()
+        mock_close.return_value = None
         response = client.post(ADD_HOST, data=json.dumps(
             host_data), headers=header_with_token)
         self.assertEqual("Param.Error", response.json.get('label'))
@@ -404,7 +408,7 @@ class TestAddHost(unittest.TestCase):
             self, mock_ssh, mock_execute_command, mock_key_pair):
         mock_ssh.return_value = paramiko.client.SSHClient()
         mock_key_pair.return_value = "private_key", "public_key"
-        mock_execute_command.return_value = '', '', BytesIO()
+        mock_execute_command.return_value = 0, '', BytesIO()
         mock_data = {
             "ssh_user": "test_user",
             "password": "test_password",
@@ -490,7 +494,7 @@ class TestAddHost(unittest.TestCase):
         mock_hosts_with_groups.return_value = SUCCEED, InstrumentedList(
         ), InstrumentedList([mock_group])
         target = AddHost()
-        target.proxy = HostProxy()
+        target.proxy = HostProxy(configuration)
         self.assertEqual(target.validate_host_info(mock_host_info)[0], SUCCEED)
 
     @mock.patch.object(HostProxy, "get_hosts_and_groups")
@@ -510,7 +514,7 @@ class TestAddHost(unittest.TestCase):
         mock_hosts_with_groups.return_value = SUCCEED, InstrumentedList(
         ), InstrumentedList([mock_group])
         target = AddHost()
-        target.proxy = HostProxy()
+        target.proxy = HostProxy(configuration)
         self.assertEqual(target.validate_host_info(
             mock_host_info)[0], PARAM_ERROR)
 
@@ -542,7 +546,7 @@ class TestAddHost(unittest.TestCase):
         mock_hosts_with_groups.return_value = SUCCEED, InstrumentedList(
             [mock_host]), InstrumentedList([mock_group])
         target = AddHost()
-        target.proxy = HostProxy()
+        target.proxy = HostProxy(configuration)
         self.assertEqual(
             DATA_EXIST, target.validate_host_info(mock_host_info)[0])
 
@@ -574,6 +578,6 @@ class TestAddHost(unittest.TestCase):
         mock_hosts_with_groups.return_value = SUCCEED, InstrumentedList(
             [mock_host]), InstrumentedList([mock_group])
         target = AddHost()
-        target.proxy = HostProxy()
+        target.proxy = HostProxy(configuration)
         self.assertEqual(
             DATA_EXIST, target.validate_host_info(mock_host_info)[0])
