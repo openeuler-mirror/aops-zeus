@@ -22,6 +22,7 @@ class HostKey:
     """
     class HostKey is the cache the store key related to user .
     """
+
     _instance_lock = threading.Lock()
     mutex = threading.Lock()
     init_flag = False

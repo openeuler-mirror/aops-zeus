@@ -15,10 +15,7 @@ Time:
 Author:
 Description: default config of manager
 """
-zeus = {
-    "IP": "127.0.0.1",
-    "PORT": 11111
-}
+zeus = {"IP": "127.0.0.1", "PORT": 11111}
 
 mysql = {
     "IP": "127.0.0.1",
@@ -26,31 +23,16 @@ mysql = {
     "DATABASE_NAME": "aops",
     "ENGINE_FORMAT": "mysql+pymysql://@%s:%s/%s",
     "POOL_SIZE": 100,
-    "POOL_RECYCLE": 7200
+    "POOL_RECYCLE": 7200,
 }
 
-diana = {
-    "IP": "127.0.0.1",
-    "PORT": 11112
-}
+diana = {"IP": "127.0.0.1", "PORT": 11112}
 
-apollo = {
-    "IP": "127.0.0.1",
-    "PORT": 11116
-}
+apollo = {"IP": "127.0.0.1", "PORT": 11116}
 
-redis = {
-    "IP": "127.0.0.1",
-    "PORT": 6379
-}
+redis = {"IP": "127.0.0.1", "PORT": 6379}
 
 
-prometheus = {
-    "IP": "127.0.0.1",
-    "PORT": 9090,
-    "QUERY_RANGE_STEP": "15s"
-}
+prometheus = {"IP": "127.0.0.1", "PORT": 9090, "QUERY_RANGE_STEP": "15s"}
 
-agent = {
-    "DEFAULT_INSTANCE_PORT": 8888
-}
+agent = {"DEFAULT_INSTANCE_PORT": 8888}

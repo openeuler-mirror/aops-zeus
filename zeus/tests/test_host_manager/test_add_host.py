@@ -33,7 +33,7 @@ from vulcanus.restful.resp.state import (
     SSH_AUTHENTICATION_ERROR,
     SSH_CONNECTION_ERROR,
     SUCCEED,
-    TOKEN_ERROR
+    TOKEN_ERROR,
 )
 from zeus.conf import configuration
 from zeus.database.proxy.host import HostProxy
@@ -89,13 +89,11 @@ class TestAddHost(unittest.TestCase):
             "ssh_port": 22,
             "management": False,
         }
-        response = client.post(
-            ADD_HOST, data=json.dumps(host_data), headers=header)
+        response = client.post(ADD_HOST, data=json.dumps(host_data), headers=header)
         self.assertEqual("Token.Error", response.json.get('label'))
 
     @mock.patch.object(BaseResponse, 'verify_token')
-    def test_add_host_should_return_token_error_when_request_interface_with_invalid_token(self,
-                                                                                          mock_token):
+    def test_add_host_should_return_token_error_when_request_interface_with_invalid_token(self, mock_token):
         mock_token.return_value = TOKEN_ERROR
         host_data = {
             "ssh_user": "test_user",
@@ -106,14 +104,14 @@ class TestAddHost(unittest.TestCase):
             "ssh_port": 22,
             "management": False,
         }
-        response = client.post(ADD_HOST, data=json.dumps(
-            host_data), headers=header_with_token)
+        response = client.post(ADD_HOST, data=json.dumps(host_data), headers=header_with_token)
         self.assertEqual("Token.Error", response.json.get('label'))
 
     @mock.patch.object(HostProxy, '_create_session')
     @mock.patch.object(BaseResponse, 'verify_token')
     def test_add_host_should_return_database_connect_error_when_all_input_is_right_but_cannot_connect_database(
-            self, mock_token, mock_connect):
+        self, mock_token, mock_connect
+    ):
         host_data = {
             "ssh_user": "test_user",
             "password": "test_password",
@@ -192,7 +190,7 @@ class TestAddHost(unittest.TestCase):
             "host_group_name": "test_host_group",
             "ssh_port": 22,
             "management": False,
-            "username": "admin"
+            "username": "admin",
         }
 
         mock_token.return_value = SUCCEED
@@ -237,18 +235,21 @@ class TestAddHost(unittest.TestCase):
                 "password": "test_password",
                 "host_ip": "",
                 "ssh_port": 0,
-            }, {
+            },
+            {
                 "ssh_user": "",
                 "password": 123456,
                 "host_group_name": 1,
                 "ssh_port": -22,
-            }, {
+            },
+            {
                 "host_name": "test_host_1",
                 "ssh_user": 2,
                 "password": True,
                 "host_ip": "ip",
                 "management": True,
-            }, {
+            },
+            {
                 "host_name": "test_host_1",
                 "ssh_user": "test_user",
                 "password": "test_password",
@@ -256,14 +257,16 @@ class TestAddHost(unittest.TestCase):
                 "host_ip": 22,
                 "ssh_port": -22,
                 "management": True,
-            }, {
+            },
+            {
                 "host_name": "",
                 "ssh_user": "",
                 "password": "test_password",
                 "host_ip": 22,
                 "ssh_port": -22,
                 "management": True,
-            }, {
+            },
+            {
                 "host_name": "",
                 "ssh_user": 123,
                 "password": 123,
@@ -271,55 +274,64 @@ class TestAddHost(unittest.TestCase):
                 "host_ip": "127.0.0.1",
                 "ssh_port": -22,
                 "management": False,
-            }, {
+            },
+            {
                 "host_name": "",
                 "ssh_user": 123,
                 "host_group_name": "test_host_group",
                 "host_ip": "1271.0.0.1",
                 "ssh_port": 0,
-            }, {
+            },
+            {
                 "host_name": "",
                 "password": "",
                 "host_group_name": "",
                 "host_ip": 123,
                 "ssh_port": -22,
                 "management": True,
-            }, {
+            },
+            {
                 "host_name": "",
                 "ssh_user": "test_user",
                 "password": "",
                 "host_group_name": 123,
                 "management": True,
-            }, {
+            },
+            {
                 "host_name": 123,
                 "ssh_user": "",
                 "password": "test_password",
                 "host_ip": "1271.0.0.1",
                 "management": True,
-            }, {
+            },
+            {
                 "host_name": 123,
                 "ssh_user": "",
                 "host_group_name": 123,
                 "host_ip": "127.0.0.1",
                 "ssh_port": -22,
                 "management": True,
-            }, {
+            },
+            {
                 "host_name": 123,
                 "ssh_user": 123,
                 "password": "test_password",
                 "host_group_name": "",
-            }, {
+            },
+            {
                 "host_name": 123,
                 "password": "",
                 "host_group_name": "test_host_group",
                 "host_ip": "127q.0.0.1",
                 "ssh_port": 22,
-            }, {
+            },
+            {
                 "host_name": 123,
                 "host_group_name": "test_host_group",
                 "host_ip": 123,
                 "management": False,
-            }, {
+            },
+            {
                 "host_name": 123,
                 "ssh_user": "test_user",
                 "password": 123,
@@ -327,41 +339,48 @@ class TestAddHost(unittest.TestCase):
                 "host_ip": "127.0.0.1",
                 "ssh_port": 0,
                 "management": False,
-            }, {
+            },
+            {
                 "host_name": 123,
                 "ssh_user": "test_user",
                 "host_group_name": 123,
                 "host_ip": 123,
                 "ssh_port": 22,
-            }, {
+            },
+            {
                 "ssh_user": "",
                 "password": 123,
                 "host_group_name": "test_host_group",
                 "management": False,
-            }, {
+            },
+            {
                 "ssh_user": 123,
                 "password": "",
                 "host_ip": "127.0.0.1",
                 "ssh_port": 22,
-            }, {
+            },
+            {
                 "ssh_user": 123,
                 "password": "test_password",
                 "host_group_name": "",
                 "host_ip": 123,
                 "ssh_port": 0,
                 "management": True,
-            }, {
+            },
+            {
                 "password": "test_password",
                 "host_group_name": 123,
                 "host_ip": "1271.0.0.1",
                 "ssh_port": 0,
                 "management": True,
-            }, {
+            },
+            {
                 "ssh_user": "test_user",
                 "host_ip": "1271.0.0.1",
                 "ssh_port": -22,
                 "management": False,
-            }, {
+            },
+            {
                 "host_name": "test_host_1",
                 "ssh_user": "",
                 "password": "",
@@ -369,35 +388,33 @@ class TestAddHost(unittest.TestCase):
                 "host_ip": "1271.0.0.1",
                 "ssh_port": 0,
                 "management": False,
-            }, {
-                "host_name": "test_host_1",
-                "ssh_user": "",
-                "host_group_name": "",
-                "ssh_port": 22
-            }, {
+            },
+            {"host_name": "test_host_1", "ssh_user": "", "host_group_name": "", "ssh_port": 22},
+            {
                 "host_name": "test_host_1",
                 "ssh_user": 123,
                 "password": 123,
                 "host_group_name": 123,
                 "host_ip": 123,
                 "ssh_port": -22,
-            }, {
+            },
+            {
                 "host_name": "test_host_1",
                 "password": 123,
                 "ssh_port": 22,
                 "management": True,
-            }, {
+            },
+            {
                 "host_name": "test_host_1",
                 "password": "test_password",
                 "host_group_name": 123,
                 "host_ip": "127.0.0.1",
                 "management": False,
-            }
+            },
         ]
         result = []
         for host in host_infos:
-            response = client.post(ADD_HOST, data=json.dumps(
-                host), headers=header_with_token)
+            response = client.post(ADD_HOST, data=json.dumps(host), headers=header_with_token)
             result.append(response.json.get("label"))
         self.assertEqual(result, ["Param.Error"] * len(host_infos))
 
@@ -405,7 +422,8 @@ class TestAddHost(unittest.TestCase):
     @mock.patch.object(SSH, "execute_command")
     @mock.patch.object(SSH, "client")
     def test_save_ssh_public_key_to_client_should_return_add_succeed_and_pkey_when_save_public_key_succeed(
-            self, mock_ssh, mock_execute_command, mock_key_pair):
+        self, mock_ssh, mock_execute_command, mock_key_pair
+    ):
         mock_ssh.return_value = paramiko.client.SSHClient()
         mock_key_pair.return_value = "private_key", "public_key"
         mock_execute_command.return_value = 0, '', BytesIO()
@@ -424,62 +442,52 @@ class TestAddHost(unittest.TestCase):
     @mock.patch("zeus.host_manager.view.generate_key")
     @mock.patch.object(SSH, "client")
     def test_save_ssh_public_key_to_client_should_return_ssh_connect_error_when_connect_host_failed(
-            self, mock_ssh, mock_key_pair):
+        self, mock_ssh, mock_key_pair
+    ):
         mock_ssh.side_effect = socket.error()
         mock_key_pair.return_value = "private_key", "public_key"
-        mock_data = {
-            "ssh_user": "test_user",
-            "password": "test_password",
-            "host_ip": "127.0.0.1",
-            "ssh_port": 22
-        }
-        self.assertEqual(SSH_CONNECTION_ERROR,
-                         save_ssh_public_key_to_client(mock_data['host_ip'],
-                                                       mock_data['ssh_port'],
-                                                       mock_data["ssh_user"],
-                                                       mock_data["password"])[0])
+        mock_data = {"ssh_user": "test_user", "password": "test_password", "host_ip": "127.0.0.1", "ssh_port": 22}
+        self.assertEqual(
+            SSH_CONNECTION_ERROR,
+            save_ssh_public_key_to_client(
+                mock_data['host_ip'], mock_data['ssh_port'], mock_data["ssh_user"], mock_data["password"]
+            )[0],
+        )
 
     @mock.patch("zeus.host_manager.view.generate_key")
     @mock.patch.object(SSH, "client")
     def test_save_ssh_public_key_to_client_should_return_ssh_authentication_error_when_authentication_failed(
-            self, mock_ssh, mock_key_pair):
+        self, mock_ssh, mock_key_pair
+    ):
         mock_ssh.side_effect = AuthenticationException
         mock_key_pair.return_value = "private_key", "public_key"
-        mock_data = {
-            "ssh_user": "test_user",
-            "password": "test_password",
-            "host_ip": "127.0.0.1",
-            "ssh_port": 22
-        }
-        self.assertEqual(SSH_AUTHENTICATION_ERROR,
-                         save_ssh_public_key_to_client(mock_data['host_ip'],
-                                                       mock_data['ssh_port'],
-                                                       mock_data["ssh_user"],
-                                                       mock_data["password"])[0])
+        mock_data = {"ssh_user": "test_user", "password": "test_password", "host_ip": "127.0.0.1", "ssh_port": 22}
+        self.assertEqual(
+            SSH_AUTHENTICATION_ERROR,
+            save_ssh_public_key_to_client(
+                mock_data['host_ip'], mock_data['ssh_port'], mock_data["ssh_user"], mock_data["password"]
+            )[0],
+        )
 
     @mock.patch("zeus.host_manager.view.generate_key")
     @mock.patch.object(SSH, "execute_command")
     @mock.patch.object(SSH, "client")
     def test_save_ssh_public_key_to_client_should_return_execute_command_error_when_save_key_to_host_failed(
-            self, mock_ssh, mock_execute_command, mock_key_pair):
+        self, mock_ssh, mock_execute_command, mock_key_pair
+    ):
         mock_ssh.return_value = paramiko.client.SSHClient()
         mock_key_pair.return_value = "private_key", "public_key"
         mock_execute_command.return_value = '', '', BytesIO(b"error")
-        mock_data = {
-            "ssh_user": "test_user",
-            "password": "test_password",
-            "host_ip": "127.0.0.1",
-            "ssh_port": 22
-        }
-        self.assertEqual(EXECUTE_COMMAND_ERROR,
-                         save_ssh_public_key_to_client(mock_data['host_ip'],
-                                                       mock_data['ssh_port'],
-                                                       mock_data["ssh_user"],
-                                                       mock_data["password"])[0])
+        mock_data = {"ssh_user": "test_user", "password": "test_password", "host_ip": "127.0.0.1", "ssh_port": 22}
+        self.assertEqual(
+            EXECUTE_COMMAND_ERROR,
+            save_ssh_public_key_to_client(
+                mock_data['host_ip'], mock_data['ssh_port'], mock_data["ssh_user"], mock_data["password"]
+            )[0],
+        )
 
     @mock.patch.object(HostProxy, "get_hosts_and_groups")
-    def test_validate_host_info_should_return_host_object_when_host_info_is_valid(
-            self, mock_hosts_with_groups):
+    def test_validate_host_info_should_return_host_object_when_host_info_is_valid(self, mock_hosts_with_groups):
         mock_host_info = {
             "ssh_user": "test_user",
             "host_name": "test_host_2",
@@ -487,19 +495,16 @@ class TestAddHost(unittest.TestCase):
             "host_group_name": "test_host_group",
             "ssh_port": 22,
             "management": False,
-            "user": "admin"
+            "user": "admin",
         }
-        mock_group = HostGroup(
-            host_group_id=1, host_group_name="test_host_group", description="test", username="admin")
-        mock_hosts_with_groups.return_value = SUCCEED, InstrumentedList(
-        ), InstrumentedList([mock_group])
+        mock_group = HostGroup(host_group_id=1, host_group_name="test_host_group", description="test", username="admin")
+        mock_hosts_with_groups.return_value = SUCCEED, InstrumentedList(), InstrumentedList([mock_group])
         target = AddHost()
         target.proxy = HostProxy(configuration)
         self.assertEqual(target.validate_host_info(mock_host_info)[0], SUCCEED)
 
     @mock.patch.object(HostProxy, "get_hosts_and_groups")
-    def test_validate_host_info_should_return_param_error_when_host_group_not_in_database(
-            self, mock_hosts_with_groups):
+    def test_validate_host_info_should_return_param_error_when_host_group_not_in_database(self, mock_hosts_with_groups):
         mock_host_info = {
             "ssh_user": "test_user",
             "host_name": "test_host_2",
@@ -507,20 +512,17 @@ class TestAddHost(unittest.TestCase):
             "host_group_name": "test_host_group",
             "ssh_port": 22,
             "management": False,
-            "user": "admin"
+            "user": "admin",
         }
-        mock_group = HostGroup(
-            host_group_id=1, host_group_name="test_group", description="test", username="admin")
-        mock_hosts_with_groups.return_value = SUCCEED, InstrumentedList(
-        ), InstrumentedList([mock_group])
+        mock_group = HostGroup(host_group_id=1, host_group_name="test_group", description="test", username="admin")
+        mock_hosts_with_groups.return_value = SUCCEED, InstrumentedList(), InstrumentedList([mock_group])
         target = AddHost()
         target.proxy = HostProxy(configuration)
         self.assertEqual(target.validate_host_info(
             mock_host_info)[0], PARAM_ERROR)
 
     @mock.patch.object(HostProxy, "get_hosts_and_groups")
-    def test_validate_host_info_should_return_data_exist_when_host_name_in_database(
-            self, mock_hosts_with_groups):
+    def test_validate_host_info_should_return_data_exist_when_host_name_in_database(self, mock_hosts_with_groups):
         mock_host_info = {
             "ssh_user": "test_user",
             "host_name": "test_host",
@@ -528,31 +530,30 @@ class TestAddHost(unittest.TestCase):
             "host_group_name": "test_host_group",
             "ssh_port": 22,
             "management": False,
-            "username": "admin"
+            "username": "admin",
         }
 
-        mock_host = Host(**{
-            "ssh_user": "test_user",
-            "host_name": "test_host",
-            "host_ip": "127.0.0.2",
-            "host_group_name": "test_host_group",
-            "host_group_id": 1,
-            "ssh_port": 22,
-            "management": False,
-            "user": "admin"
-        })
-        mock_group = HostGroup(host_group_id=1, host_group_name="test_host_group",
-                               description="test", username="admin")
-        mock_hosts_with_groups.return_value = SUCCEED, InstrumentedList(
-            [mock_host]), InstrumentedList([mock_group])
+        mock_host = Host(
+            **{
+                "ssh_user": "test_user",
+                "host_name": "test_host",
+                "host_ip": "127.0.0.2",
+                "host_group_name": "test_host_group",
+                "host_group_id": 1,
+                "ssh_port": 22,
+                "management": False,
+                "user": "admin",
+            }
+        )
+        mock_group = HostGroup(host_group_id=1, host_group_name="test_host_group", description="test", username="admin")
+        mock_hosts_with_groups.return_value = SUCCEED, InstrumentedList([mock_host]), InstrumentedList([mock_group])
         target = AddHost()
         target.proxy = HostProxy(configuration)
         self.assertEqual(
             DATA_EXIST, target.validate_host_info(mock_host_info)[0])
 
     @mock.patch.object(HostProxy, "get_hosts_and_groups")
-    def test_validate_host_info_should_return_data_exist_when_host_ip_in_database(
-            self, mock_hosts_with_groups):
+    def test_validate_host_info_should_return_data_exist_when_host_ip_in_database(self, mock_hosts_with_groups):
         mock_host_info = {
             "ssh_user": "test_user",
             "host_name": "test_host_1",
@@ -560,23 +561,23 @@ class TestAddHost(unittest.TestCase):
             "host_group_name": "test_host_group",
             "ssh_port": 22,
             "management": False,
-            "username": "admin"
+            "username": "admin",
         }
 
-        mock_host = Host(**{
-            "ssh_user": "test_user",
-            "host_name": "test_host_2",
-            "host_ip": "127.0.0.1",
-            "host_group_name": "test_host_group",
-            "host_group_id": 1,
-            "ssh_port": 22,
-            "management": False,
-            "user": "admin"
-        })
-        mock_group = HostGroup(host_group_id=1, host_group_name="test_host_group",
-                               description="test", username="admin")
-        mock_hosts_with_groups.return_value = SUCCEED, InstrumentedList(
-            [mock_host]), InstrumentedList([mock_group])
+        mock_host = Host(
+            **{
+                "ssh_user": "test_user",
+                "host_name": "test_host_2",
+                "host_ip": "127.0.0.1",
+                "host_group_name": "test_host_group",
+                "host_group_id": 1,
+                "ssh_port": 22,
+                "management": False,
+                "user": "admin",
+            }
+        )
+        mock_group = HostGroup(host_group_id=1, host_group_name="test_host_group", description="test", username="admin")
+        mock_hosts_with_groups.return_value = SUCCEED, InstrumentedList([mock_host]), InstrumentedList([mock_group])
         target = AddHost()
         target.proxy = HostProxy(configuration)
         self.assertEqual(

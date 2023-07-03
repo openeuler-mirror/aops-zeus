@@ -25,6 +25,7 @@ class ClientConnectArgs:
         timeout: timeout opening a channel, default 10s
 
     """
+
     host_ip: str
     ssh_port: int
     ssh_user: str

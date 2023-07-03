@@ -32,7 +32,7 @@ from zeus.function.verify.acount import (
     LoginSchema,
     ChangePasswordSchema,
     AddUserSchema,
-    RefreshTokenSchema
+    RefreshTokenSchema,
 )
 
 
@@ -80,10 +80,8 @@ class Login(BaseResponse):
         status_code, auth_result = callback.login(params)
         if status_code == state.SUCCEED:
             token_info = decode_token(auth_result["token"])
-            RedisProxy.redis_connect.set(
-                "token_" + token_info["key"], auth_result["token"])
-            RedisProxy.redis_connect.set(
-                "refresh_token_" + token_info["key"], auth_result["refresh_token"])
+            RedisProxy.redis_connect.set("token_" + token_info["key"], auth_result["token"])
+            RedisProxy.redis_connect.set("refresh_token_" + token_info["key"], auth_result["refresh_token"])
         return self.response(code=status_code, data=auth_result)
 
 
@@ -101,7 +99,7 @@ class AuthRedirectUrl(BaseResponse):
             host: http://openeuler.org
 
         Returns:
-            dict: eg. 
+            dict: eg.
             {
                 "gitee": "https://gitee.com"
             }
@@ -119,16 +117,12 @@ class GiteeAuthLogin(BaseResponse):
     """
 
     @BaseResponse.handle(schema=GiteeAuthLoginSchema, token=False, proxy=UserProxy, config=configuration)
-    def get(self, callback: UserProxy, **params:dict):
-
-        status_code, auth_result = callback.gitee_auth_login(
-            code=params["code"])
+    def get(self, callback: UserProxy, **params: dict):
+        status_code, auth_result = callback.gitee_auth_login(code=params["code"])
         if status_code == state.SUCCEED:
             token_info = decode_token(auth_result["token"])
-            RedisProxy.redis_connect.set(
-                "token_" + token_info["key"], auth_result["token"])
-            RedisProxy.redis_connect.set(
-                "refresh_token_" + token_info["key"], auth_result["refresh_token"])
+            RedisProxy.redis_connect.set("token_" + token_info["key"], auth_result["token"])
+            RedisProxy.redis_connect.set("refresh_token_" + token_info["key"], auth_result["refresh_token"])
 
         return self.response(code=status_code, data=auth_result)
 
@@ -140,10 +134,10 @@ class BindAuthAccount(BaseResponse):
     """
 
     @BaseResponse.handle(schema=BindAuthAccountSchema, token=False, proxy=UserProxy, config=configuration)
-    def post(self, callback: UserProxy, **params:dict):
-
+    def post(self, callback: UserProxy, **params: dict):
         status_code, auth_result = callback.bind_auth_account(
-            auth_account=params["auth_account"], username=params["username"], password=params["password"])
+            auth_account=params["auth_account"], username=params["username"], password=params["password"]
+        )
         return self.response(code=status_code, data=auth_result)
 
 
@@ -154,7 +148,7 @@ class ChangePassword(BaseResponse):
     """
 
     @BaseResponse.handle(schema=ChangePasswordSchema, proxy=UserProxy, config=configuration)
-    def post(self, callback: UserProxy, **params:dict):
+    def post(self, callback: UserProxy, **params: dict):
         """
         Change password
 
@@ -190,12 +184,12 @@ class RefreshToken(BaseResponse):
             return self.response(code=state.TOKEN_EXPIRE)
         except ValueError:
             self.response(code=state.TOKEN_ERROR, message="token refreshing failure.")
-        
+
         username = refresh_token_info["key"]
         old_refresh_token = RedisProxy.redis_connect.get("refresh_token_" + username)
         if not old_refresh_token or old_refresh_token != params.get("refresh_token"):
             return self.response(code=state.TOKEN_ERROR, message="Invalid token.")
-        
+
         try:
             token = generate_token(unique_iden=username)
             refresh_token = generate_token(unique_iden=username, minutes=REFRESH_TOKEN_EXP)

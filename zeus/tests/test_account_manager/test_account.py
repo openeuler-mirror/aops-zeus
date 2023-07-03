@@ -32,8 +32,7 @@ class TestAccountDatabase(unittest.TestCase):
         mysql_port = 3306
         mysql_url_format = "mysql+pymysql://%s:%s/%s"
         mysql_database_name = "aops_test"
-        engine_url = mysql_url_format % (
-            mysql_host, mysql_port, mysql_database_name)
+        engine_url = mysql_url_format % (mysql_host, mysql_port, mysql_database_name)
         self.engine = create_database_engine(engine_url, 100, 7200)
         self.proxy.engine = self.engine
         self.proxy.connect()
@@ -46,16 +45,7 @@ class TestAccountDatabase(unittest.TestCase):
 
     def test_api_user(self):
         # ==============add user ===================
-        data = [
-            {
-                "username": "admin",
-                "password": "changeme"
-            },
-            {
-                "username": "test",
-                "password": "123456"
-            }
-        ]
+        data = [{"username": "admin", "password": "changeme"}, {"username": "test", "password": "123456"}]
         for user in data:
             res = self.proxy.add_user(user)
             self.assertEqual(res, SUCCEED)
@@ -66,43 +56,26 @@ class TestAccountDatabase(unittest.TestCase):
 
         # ==============user login=====================
         # unknown username
-        data = {
-            "username": "test1",
-            "password": "aa"
-        }
+        data = {"username": "test1", "password": "aa"}
         res = self.proxy.login(data)
         self.assertEqual(res[0], LOGIN_ERROR)
         # wrong password
-        data = {
-            "username": "test",
-            "password": "2111"
-        }
+        data = {"username": "test", "password": "2111"}
         res = self.proxy.login(data)
         self.assertEqual(res[0], LOGIN_ERROR)
         # right
-        data = {
-            "username": "test",
-            "password": "123456"
-        }
+        data = {"username": "test", "password": "123456"}
         res = self.proxy.login(data)
         self.assertEqual(res[0], SUCCEED)
 
         # =============change password===================
         # new password is the same as origin
-        data = {
-            "username": "test",
-            "password": "123456",
-            "old_password": "123456"
-        }
+        data = {"username": "test", "password": "123456", "old_password": "123456"}
         res = self.proxy.change_password(data)
         self.assertEqual(res[0], REPEAT_PASSWORD)
 
         # right
-        data = {
-            "username": "test",
-            "password": "444",
-            "old_password": "123456"
-        }
+        data = {"username": "test", "password": "444", "old_password": "123456"}
         res = self.proxy.change_password(data)
         self.assertEqual(res[0], SUCCEED)
 

@@ -20,13 +20,10 @@ setup(
         'paramiko>=2.11.0',
         "redis",
         'prometheus_api_client',
-        'gevent'
+        'gevent',
     ],
     author='cmd-lsw-yyy-zyc',
-    data_files=[
-        ('/etc/aops', ['conf/zeus.ini']),
-        ('/usr/lib/systemd/system', ['aops-zeus.service'])
-    ],
+    data_files=[('/etc/aops', ['conf/zeus.ini']), ('/usr/lib/systemd/system', ['aops-zeus.service'])],
     scripts=['aops-zeus'],
-    zip_safe=False
+    zip_safe=False,
 )

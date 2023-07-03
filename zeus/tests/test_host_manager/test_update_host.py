@@ -26,9 +26,7 @@ from zeus.tests import BaseTestCase
 
 
 class TestConfigManage(BaseTestCase):
-    header = {
-        "Content-Type": "application/json; charset=UTF-8"
-    }
+    header = {"Content-Type": "application/json; charset=UTF-8"}
     client = BaseTestCase.create_app()
 
     def setUp(self) -> None:
@@ -42,7 +40,7 @@ class TestConfigManage(BaseTestCase):
                 pkey="pkey",
                 ssh_port=22,
                 management=True,
-                host_group_id=1
+                host_group_id=1,
             ),
             Host(
                 host_id=2,
@@ -53,7 +51,7 @@ class TestConfigManage(BaseTestCase):
                 pkey="pkey",
                 ssh_port=22,
                 management=True,
-                host_group_id=1
+                host_group_id=1,
             ),
             Host(
                 host_id=3,
@@ -64,22 +62,12 @@ class TestConfigManage(BaseTestCase):
                 pkey="pkey",
                 ssh_port=22,
                 management=True,
-                host_group_id=1
-            )
+                host_group_id=1,
+            ),
         ]
         self.group_list = [
-            HostGroup(
-                host_group_id=1,
-                host_group_name="group1",
-                description="test",
-                username="admin"
-            ),
-            HostGroup(
-                host_group_id=2,
-                host_group_name="group2",
-                description="test",
-                username="admin"
-            )
+            HostGroup(host_group_id=1, host_group_name="group1", description="test", username="admin"),
+            HostGroup(host_group_id=2, host_group_name="group2", description="test", username="admin"),
         ]
         self.mock_args = {
             "host_id": 1,
@@ -89,7 +77,7 @@ class TestConfigManage(BaseTestCase):
             "host_name": "test1",
             "host_group_name": "group1",
             "management": True,
-            "username": "admin"
+            "username": "admin",
         }
         self.incorrect_host_id = 10
 
@@ -148,8 +136,7 @@ class TestConfigManage(BaseTestCase):
         mock_connect.return_value = None
         mock_close.return_value = None
         self.mock_args.update({"host_id": self.incorrect_host_id})
-        response = self.client.post(UPDATE_HOST, data=json.dumps(self.mock_args),
-                                    headers=self.header)
+        response = self.client.post(UPDATE_HOST, data=json.dumps(self.mock_args), headers=self.header)
         self.assertEqual(state.NO_DATA, response.json.get("label"), response.json)
 
     @mock.patch.object(HostProxy, "__exit__")
@@ -164,8 +151,7 @@ class TestConfigManage(BaseTestCase):
         mock_connect.return_value = None
         mock_close.return_value = None
         self.mock_args.update({"host_name": "mock_host_1"})
-        response = self.client.post(UPDATE_HOST, data=json.dumps(self.mock_args),
-                                    headers=self.header)
+        response = self.client.post(UPDATE_HOST, data=json.dumps(self.mock_args), headers=self.header)
         self.assertEqual(state.PARAM_ERROR, response.json.get("label"), response.json)
 
     @mock.patch.object(HostProxy, "__exit__")
@@ -180,8 +166,7 @@ class TestConfigManage(BaseTestCase):
         mock_connect.return_value = None
         mock_close.return_value = None
         self.mock_args.update({"host_group_name": "group3"})
-        response = self.client.post(UPDATE_HOST, data=json.dumps(self.mock_args),
-                                    headers=self.header)
+        response = self.client.post(UPDATE_HOST, data=json.dumps(self.mock_args), headers=self.header)
         self.assertEqual(state.PARAM_ERROR, response.json.get("label"), response.json)
 
     @mock.patch.object(HostProxy, "__exit__")
@@ -196,8 +181,7 @@ class TestConfigManage(BaseTestCase):
         mock_connect.return_value = None
         mock_close.return_value = None
         self.mock_args.update({"ssh_port": "22"})
-        response = self.client.post(UPDATE_HOST, data=json.dumps(self.mock_args),
-                                    headers=self.header)
+        response = self.client.post(UPDATE_HOST, data=json.dumps(self.mock_args), headers=self.header)
         self.assertEqual(state.PARAM_ERROR, response.json.get("label"), response.json)
 
     @mock.patch.object(HostProxy, "__exit__")
@@ -215,14 +199,12 @@ class TestConfigManage(BaseTestCase):
         mock_close.return_value = None
         mock_ssh_key.return_value = state.SUCCEED, "pkey"
         mock_update_host.return_value = state.DATABASE_UPDATE_ERROR
-        response = self.client.post(UPDATE_HOST, data=json.dumps(self.mock_args),
-                                    headers=self.header)
+        response = self.client.post(UPDATE_HOST, data=json.dumps(self.mock_args), headers=self.header)
         self.assertEqual(state.DATABASE_UPDATE_ERROR, response.json.get("label"), response.json)
 
     def test_update_host_should_return_token_error_when_request_api_without_token(self):
         self.mock_args.pop("username")
-        response = self.client.post(UPDATE_HOST, data=json.dumps(self.mock_args),
-                                    headers=self.header)
+        response = self.client.post(UPDATE_HOST, data=json.dumps(self.mock_args), headers=self.header)
         self.assertEqual(state.TOKEN_ERROR, response.json.get("label"), response.json)
 
     def test_update_host_should_return_param_error_when_request_api_without_args(self):

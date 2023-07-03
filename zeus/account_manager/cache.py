@@ -36,6 +36,7 @@ class UserCache:
     """
     class UserCache is the cache the store key related to user .
     """
+
     _instance_lock = threading.Lock()
     mutex = threading.Lock()
     init_flag = False
@@ -72,8 +73,7 @@ class UserCache:
             user
         """
         UserCache.mutex.acquire()
-        UserCache.cache[key] = UserInfo(
-            user.username, user.password, user.token)
+        UserCache.cache[key] = UserInfo(user.username, user.password, user.token)
         UserCache.key = key
         UserCache.mutex.release()
 
@@ -98,19 +98,16 @@ class UserCache:
         if user is None:
             proxy = UserProxy()
             if proxy.connect(session_maker()):
-                query_res = proxy.session.query(
-                    User).filter_by(username=key).all()
+                query_res = proxy.session.query(User).filter_by(username=key).all()
                 if len(query_res) == 0:
                     LOGGER.error("no such user, please check username again.")
                     UserCache.mutex.release()
                     return user
                 user = query_res[0]
-                UserCache.cache[key] = UserInfo(
-                    user.username, user.password, user.token)
+                UserCache.cache[key] = UserInfo(user.username, user.password, user.token)
                 proxy.close()
             else:
-                LOGGER.error(
-                    "connect to database error, cannot get user token")
+                LOGGER.error("connect to database error, cannot get user token")
 
         UserCache.mutex.release()
         return user

@@ -46,7 +46,7 @@ from vulcanus.conf.constant import (
     QUERY_METRIC_LIST,
     REFRESH_TOKEN,
     LOGOUT,
-    EXECUTE_CVE_ROLLBACK
+    EXECUTE_CVE_ROLLBACK,
 )
 from zeus.account_manager import view as account_view
 from zeus.agent_manager import view as agent_view
@@ -76,34 +76,31 @@ SPECIFIC_URLS = {
         (host_view.GetHost, QUERY_HOST),
         (host_view.GetHostInfo, QUERY_HOST_DETAIL),
         (host_view.GetHostCount, GET_HOST_COUNT),
-        (host_view.GetHostTemplateFile, GET_HOST_TEMPLATE_FILE)
+        (host_view.GetHostTemplateFile, GET_HOST_TEMPLATE_FILE),
     ],
     "HOST_GROUP_URLS": [
         (host_view.AddHostGroup, ADD_GROUP),
         (host_view.DeleteHostGroup, DELETE_GROUP),
-        (host_view.GetHostGroup, GET_GROUP)
+        (host_view.GetHostGroup, GET_GROUP),
     ],
-    "CONFIG_URLS": [
-        (config_view.CollectConfig, COLLECT_CONFIG)
-    ],
+    "CONFIG_URLS": [(config_view.CollectConfig, COLLECT_CONFIG)],
     'AGENT_URLS': [
         (agent_view.AgentPluginInfo, AGENT_PLUGIN_INFO),
         (agent_view.SetAgentPluginStatus, AGENT_PLUGIN_SET),
         (agent_view.SetAgentMetricStatus, AGENT_METRIC_SET),
-        (agent_view.GetHostScene, HOST_SCENE_GET)
+        (agent_view.GetHostScene, HOST_SCENE_GET),
     ],
     'CVE_URLS': [
         (vulnerability_view.ExecuteRepoSetTask, EXECUTE_REPO_SET),
         (vulnerability_view.ExecuteCveScanTask, EXECUTE_CVE_SCAN),
         (vulnerability_view.ExecuteCveFixTask, EXECUTE_CVE_FIX),
-        (vulnerability_view.ExecuteCveRollbackTask,EXECUTE_CVE_ROLLBACK)
+        (vulnerability_view.ExecuteCveRollbackTask, EXECUTE_CVE_ROLLBACK),
     ],
     'METRIC': [
         (metric_view.QueryHostMetricNames, QUERY_METRIC_NAMES),
         (metric_view.QueryHostMetricData, QUERY_METRIC_DATA),
         (metric_view.QueryHostMetricList, QUERY_METRIC_LIST),
     ],
-
 }
 
 for _, value in SPECIFIC_URLS.items():

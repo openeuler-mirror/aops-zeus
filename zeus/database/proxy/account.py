@@ -37,7 +37,7 @@ from vulcanus.restful.resp.state import (
     GENERATION_TOKEN_ERROR,
     NO_DATA,
     DATABASE_UPDATE_ERROR,
-    REPEAT_BIND
+    REPEAT_BIND,
 )
 from vulcanus.restful.response import BaseResponse
 from vulcanus.token import generate_token
@@ -68,8 +68,7 @@ class UserProxy(MysqlProxy):
         password = data.get('password')
         token = secrets.token_hex(16)
         password_hash = User.hash_password(password)
-        user = User(username=username, password=password_hash, token=token,
-                    email=data.get("email"))
+        user = User(username=username, password=password_hash, token=token, email=data.get("email"))
 
         try:
             self.session.add(user)
@@ -105,8 +104,7 @@ class UserProxy(MysqlProxy):
         password = data.get('password')
         auth_result = dict(token=None, refresh_token=None)
         try:
-            query_res = self.session.query(
-                User).filter_by(username=username).all()
+            query_res = self.session.query(User).filter_by(username=username).all()
             if len(query_res) == 0:
                 LOGGER.error("login with unknown username")
                 return LOGIN_ERROR, auth_result
@@ -146,8 +144,7 @@ class UserProxy(MysqlProxy):
         old_password = data.get("old_password")
 
         try:
-            change_user = self.session.query(
-                User).filter_by(username=username).one_or_none()
+            change_user = self.session.query(User).filter_by(username=username).one_or_none()
             if not change_user:
                 LOGGER.error("login with unknown username")
                 return LOGIN_ERROR, ""
@@ -190,8 +187,7 @@ class UserProxy(MysqlProxy):
         client_id = configuration.individuation.get('GITEE_CLIENT_ID', "")
         redirect_url = configuration.individuation.get('REDIRECT_URL', "")
         if not all([client_id, redirect_url]):
-            LOGGER.error(
-                "The 'GITEE_CLIENT_ID' 'REDIRECT_URL' configuration is missing.")
+            LOGGER.error("The 'GITEE_CLIENT_ID' 'REDIRECT_URL' configuration is missing.")
 
         return f"{GITEE_OAUTH}?client_id={client_id}&scope=user_info&response_type=code&redirect_uri={redirect_url}"
 
@@ -217,11 +213,9 @@ class UserProxy(MysqlProxy):
         userinfo = self._get_gitee_userinfo(token)
         if not userinfo:
             return LOGIN_ERROR, auth_result
-        status_code, save_auth_result = self._gitee_account_info_update(
-            userinfo)
+        status_code, save_auth_result = self._gitee_account_info_update(userinfo)
         if status_code != SUCCEED:
-            LOGGER.error(
-                "Gitee authentication user information fails to be saved.")
+            LOGGER.error("Gitee authentication user information fails to be saved.")
             return AUTH_USERINFO_SYNC_ERROR, auth_result
         # authentication account is bound to the local account
         if not save_auth_result["bind_local_user"]:
@@ -235,8 +229,7 @@ class UserProxy(MysqlProxy):
         auth_result = dict(token=None, refresh_token=None, username=username)
         try:
             auth_result["token"] = generate_token(unique_iden=username)
-            auth_result["refresh_token"] = generate_token(
-                unique_iden=username, minutes=REFRESH_TOKEN_EXP)
+            auth_result["refresh_token"] = generate_token(unique_iden=username, minutes=REFRESH_TOKEN_EXP)
             return SUCCEED, auth_result
 
         except ValueError:
@@ -256,10 +249,10 @@ class UserProxy(MysqlProxy):
         """
         try:
             bind_local_user = False
-            auth_userinfo = Auth(auth_account=userinfo.get(
-                "login"), auth_type="gitee")
-            gitee_auth_user = self.session.query(
-                Auth).filter_by(auth_account=userinfo.get("login"), auth_type="gitee").one_or_none()
+            auth_userinfo = Auth(auth_account=userinfo.get("login"), auth_type="gitee")
+            gitee_auth_user = (
+                self.session.query(Auth).filter_by(auth_account=userinfo.get("login"), auth_type="gitee").one_or_none()
+            )
             if gitee_auth_user:
                 gitee_auth_user.auth_account = userinfo.get("login")
                 gitee_auth_user.nick_name = userinfo.get("name")
@@ -267,30 +260,30 @@ class UserProxy(MysqlProxy):
                     bind_local_user = True
                 auth_userinfo = gitee_auth_user
             else:
-                auth = Auth(auth_id=str(uuid.uuid1()).replace('-', ''), auth_account=userinfo.get(
-                    "login"), nick_name=userinfo.get("name"), auth_type="gitee")
+                auth = Auth(
+                    auth_id=str(uuid.uuid1()).replace('-', ''),
+                    auth_account=userinfo.get("login"),
+                    nick_name=userinfo.get("name"),
+                    auth_type="gitee",
+                )
                 self.session.add(auth)
             self.session.commit()
-            LOGGER.debug(
-                "Gitee user authentication information has been saved or updated.")
+            LOGGER.debug("Gitee user authentication information has been saved or updated.")
 
             return SUCCEED, dict(bind_local_user=bind_local_user, userinfo=auth_userinfo)
         except sqlalchemy.exc.SQLAlchemyError as error:
             LOGGER.error(error)
-            return DATABASE_QUERY_ERROR, dict(bind_local_user=bind_local_user,
-                                              userinfo=auth_userinfo)
+            return DATABASE_QUERY_ERROR, dict(bind_local_user=bind_local_user, userinfo=auth_userinfo)
 
     def _get_gitee_auth_token(self, code: str):
         client_id = configuration.individuation.get('GITEE_CLIENT_ID')
         redirect_url = configuration.individuation.get('REDIRECT_URL')
         if not all([client_id, redirect_url]):
-            LOGGER.error(
-                "The 'GITEE_CLIENT_ID' 'REDIRECT_URL' configuration is missing.")
+            LOGGER.error("The 'GITEE_CLIENT_ID' 'REDIRECT_URL' configuration is missing.")
             return None
 
         auth_url = f"{GITEE_TOKEN}&client_id={client_id}&code={code}&redirect_uri={redirect_url}"
-        request_body = dict(
-            client_secret=configuration.individuation.get('GITEE_CLIENT_SECRET'))
+        request_body = dict(client_secret=configuration.individuation.get('GITEE_CLIENT_SECRET'))
         response = BaseResponse.get_response('POST', auth_url, request_body)
         if "access_token" not in response:
             LOGGER.error("Gitee authentication failed to get token.")
@@ -324,21 +317,21 @@ class UserProxy(MysqlProxy):
                 }
         """
         auth_result = dict(token=None, refresh_token=None, username=username)
-        local_user = self.session.query(User).filter(
-            User.username == username).one_or_none()
+        local_user = self.session.query(User).filter(User.username == username).one_or_none()
         if not local_user:
             return NO_DATA, auth_result
 
         if not check_password_hash(local_user.password, password):
             return LOGIN_ERROR, auth_result
         try:
-            exists_bind_relation_auth = self.session.query(Auth).filter(
-                Auth.username == username, Auth.auth_type == auth_type,
-                Auth.auth_account != auth_account).count()
+            exists_bind_relation_auth = (
+                self.session.query(Auth)
+                .filter(Auth.username == username, Auth.auth_type == auth_type, Auth.auth_account != auth_account)
+                .count()
+            )
             if exists_bind_relation_auth:
                 return REPEAT_BIND, auth_result
-            bind_account = self.session.query(Auth).filter(
-                Auth.auth_account == auth_account).one_or_none()
+            bind_account = self.session.query(Auth).filter(Auth.auth_account == auth_account).one_or_none()
             if not bind_account:
                 return NO_DATA, auth_result
             bind_account.username = username

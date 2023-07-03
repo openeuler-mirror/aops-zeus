@@ -68,8 +68,11 @@ class CollectConfig(BaseResponse):
         """
         command = CERES_COLLECT_FILE % json.dumps(file_list)
         status, content = execute_command_and_parse_its_result(
-            ClientConnectArgs(host_info.get("host_ip"), host_info.get("ssh_port"),
-                              host_info.get("ssh_user"), host_info.get("pkey")), command)
+            ClientConnectArgs(
+                host_info.get("host_ip"), host_info.get("ssh_port"), host_info.get("ssh_user"), host_info.get("pkey")
+            ),
+            command,
+        )
         if status == state.SUCCEED:
             data = json.loads(content)
             data.update({"host_id": host_info["host_id"]})
@@ -99,16 +102,11 @@ class CollectConfig(BaseResponse):
                }]
         """
         return [
-            {
-                'host_id': host_id,
-                'success_files': [],
-                'fail_files': host_id_with_file.get(host_id),
-                'infos': []
-            } for host_id in host_id_list
+            {'host_id': host_id, 'success_files': [], 'fail_files': host_id_with_file.get(host_id), 'infos': []}
+            for host_id in host_id_list
         ]
 
-    def generate_target_data_format(self, collect_result_list: List[Dict],
-                                    host_id_with_file: Dict[str, List]) -> List:
+    def generate_target_data_format(self, collect_result_list: List[Dict], host_id_with_file: Dict[str, List]) -> List:
         """
         Generate target data format
 
@@ -144,8 +142,7 @@ class CollectConfig(BaseResponse):
                 valid_host_id.add(collect_result.get('host_id'))
 
         invalid_host_id = set(host_id_with_file.keys()) - valid_host_id
-        read_failed_data = self.convert_host_id_to_failed_data_format(
-            list(invalid_host_id), host_id_with_file)
+        read_failed_data = self.convert_host_id_to_failed_data_format(list(invalid_host_id), host_id_with_file)
         file_content.extend(read_failed_data)
 
         return file_content
@@ -196,31 +193,29 @@ class CollectConfig(BaseResponse):
         # Get host id list
         host_id_with_config_file = {}
         for host in param.get('infos'):
-            host_id_with_config_file[host.get(
-                'host_id')] = host.get('config_list')
+            host_id_with_config_file[host.get('host_id')] = host.get('config_list')
 
         # Query host address from database
         proxy = HostProxy(configuration)
         if not proxy.connect():
             file_content = self.convert_host_id_to_failed_data_format(
-                list(host_id_with_config_file.keys()), host_id_with_config_file)
+                list(host_id_with_config_file.keys()), host_id_with_config_file
+            )
             return self.response(code=state.DATABASE_CONNECT_ERROR, data={"resp": file_content})
 
         status, host_list = proxy.get_host_info(
-            {"username": "admin", "host_list": list(host_id_with_config_file.keys())}, True)
+            {"username": "admin", "host_list": list(host_id_with_config_file.keys())}, True
+        )
         if status != state.SUCCEED:
             file_content = self.convert_host_id_to_failed_data_format(
-                list(host_id_with_config_file.keys()), host_id_with_config_file)
+                list(host_id_with_config_file.keys()), host_id_with_config_file
+            )
             return self.response(code=status, data={"resp": file_content})
         # Get file content
-        tasks = [(host, host_id_with_config_file[host["host_id"]])
-                 for host in host_list]
-        multi_thread = MultiThreadHandler(
-            lambda data: self.get_file_content(*data), tasks, None)
+        tasks = [(host, host_id_with_config_file[host["host_id"]]) for host in host_list]
+        multi_thread = MultiThreadHandler(lambda data: self.get_file_content(*data), tasks, None)
         multi_thread.create_thread()
 
         return self.response(
-            state.SUCCEED, None,
-            self.generate_target_data_format(
-                multi_thread.get_result(), host_id_with_config_file)
+            state.SUCCEED, None, self.generate_target_data_format(multi_thread.get_result(), host_id_with_config_file)
         )
