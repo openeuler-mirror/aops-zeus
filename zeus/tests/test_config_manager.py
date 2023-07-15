@@ -31,28 +31,17 @@ from zeus.config_manager.view import CollectConfig
 from zeus.database.proxy.host import HostProxy
 from zeus.tests import BaseTestCase
 
-header = {
-    "Content-Type": "application/json; charset=UTF-8"
-}
+header = {"Content-Type": "application/json; charset=UTF-8"}
 
 
 class TestConfigManage(BaseTestCase):
     client = BaseTestCase.create_app()
     MOCK_GET_FILE_CONTENT_ARGS = {
         "infos": [
-            {
-                "host_id": 1,
-                "config_list": [
-                    "mock_path1",
-                    "mock_path2"
-                ]},
-            {
-                "host_id": 2,
-                "config_list": [
-                    "mock_path3",
-                    "mock_path4"
-                ]}
-        ]}
+            {"host_id": 1, "config_list": ["mock_path1", "mock_path2"]},
+            {"host_id": 2, "config_list": ["mock_path3", "mock_path4"]},
+        ]
+    }
 
     MOCK_HOST_INFO = [
         {
@@ -94,10 +83,9 @@ class TestConfigManage(BaseTestCase):
             }
         ]
         mock_get_result.return_value = mock_file_content
-        resp = self.client.post('/manage/config/collect',
-                                data=json.dumps(
-                                    self.MOCK_GET_FILE_CONTENT_ARGS),
-                                headers=header)
+        resp = self.client.post(
+            '/manage/config/collect', data=json.dumps(self.MOCK_GET_FILE_CONTENT_ARGS), headers=header
+        )
         all_fail_file_list = []
         for file_content in resp.json["data"]:
             all_fail_file_list.extend(file_content.get("fail_files"))
@@ -137,10 +125,9 @@ class TestConfigManage(BaseTestCase):
             'host_id': 1
         }]
         mock_get_result.return_value = mock_file_content
-        resp = self.client.post('/manage/config/collect',
-                                data=json.dumps(
-                                    self.MOCK_GET_FILE_CONTENT_ARGS),
-                                headers=header)
+        resp = self.client.post(
+            '/manage/config/collect', data=json.dumps(self.MOCK_GET_FILE_CONTENT_ARGS), headers=header
+        )
         all_fail_file_list = []
         for file_content in resp.json["data"]:
             all_fail_file_list.extend(file_content.get("fail_files"))
@@ -159,8 +146,7 @@ class TestConfigManage(BaseTestCase):
         mock_file_content = [{"message": "error"}, {"message": "error"}]
         mock_get_result.return_value = mock_file_content
 
-        expecte_fail_file = ['mock_path1',
-                             'mock_path2', 'mock_path3', 'mock_path4']
+        expecte_fail_file = ['mock_path1', 'mock_path2', 'mock_path3', 'mock_path4']
         all_fail_file_list = []
         resp = self.client.post(COLLECT_CONFIG, data=json.dumps(self.MOCK_GET_FILE_CONTENT_ARGS), headers=header)
         for file_content in resp.json["data"]:

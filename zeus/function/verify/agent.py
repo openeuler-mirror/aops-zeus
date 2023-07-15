@@ -19,6 +19,7 @@ class AgentPluginInfoSchema(Schema):
     """
     validators for parameter of /manage/agent/plugin/info
     """
+
     host_id = fields.Integer(required=True)
 
 
@@ -26,6 +27,7 @@ class AgentHostInfoSchema(AgentPluginInfoSchema):
     """
     validators for parameter of /manage/agent/host/info/query
     """
+
     pass
 
 
@@ -33,28 +35,34 @@ class GetHostSceneSchema(Schema):
     """
     validators for parameter of /manage/host/scene/get
     """
-    host_id = fields.Integer(
-        required=True, validate=lambda s: s > 0)
+
+    host_id = fields.Integer(required=True, validate=lambda s: s > 0)
 
 
 class SetAgentPluginStatusSchema(Schema):
     """
     validators for parameter of /manage/agent/plugin/set
     """
-    host_id = fields.Integer(
-        required=True, validate=lambda s: s > 0)
-    plugins = fields.Dict(required=True, keys=fields.String(validate=lambda s: len(s) > 0),
-                          values=fields.Str(validate=validate.OneOf(["active", "inactive"])))
+
+    host_id = fields.Integer(required=True, validate=lambda s: s > 0)
+    plugins = fields.Dict(
+        required=True,
+        keys=fields.String(validate=lambda s: len(s) > 0),
+        values=fields.Str(validate=validate.OneOf(["active", "inactive"])),
+    )
 
 
 class SetAgentMetricStatusSchema(Schema):
     """
     validators for parameter of /manage/agent/metrics/set
     """
-    host_id = fields.Integer(
-        required=True, validate=lambda s: s > 0)
-    plugins = fields.Dict(required=True, keys=fields.String(validate=lambda s: len(s) > 0),
-                          values=fields.Dict(keys=fields.String(validate=lambda s: len(s) > 0),
-                                             values=fields.Str(validate=validate.OneOf(["on",
-                                                                                        "off",
-                                                                                        "auto"]))))
+
+    host_id = fields.Integer(required=True, validate=lambda s: s > 0)
+    plugins = fields.Dict(
+        required=True,
+        keys=fields.String(validate=lambda s: len(s) > 0),
+        values=fields.Dict(
+            keys=fields.String(validate=lambda s: len(s) > 0),
+            values=fields.Str(validate=validate.OneOf(["on", "off", "auto"])),
+        ),
+    )

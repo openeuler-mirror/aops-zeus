@@ -25,7 +25,7 @@ from zeus.conf.constant import (
     CERES_PLUGIN_STOP,
     CERES_APPLICATION_INFO,
     CERES_COLLECT_ITEMS_CHANGE,
-    CHECK_IDENTIFY_SCENE
+    CHECK_IDENTIFY_SCENE,
 )
 from zeus.database.proxy.host import HostProxy
 from zeus.function.model import ClientConnectArgs
@@ -33,7 +33,7 @@ from zeus.function.verify.agent import (
     AgentPluginInfoSchema,
     GetHostSceneSchema,
     SetAgentMetricStatusSchema,
-    SetAgentPluginStatusSchema
+    SetAgentPluginStatusSchema,
 )
 from zeus.host_manager.ssh import execute_command_and_parse_its_result
 
@@ -51,8 +51,7 @@ class AgentPluginInfo(BaseResponse):
         Returns:
             Response: response body
         """
-        status, host = callback.get_host_info(
-            {"username": params["username"], "host_list": [params["host_id"]]})
+        status, host = callback.get_host_info({"username": params["username"], "host_list": [params["host_id"]]})
         if status != state.SUCCEED:
             LOGGER.error(f"query host {params['host_id']} info failed.")
             return self.response(code=status)
@@ -60,8 +59,11 @@ class AgentPluginInfo(BaseResponse):
             return self.response(state.NO_DATA)
 
         status, result = execute_command_and_parse_its_result(
-            ClientConnectArgs(host[0].get("host_ip"), host[0].get("ssh_port"),
-                              host[0].get("ssh_user"), host[0].get("pkey")), CERES_PLUGIN_INFO)
+            ClientConnectArgs(
+                host[0].get("host_ip"), host[0].get("ssh_port"), host[0].get("ssh_user"), host[0].get("pkey")
+            ),
+            CERES_PLUGIN_INFO,
+        )
         if status != state.SUCCEED:
             return self.response(code=status)
 
@@ -88,9 +90,7 @@ class GetHostScene(BaseResponse):
         check_ip = configuration.diana.get("IP")
         check_port = configuration.diana.get("PORT")
         check_url = f"http://{check_ip}:{check_port}{route}"
-        check_header = {
-            "Content-Type": "application/json; charset=UTF-8"
-        }
+        check_header = {"Content-Type": "application/json; charset=UTF-8"}
         return check_url, check_header
 
     @staticmethod
@@ -107,19 +107,17 @@ class GetHostScene(BaseResponse):
         """
 
         host_scene_info = {"applications": [], "collect_items": {}}
-        client_connect_args = ClientConnectArgs(host.get("host_ip"), host.get("ssh_port"),
-                                                host.get("ssh_user"), host.get("pkey"))
-        status, running_applications = execute_command_and_parse_its_result(
-            client_connect_args, CERES_APPLICATION_INFO)
+        client_connect_args = ClientConnectArgs(
+            host.get("host_ip"), host.get("ssh_port"), host.get("ssh_user"), host.get("pkey")
+        )
+        status, running_applications = execute_command_and_parse_its_result(client_connect_args, CERES_APPLICATION_INFO)
         if status == state.SUCCEED:
             host_scene_info["applications"] = json.loads(running_applications)
 
-        status, collect_items = execute_command_and_parse_its_result(client_connect_args,
-                                                                     CERES_PLUGIN_INFO)
+        status, collect_items = execute_command_and_parse_its_result(client_connect_args, CERES_PLUGIN_INFO)
         if status == state.SUCCEED:
             for plugin_data in json.loads(collect_items):
-                host_scene_info["collect_items"][plugin_data.get("plugin_name")] = plugin_data.get(
-                    "collect_items")
+                host_scene_info["collect_items"][plugin_data.get("plugin_name")] = plugin_data.get("collect_items")
         return host_scene_info
 
     @BaseResponse.handle(schema=GetHostSceneSchema, proxy=HostProxy, config=configuration)
@@ -130,8 +128,7 @@ class GetHostScene(BaseResponse):
         Returns:
             dict: response body
         """
-        status, host_list = callback.get_host_info(
-            {"username": params["username"], "host_list": [params["host_id"]]})
+        status, host_list = callback.get_host_info({"username": params["username"], "host_list": [params["host_id"]]})
         if status != state.SUCCEED:
             LOGGER.error(f"query host {params['host_id']} info failed.")
             return self.response(code=status)
@@ -141,26 +138,21 @@ class GetHostScene(BaseResponse):
         host_scene_info = self.__get_scene_data_from_ceres(host_list[0])
 
         # get scene and recommend collect items from check
-        check_url_get_scene, check_header = self.__get_check_url(
-            CHECK_IDENTIFY_SCENE)
+        check_url_get_scene, check_header = self.__get_check_url(CHECK_IDENTIFY_SCENE)
         check_header['access_token'] = request.headers.get("access_token")
-        response = self.get_response(
-            "post", check_url_get_scene, host_scene_info, check_header)
+        response = self.get_response("post", check_url_get_scene, host_scene_info, check_header)
         status_code = response.get("label")
         if status_code != state.SUCCEED:
-            LOGGER.error("Get scene of host %s from check failed.",
-                         params["host_id"])
+            LOGGER.error("Get scene of host %s from check failed.", params["host_id"])
             return self.response(code=status_code)
 
         scene_ret = response.get("data", dict()).get("scene_name")
-        status_code = callback.save_scene(
-            {"host_id": params["host_id"], "scene": scene_ret})
+        status_code = callback.save_scene({"host_id": params["host_id"], "scene": scene_ret})
         if status_code != state.SUCCEED:
             LOGGER.error("save scene of host %s failed.", params["host_id"])
             return self.response(code=status_code)
 
-        response_data = {"scene": scene_ret,
-                         "collect_items": response.get("collect_items")}
+        response_data = {"scene": scene_ret, "collect_items": response.get("collect_items")}
         return self.response(code=status_code, data=response_data)
 
 
@@ -169,10 +161,8 @@ class SetAgentPluginStatus(BaseResponse):
     Interface for get host scene.
     Restful API: POST
     """
-    status_url_map = {
-        "active": CERES_PLUGIN_START,
-        "inactive": CERES_PLUGIN_STOP
-    }
+
+    status_url_map = {"active": CERES_PLUGIN_START, "inactive": CERES_PLUGIN_STOP}
 
     @BaseResponse.handle(schema=SetAgentPluginStatusSchema, proxy=HostProxy, config=configuration)
     def post(self, callback: HostProxy, **params: dict) -> Response:
@@ -183,8 +173,7 @@ class SetAgentPluginStatus(BaseResponse):
             dict: response body
         """
         ret = {"failed_list": [], "succeed_list": []}
-        status, host = callback.get_host_info(
-            {"username": params["username"], "host_list": [params["host_id"]]})
+        status, host = callback.get_host_info({"username": params["username"], "host_list": [params["host_id"]]})
         if status != state.SUCCEED:
             LOGGER.error(f"query host {params['host_id']} info failed.")
             return self.response(code=status)
@@ -195,22 +184,23 @@ class SetAgentPluginStatus(BaseResponse):
         plugin_status_list = params.get('plugins')
         for plugin_name, plugin_status in plugin_status_list.items():
             if plugin_status not in SetAgentPluginStatus.status_url_map:
-                LOGGER.error("Unknown plugin status of host %s plugin %s." %
-                             params.get("host_id"), plugin_name)
+                LOGGER.error("Unknown plugin status of host %s plugin %s." % params.get("host_id"), plugin_name)
                 ret["failed_list"].append(plugin_name)
                 continue
 
             command = SetAgentPluginStatus.status_url_map[plugin_status] % plugin_name
             status, result = execute_command_and_parse_its_result(
-                ClientConnectArgs(host[0].get("host_ip"), host[0].get("ssh_port"),
-                                  host[0].get("ssh_user"), host[0].get("pkey")), command)
+                ClientConnectArgs(
+                    host[0].get("host_ip"), host[0].get("ssh_port"), host[0].get("ssh_user"), host[0].get("pkey")
+                ),
+                command,
+            )
             if status != state.SUCCEED:
                 ret["failed_list"].append(plugin_name)
             else:
                 ret["succeed_list"].append(plugin_name)
 
-        return self.response(code=judge_return_code(ret, state.SET_AGENT_PLUGIN_STATUS_FAILED),
-                             data=ret)
+        return self.response(code=judge_return_code(ret, state.SET_AGENT_PLUGIN_STATUS_FAILED), data=ret)
 
 
 class SetAgentMetricStatus(BaseResponse):
@@ -227,19 +217,20 @@ class SetAgentMetricStatus(BaseResponse):
         Returns:
             dict: response body
         """
-        status, host = callback.get_host_info(
-            {"username": params["username"], "host_list": [params["host_id"]]})
+        status, host = callback.get_host_info({"username": params["username"], "host_list": [params["host_id"]]})
         if status != state.SUCCEED:
             LOGGER.error(f"query host {params['host_id']} info failed.")
             return self.response(code=status)
         if len(host) == 0:
             return self.response(state.NO_DATA)
 
-        command = CERES_COLLECT_ITEMS_CHANGE % json.dumps(
-            params.get("plugins"))
+        command = CERES_COLLECT_ITEMS_CHANGE % json.dumps(params.get("plugins"))
         status, result = execute_command_and_parse_its_result(
-            ClientConnectArgs(host[0].get("host_ip"), host[0].get("ssh_port"),
-                              host[0].get("ssh_user"), host[0].get("pkey")), command)
+            ClientConnectArgs(
+                host[0].get("host_ip"), host[0].get("ssh_port"), host[0].get("ssh_user"), host[0].get("pkey")
+            ),
+            command,
+        )
         if status == state.SUCCEED:
             return self.response(code=status, data=json.loads(result))
 

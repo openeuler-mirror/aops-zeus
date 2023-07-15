@@ -34,11 +34,7 @@ from vulcanus.restful.resp import state
 from vulcanus.restful.response import BaseResponse
 from vulcanus.restful.serialize.validate import validate
 from zeus.conf import configuration
-from zeus.conf.constant import (
-    CERES_HOST_INFO,
-    HOST_TEMPLATE_FILE_CONTENT,
-    HostStatus
-)
+from zeus.conf.constant import CERES_HOST_INFO, HOST_TEMPLATE_FILE_CONTENT, HostStatus
 from zeus.database.proxy.host import HostProxy
 from zeus.function.model import ClientConnectArgs
 from zeus.function.verify.host import (
@@ -50,7 +46,7 @@ from zeus.function.verify.host import (
     GetHostGroupSchema,
     GetHostInfoSchema,
     GetHostSchema,
-    UpdateHostSchema
+    UpdateHostSchema,
 )
 from zeus.host_manager.ssh import SSH, execute_command_and_parse_its_result, generate_key
 
@@ -201,8 +197,9 @@ class GetHostInfo(BaseResponse):
         res = {'host_id': host.get('host_id'), 'host_info': {}}
         command = CERES_HOST_INFO % json.dumps(info_type)
         status, host_info = execute_command_and_parse_its_result(
-            ClientConnectArgs(host.get("host_ip"), host.get("ssh_port"),
-                              host.get("ssh_user"), host.get("pkey")), command)
+            ClientConnectArgs(host.get("host_ip"), host.get("ssh_port"), host.get("ssh_user"), host.get("pkey")),
+            command,
+        )
         if status == state.SUCCEED:
             res["host_info"] = json.loads(host_info)
         return res
@@ -228,8 +225,7 @@ class GetHostInfo(BaseResponse):
         """
         return [{"host_id": host_id, "host_info": {}} for host_id in host_list]
 
-    def analyse_query_result(self, all_host: List[str],
-                             multithreading_execute_result: List) -> List:
+    def analyse_query_result(self, all_host: List[str], multithreading_execute_result: List) -> List:
         """
         Analyze multi-threaded execution results,
         find out the data which fails to execute,
@@ -282,7 +278,7 @@ class GetHostInfo(BaseResponse):
         return host_infos
 
     @BaseResponse.handle(schema=GetHostInfoSchema, proxy=HostProxy, config=configuration)
-    def post(self, callback: HostProxy,  **params):
+    def post(self, callback: HostProxy, **params):
         """
         Get host info
 
@@ -308,14 +304,12 @@ class GetHostInfo(BaseResponse):
         # generate tasks
         tasks = [(host, []) for host in host_list]
         # execute multi threading
-        multi_thread_handler = MultiThreadHandler(
-            lambda p: self.get_host_info(*p), tasks, None)
+        multi_thread_handler = MultiThreadHandler(lambda p: self.get_host_info(*p), tasks, None)
         multi_thread_handler.create_thread()
         result_list = multi_thread_handler.get_result()
 
         # analyse execute result and generate target data format
-        host_infos = self.analyse_query_result(
-            params.get('host_list'), result_list)
+        host_infos = self.analyse_query_result(params.get('host_list'), result_list)
         return self.response(code=state.SUCCEED, data={"host_infos": host_infos})
 
 
@@ -347,8 +341,7 @@ class AddHost(BaseResponse):
             tuple:
                 status code, host object
         """
-        status, hosts, groups = self.proxy.get_hosts_and_groups(
-            host_info.get('username'))
+        status, hosts, groups = self.proxy.get_hosts_and_groups(host_info.get('username'))
         if status != state.SUCCEED:
             return status, Host()
 
@@ -358,20 +351,21 @@ class AddHost(BaseResponse):
                 group_id = group.host_group_id
 
         if group_id is None:
-            LOGGER.warning(f"host group doesn't exist "
-                           f"which named {host_info.get('host_group_name')} !")
+            LOGGER.warning(f"host group doesn't exist " f"which named {host_info.get('host_group_name')} !")
             return state.PARAM_ERROR, Host()
 
-        host = Host(**{
-            "host_name": host_info.get("host_name"),
-            "ssh_user": host_info.get("ssh_user"),
-            "host_group_name": host_info.get("host_group_name"),
-            "host_group_id": group_id,
-            "host_ip": host_info.get("host_ip"),
-            "ssh_port": host_info.get("ssh_port"),
-            "user": host_info.get("username"),
-            "management": host_info.get("management"),
-        })
+        host = Host(
+            **{
+                "host_name": host_info.get("host_name"),
+                "ssh_user": host_info.get("ssh_user"),
+                "host_group_name": host_info.get("host_group_name"),
+                "host_group_id": group_id,
+                "host_ip": host_info.get("host_ip"),
+                "ssh_port": host_info.get("ssh_port"),
+                "user": host_info.get("username"),
+                "management": host_info.get("management"),
+            }
+        )
         if host in hosts:
             return state.DATA_EXIST, Host()
         return state.SUCCEED, host
@@ -404,9 +398,8 @@ class AddHost(BaseResponse):
             return self.response(code=status)
 
         status, private_key = save_ssh_public_key_to_client(
-            params.get('host_ip'), params.get(
-                'ssh_port'), params.get('ssh_user'),
-            params.get('password'))
+            params.get('host_ip'), params.get('ssh_port'), params.get('ssh_user'), params.get('password')
+        )
         if status == state.SUCCEED:
             host.pkey = private_key
             host.status = HostStatus.ONLINE
@@ -428,12 +421,13 @@ def save_ssh_public_key_to_client(ip: str, port: int, username: str, password: s
             status code(int), private key string
     """
     private_key, public_key = generate_key()
-    command = f"mkdir -p -m 700 ~/.ssh " \
-              f"&& echo {public_key!r} >> ~/.ssh/authorized_keys" \
-              f"&& chmod 600 ~/.ssh/authorized_keys"
+    command = (
+        f"mkdir -p -m 700 ~/.ssh "
+        f"&& echo {public_key!r} >> ~/.ssh/authorized_keys"
+        f"&& chmod 600 ~/.ssh/authorized_keys"
+    )
     try:
-        client = SSH(ip=ip, username=username,
-                     port=port, password=password)
+        client = SSH(ip=ip, username=username, port=port, password=password)
         status, _, stderr = client.execute_command(command)
     except socket.error as error:
         LOGGER.error(error)
@@ -473,8 +467,9 @@ class GetHostTemplateFile(BaseResponse):
         file.write(HOST_TEMPLATE_FILE_CONTENT.encode('utf-8'))
         file.seek(0)
 
-        return send_file(file, as_attachment=True, attachment_filename="template.csv",
-                         mimetype="application/octet-stream")
+        return send_file(
+            file, as_attachment=True, attachment_filename="template.csv", mimetype="application/octet-stream"
+        )
 
 
 class AddHostBatch(BaseResponse):
@@ -505,30 +500,30 @@ class AddHostBatch(BaseResponse):
         if not proxy.connect():
             LOGGER.error("connect to database error")
             self.update_add_result(
-                args["host_list"],
-                {"result": self.add_failed, "reason": "connect to database error"})
+                args["host_list"], {"result": self.add_failed, "reason": "connect to database error"}
+            )
             return self.response(code=state.DATABASE_CONNECT_ERROR, data=self.add_result)
 
         # Query hosts with groups, validate hostname or host address
-        status, hosts, groups = proxy.get_hosts_and_groups(
-            args.get('username'))
+        status, hosts, groups = proxy.get_hosts_and_groups(args.get('username'))
         if status != state.SUCCEED:
             self.update_add_result(
-                args["host_list"],
-                {"result": self.add_failed, "reason": "query data from database fail"})
+                args["host_list"], {"result": self.add_failed, "reason": "query data from database fail"}
+            )
             return self.response(code=status, data=self.add_result)
 
         valid_hosts = self.validate_host_info(args, hosts, groups)
         if len(valid_hosts) == 0:
-            return self.response(code=state.ADD_HOST_FAILED,
-                                 message="invalid host info or all hosts has been added",
-                                 data=self.add_result)
+            return self.response(
+                code=state.ADD_HOST_FAILED,
+                message="invalid host info or all hosts has been added",
+                data=self.add_result,
+            )
 
         # save public_key on host and add host to database
         status = proxy.add_host_batch(self.save_key_to_client(valid_hosts))
         if status != state.SUCCEED:
-            self.update_add_result(valid_hosts,
-                                   {"result": self.add_failed, "reason": "Insert Database error"})
+            self.update_add_result(valid_hosts, {"result": self.add_failed, "reason": "Insert Database error"})
             return self.response(code=status, data=self.add_result)
         self.update_add_result(valid_hosts, {"result": self.add_succeed})
 
@@ -576,25 +571,20 @@ class AddHostBatch(BaseResponse):
 
         for host_info in data["host_list"]:
             if host_info.get("host_group_name") not in group_id_info:
-                LOGGER.warning(
-                    f"invalid host group when add host {host_info['host_name']}")
-                self.update_add_result(
-                    [host_info], {"result": self.add_failed, "reason": "invalid host group name"})
+                LOGGER.warning(f"invalid host group when add host {host_info['host_name']}")
+                self.update_add_result([host_info], {"result": self.add_failed, "reason": "invalid host group name"})
                 continue
 
             password = host_info.pop("password")
-            host_info.update({
-                "host_group_id": group_id_info.get(host_info['host_group_name']),
-                "user": data["username"]}
+            host_info.update(
+                {"host_group_id": group_id_info.get(host_info['host_group_name']), "user": data["username"]}
             )
             host = Host(**host_info)
             if host in hosts:
-                LOGGER.warning(
-                    f"host name or host ip is existed when add host {host_info['host_name']}.")
-                self.update_add_result([host_info], {
-                    "result": self.add_failed,
-                    "reason": "host name or host ip is existed!"
-                })
+                LOGGER.warning(f"host name or host ip is existed when add host {host_info['host_name']}.")
+                self.update_add_result(
+                    [host_info], {"result": self.add_failed, "reason": "host name or host ip is existed!"}
+                )
                 continue
 
             valid_host.append((host, password))
@@ -611,12 +601,11 @@ class AddHostBatch(BaseResponse):
             host object list
         """
         # 30 connections are created at a time.
-        tasks = [host_connect_infos[index:index + 30] for index in range(0, len(host_connect_infos), 30)]
+        tasks = [host_connect_infos[index : index + 30] for index in range(0, len(host_connect_infos), 30)]
         result = []
 
         for task in tasks:
-            jobs = [gevent.spawn(self.update_rsa_key_to_host, *host_connect_info)
-                    for host_connect_info in task]
+            jobs = [gevent.spawn(self.update_rsa_key_to_host, *host_connect_info) for host_connect_info in task]
 
             gevent.joinall(jobs)
             for job in jobs:
@@ -636,8 +625,7 @@ class AddHostBatch(BaseResponse):
         Returns:
             host object
         """
-        status, pkey = save_ssh_public_key_to_client(
-            host.host_ip, host.ssh_port, host.ssh_user, password)
+        status, pkey = save_ssh_public_key_to_client(host.host_ip, host.ssh_port, host.ssh_user, password)
         if status == state.SUCCEED:
             host.status = HostStatus.ONLINE
             host.pkey = pkey
@@ -663,7 +651,7 @@ class AddHostBatch(BaseResponse):
                     "ssh_user": host.get("ssh_user"),
                     "host_name": host.get("host_name"),
                     "host_group_name": host.get("host_group_name"),
-                    "management": host.get("management")
+                    "management": host.get("management"),
                 }
                 new_host.update(update_info)
                 self.add_result.append(new_host)
@@ -696,16 +684,14 @@ class AddHostBatch(BaseResponse):
 
         if errors:
             LOGGER.error(errors)
-            self.parse_validate_error(
-                args.get("host_list"), errors.get("host_list"))
+            self.parse_validate_error(args.get("host_list"), errors.get("host_list"))
             return state.PARAM_ERROR, {}
 
         if self.validate_host_repeated(args.get("host_list")):
             return state.PARAM_ERROR, {}
 
         if self.verify_token(request.headers.get('access_token'), args) != state.SUCCEED:
-            self.update_add_result(
-                args.get("host_list"), {"result": self.add_failed, "reason": state.TOKEN_ERROR})
+            self.update_add_result(args.get("host_list"), {"result": self.add_failed, "reason": state.TOKEN_ERROR})
             return state.TOKEN_ERROR, {}
 
         for host in args.get('host_list'):
@@ -738,16 +724,14 @@ class AddHostBatch(BaseResponse):
             return
 
         if not isinstance(errors, dict):
-            return self.update_add_result(
-                host_list, {"result": self.add_failed, "reason": errors[0]})
+            return self.update_add_result(host_list, {"result": self.add_failed, "reason": errors[0]})
 
         index_list = list(errors.keys())
         index_list.sort(reverse=True)
         for index in index_list:
             self.update_add_result(
-                [host_list.pop(int(index))], {
-                    "result": self.add_failed, "reason": errors[index].__str__()
-                })
+                [host_list.pop(int(index))], {"result": self.add_failed, "reason": errors[index].__str__()}
+            )
 
         self.update_add_result(host_list, {"result": self.add_failed})
 
@@ -768,23 +752,16 @@ class AddHostBatch(BaseResponse):
         for index, host in enumerate(host_list):
             host_ssh_address = f'{host["host_ip"]}:{host["ssh_port"]}'
             if host["host_name"] in host_name_dict:
-                errors.update({
-                    host_name_dict[host["host_name"]
-                                   ]: "there is a duplicate host name "
-                    "or host address!"
-                })
+                errors.update({host_name_dict[host["host_name"]]: "there is a duplicate host name " "or host address!"})
 
-                errors.update(
-                    {index: "there is a duplicate host name or host address!"})
+                errors.update({index: "there is a duplicate host name or host address!"})
                 host_ssh_address_dict.update({host_ssh_address: index})
             elif host_ssh_address in host_ssh_address_dict:
-                errors.update({
-                    host_ssh_address_dict[host_ssh_address]: "there is a duplicate host name "
-                                                             "or host address!"
-                })
-
                 errors.update(
-                    {index: "there is a duplicate host name or host address!"})
+                    {host_ssh_address_dict[host_ssh_address]: "there is a duplicate host name " "or host address!"}
+                )
+
+                errors.update({index: "there is a duplicate host name or host address!"})
                 host_name_dict.update({host["host_name"]: index})
             else:
                 host_name_dict.update({host["host_name"]: index})
@@ -798,7 +775,7 @@ class AddHostBatch(BaseResponse):
 
 class UpdateHost(BaseResponse):
     """
-        update host info
+    update host info
     """
 
     def _save_ssh_key(self, params: dict) -> None:
@@ -817,15 +794,16 @@ class UpdateHost(BaseResponse):
         status, private_key = save_ssh_public_key_to_client(
             self.host.host_ip, ssh_port, ssh_user, params.pop("password", None)
         )
-        params.update({
-            "ssh_user": ssh_user,
-            "ssh_port": ssh_port,
-            "pkey": private_key or None,
-            "status": HostStatus.ONLINE if status == state.SUCCEED else HostStatus.UNESTABLISHED
-        })
+        params.update(
+            {
+                "ssh_user": ssh_user,
+                "ssh_port": ssh_port,
+                "pkey": private_key or None,
+                "status": HostStatus.ONLINE if status == state.SUCCEED else HostStatus.UNESTABLISHED,
+            }
+        )
 
-    def _validate_host_exist(self, host_id: int, host_name: str,
-                             host_infos: InstrumentedList) -> tuple:
+    def _validate_host_exist(self, host_id: int, host_name: str, host_infos: InstrumentedList) -> tuple:
         """
         generate ssh address list, determines whether the host exists and
         determines whether the host name is repeated in database
@@ -842,8 +820,7 @@ class UpdateHost(BaseResponse):
         key = False
         self.host_ssh_address = []
         for host_info in host_infos:
-            self.host_ssh_address.append(
-                f"{host_info.host_ip}:{host_info.ssh_port}")
+            self.host_ssh_address.append(f"{host_info.host_ip}:{host_info.ssh_port}")
             if host_id == host_info.host_id:
                 self.host = host_info
                 key = True
@@ -877,13 +854,11 @@ class UpdateHost(BaseResponse):
         Returns:
             Response
         """
-        status, host_infos, host_group_infos = callback.get_hosts_and_groups(
-            params.pop("username"))
+        status, host_infos, host_group_infos = callback.get_hosts_and_groups(params.pop("username"))
         if status != state.SUCCEED:
             return self.response(status)
 
-        status, message = self._validate_host_exist(
-            params.get("host_id"), params.get("host_name"), host_infos)
+        status, message = self._validate_host_exist(params.get("host_id"), params.get("host_name"), host_infos)
         if status != state.SUCCEED:
             return self.response(code=status, message=message)
 
@@ -895,17 +870,12 @@ class UpdateHost(BaseResponse):
                 return self.response(
                     code=state.PARAM_ERROR,
                     message=f"there is no host group name {params.get('host_group_name')} "
-                            f"in database when update host {self.host.host_id}!"
+                    f"in database when update host {self.host.host_id}!",
                 )
 
-        if params.get("ssh_port") and \
-                f"{self.host.host_ip}:{params.get('ssh_port')}" in self.host_ssh_address:
-            LOGGER.warning(f"there is a duplicate host address in database "
-                           f"when update host {self.host.host_id}!")
-            return self.response(
-                code=state.PARAM_ERROR,
-                message="there is a duplicate host ssh address in database!"
-            )
+        if params.get("ssh_port") and f"{self.host.host_ip}:{params.get('ssh_port')}" in self.host_ssh_address:
+            LOGGER.warning(f"there is a duplicate host address in database " f"when update host {self.host.host_id}!")
+            return self.response(code=state.PARAM_ERROR, message="there is a duplicate host ssh address in database!")
 
         if params.get("ssh_user") or params.get("ssh_port"):
             if not params.get("password"):

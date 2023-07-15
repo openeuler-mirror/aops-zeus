@@ -17,6 +17,7 @@ Description: Manager that start aops-zeus
 """
 try:
     from gevent import monkey
+
     monkey.patch_all(ssl=False)
 except:
     pass
@@ -47,10 +48,7 @@ def init_user():
     if not proxy.connect():
         raise ValueError("connect to mysql fail")
 
-    data = {
-        "username": "admin",
-        "password": "changeme"
-    }
+    data = {"username": "admin", "password": "changeme"}
     res = proxy.select([User.username], {"username": data['username']})
     # user has been added to database, return
     if res[1]:

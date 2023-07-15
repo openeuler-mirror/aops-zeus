@@ -24,6 +24,7 @@ class LoginSchema(Schema):
     """
     validators for parameter of /manage/account/login
     """
+
     username = fields.String(required=True, validate=ValidateRules.account_name_check)
     password = fields.String(required=True, validate=ValidateRules.account_password_check)
 
@@ -32,6 +33,7 @@ class AddUserSchema(LoginSchema):
     """
     validators for parameter of /manage/account/add
     """
+
     email = fields.Email(required=True)
 
 
@@ -39,6 +41,7 @@ class ChangePasswordSchema(Schema):
     """
     validators for parameter of /manage/account/change
     """
+
     password = fields.String(required=True, validate=lambda s: len(s) > 0)
     old_password = fields.String(required=True, validate=lambda s: len(s) > 0)
 
@@ -47,6 +50,7 @@ class CertificateSchema(Schema):
     """
     validators for parameter of /manage/account/certificate
     """
+
     key = fields.String(required=True, validate=lambda s: len(s) > 0)
 
 
@@ -54,6 +58,7 @@ class BindAuthAccountSchema(Schema):
     """
     validators for parameter of /manage/account/bindaccount
     """
+
     username = fields.String(required=True, validate=lambda s: len(s) > 0)
     auth_account = fields.String(required=True, validate=lambda s: len(s) > 0)
     password = fields.String(required=True, validate=lambda s: len(s) > 0)
@@ -63,6 +68,7 @@ class GiteeAuthLoginSchema(Schema):
     """
     validators for parameter of /manage/account/gitee/login
     """
+
     code = fields.String(required=True, validate=lambda s: len(s) > 0)
 
 
@@ -70,4 +76,5 @@ class RefreshTokenSchema(Schema):
     """
     validators for parameter of /manage/account/refreshtoken
     """
+
     refresh_token = fields.String(required=True, validate=lambda s: len(s) > 0)

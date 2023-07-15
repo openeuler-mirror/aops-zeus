@@ -57,13 +57,7 @@ class SSH:
     """
 
     def __init__(self, ip, username, port, password=None, pkey=None):
-        self._client_args = {
-            'hostname': ip,
-            'username': username,
-            'port': port,
-            "password": password,
-            "pkey": pkey
-        }
+        self._client_args = {'hostname': ip, 'username': username, 'port': port, "password": password, "pkey": pkey}
         self._client = self.client()
 
     def client(self):
@@ -77,15 +71,15 @@ class SSH:
 
     def execute_command(self, command: str, timeout: float = None) -> tuple:
         """
-            create a ssh client, execute command and parse result
+        create a ssh client, execute command and parse result
 
-            Args:
-                command(str): shell command
-                timeout(float): the maximum time to wait for the result of command execution
+        Args:
+            command(str): shell command
+            timeout(float): the maximum time to wait for the result of command execution
 
-            Returns:
-                tuple:
-                    status, result, error message
+        Returns:
+            tuple:
+                status, result, error message
         """
         open_channel = self._client.get_transport().open_session(timeout=timeout)
         open_channel.set_combine_stderr(False)
@@ -116,14 +110,13 @@ def execute_command_and_parse_its_result(connect_args: ClientConnectArgs, comman
             status, result
     """
     if not connect_args.pkey:
-        return state.SSH_AUTHENTICATION_ERROR, f"ssh authentication failed when connect host " \
-                                               f"{connect_args.host_ip}"
+        return state.SSH_AUTHENTICATION_ERROR, f"ssh authentication failed when connect host " f"{connect_args.host_ip}"
     try:
         client = SSH(
             ip=connect_args.host_ip,
             username=connect_args.ssh_user,
             port=connect_args.ssh_port,
-            pkey=paramiko.RSAKey.from_private_key(StringIO(connect_args.pkey))
+            pkey=paramiko.RSAKey.from_private_key(StringIO(connect_args.pkey)),
         )
         exit_status, stdout, stderr = client.execute_command(command, connect_args.timeout)
     except socket.error as error:

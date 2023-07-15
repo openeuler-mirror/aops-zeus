@@ -35,7 +35,7 @@ from vulcanus.restful.resp.state import (
     DATA_DEPENDENCY_ERROR,
     DATA_EXIST,
     NO_DATA,
-    SUCCEED
+    SUCCEED,
 )
 
 
@@ -65,16 +65,11 @@ class HostProxy(MysqlProxy):
         """
         username = data.pop('username')
         try:
-            user = self.session.query(User).filter(
-                User.username == username).first()
+            user = self.session.query(User).filter(User.username == username).first()
             hosts = user.hosts
 
-            group_filters = {
-                HostGroup.username == username,
-                HostGroup.host_group_name == data['host_group_name']
-            }
-            host_group_res = self.session.query(
-                HostGroup).filter(*group_filters).all()
+            group_filters = {HostGroup.username == username, HostGroup.host_group_name == data['host_group_name']}
+            host_group_res = self.session.query(HostGroup).filter(*group_filters).all()
             if len(host_group_res) == 0:
                 return NO_DATA
 
@@ -113,23 +108,18 @@ class HostProxy(MysqlProxy):
             int
         """
         host_list = data['host_list']
-        result = {
-            "succeed_list": [],
-            "fail_list": {}
-        }
+        result = {"succeed_list": [], "fail_list": {}}
         host_info = {}
         try:
             # query matched host
-            hosts = self.session.query(Host).filter(
-                Host.host_id.in_(host_list)).all()
+            hosts = self.session.query(Host).filter(Host.host_id.in_(host_list)).all()
             for host in hosts:
                 self.session.delete(host)
                 result['succeed_list'].append(host.host_id)
                 host_info[host.host_id] = host.host_name
             self.session.commit()
             fail_list = list(set(host_list) - set(result['succeed_list']))
-            result['fail_list'].update(zip(fail_list,
-                                           len(fail_list) * ("Can't find the data in database",)))
+            result['fail_list'].update(zip(fail_list, len(fail_list) * ("Can't find the data in database",)))
             status_code = judge_return_code(result, DATABASE_DELETE_ERROR)
             result['host_info'] = host_info
             return status_code, result
@@ -137,8 +127,7 @@ class HostProxy(MysqlProxy):
             LOGGER.error(error)
             LOGGER.error("delete host %s fail", host_list)
             self.session.rollback()
-            result['fail_list'].update(
-                zip(host_list, len(host_list) * ("Connect database fail",)))
+            result['fail_list'].update(zip(host_list, len(host_list) * ("Connect database fail",)))
             return DATABASE_DELETE_ERROR, result
 
     def get_host(self, data):
@@ -204,8 +193,7 @@ class HostProxy(MysqlProxy):
         Returns:
             int
         """
-        total_count = self.session.query(func.count(
-            Host.host_id)).filter(*filters).scalar()
+        total_count = self.session.query(func.count(Host.host_id)).filter(*filters).scalar()
         return total_count
 
     @staticmethod
@@ -222,9 +210,7 @@ class HostProxy(MysqlProxy):
         username = data['username']
         host_group_list = data.get('host_group_list')
         management = data.get('management')
-        filters = {
-            Host.user == username
-        }
+        filters = {Host.user == username}
         if host_group_list:
             filters.add(Host.host_group_name.in_(host_group_list))
         if management is not None:
@@ -244,11 +230,7 @@ class HostProxy(MysqlProxy):
         Returns:
             dict
         """
-        result = {
-            "total_count": 0,
-            "total_page": 0,
-            "host_infos": []
-        }
+        result = {"total_count": 0, "total_page": 0, "host_infos": []}
         sort = data.get('sort')
         direction = desc if data.get('direction') == 'desc' else asc
         page = data.get('page')
@@ -262,21 +244,22 @@ class HostProxy(MysqlProxy):
         if sort:
             if page and per_page:
                 total_page = math.ceil(total_count / per_page)
-                hosts = self.session.query(Host).filter(*filters). \
-                    order_by(direction(getattr(Host, sort))). \
-                    offset((page - 1) * per_page). \
-                    limit(per_page).all()
+                hosts = (
+                    self.session.query(Host)
+                    .filter(*filters)
+                    .order_by(direction(getattr(Host, sort)))
+                    .offset((page - 1) * per_page)
+                    .limit(per_page)
+                    .all()
+                )
             else:
-                hosts = self.session.query(Host).filter(
-                    *filters).order_by(direction(getattr(Host, sort))).all()
+                hosts = self.session.query(Host).filter(*filters).order_by(direction(getattr(Host, sort))).all()
         else:
             if page and per_page:
                 total_page = math.ceil(total_count / per_page)
-                hosts = self.session.query(Host).filter(
-                    *filters).offset((page - 1) * per_page).limit(per_page).all()
+                hosts = self.session.query(Host).filter(*filters).offset((page - 1) * per_page).limit(per_page).all()
             else:
-                hosts = self.session.query(Host).filter(
-                    *filters).all()
+                hosts = self.session.query(Host).filter(*filters).all()
 
         for host in hosts:
             host_info = {
@@ -316,9 +299,19 @@ class HostProxy(MysqlProxy):
         username = data.get('username')
         host_list = data.get('host_list')
         result = []
-        query_fields = [Host.host_id, Host.host_name, Host.host_ip, Host.os_version, Host.ssh_port,
-                        Host.host_group_name, Host.management, Host.status, Host.scene, Host.pkey,
-                        Host.ssh_user]
+        query_fields = [
+            Host.host_id,
+            Host.host_name,
+            Host.host_ip,
+            Host.os_version,
+            Host.ssh_port,
+            Host.host_group_name,
+            Host.management,
+            Host.status,
+            Host.scene,
+            Host.pkey,
+            Host.ssh_user,
+        ]
         filters = {Host.user == username} if not is_collect_file else set()
         if host_list:
             filters.add(Host.host_id.in_(host_list))
@@ -336,7 +329,7 @@ class HostProxy(MysqlProxy):
                     "os_version": host.os_version,
                     "ssh_port": host.ssh_port,
                     "pkey": host.pkey,
-                    "ssh_user": host.ssh_user
+                    "ssh_user": host.ssh_user,
                 }
                 result.append(host_info)
             self.session.commit()
@@ -368,8 +361,7 @@ class HostProxy(MysqlProxy):
 
         try:
             if username:
-                users = self.session.query(User).filter(
-                    User.username.in_(username)).all()
+                users = self.session.query(User).filter(User.username.in_(username)).all()
             else:
                 users = self.session.query(User).all()
             for user in users:
@@ -380,7 +372,7 @@ class HostProxy(MysqlProxy):
                         "host_id": host.host_id,
                         "host_group_name": host.host_group_name,
                         "host_name": host.host_name,
-                        "host_ip": host.host_ip
+                        "host_ip": host.host_ip,
                     }
                     temp_res[name].append(host_info)
             self.session.commit()
@@ -409,8 +401,7 @@ class HostProxy(MysqlProxy):
         username = data['username']
         host_group_name = data['host_group_name']
         try:
-            user = self.session.query(User).filter(
-                User.username == username).first()
+            user = self.session.query(User).filter(User.username == username).first()
             host_group = HostGroup(**data)
             if host_group in user.host_groups:
                 return DATA_EXIST
@@ -448,12 +439,14 @@ class HostProxy(MysqlProxy):
         not_deleted = []
         try:
             # Filter the group if there are hosts in the group
-            host_groups = self.session.query(HostGroup,
-                                             func.count(Host.host_id).label("host_count")). \
-                outerjoin(Host, HostGroup.host_group_id == Host.host_group_id). \
-                filter(HostGroup.username == username). \
-                filter(HostGroup.host_group_name.in_(host_group_list)). \
-                group_by(HostGroup.host_group_id).all()
+            host_groups = (
+                self.session.query(HostGroup, func.count(Host.host_id).label("host_count"))
+                .outerjoin(Host, HostGroup.host_group_id == Host.host_group_id)
+                .filter(HostGroup.username == username)
+                .filter(HostGroup.host_group_name.in_(host_group_list))
+                .group_by(HostGroup.host_group_id)
+                .all()
+            )
             for host_group, host_count in host_groups:
                 if host_count > 0:
                     not_deleted.append(host_group.host_group_name)
@@ -463,8 +456,7 @@ class HostProxy(MysqlProxy):
             self.session.commit()
             result["deleted"] = deleted
             if not_deleted:
-                LOGGER.error(
-                    "host group %s deleted, groups %s delete fail", deleted, not_deleted)
+                LOGGER.error("host group %s deleted, groups %s delete fail", deleted, not_deleted)
                 return DATA_DEPENDENCY_ERROR, result
             LOGGER.info("host group %s delete succeed", deleted)
             return SUCCEED, result
@@ -504,26 +496,22 @@ class HostProxy(MysqlProxy):
             return DATABASE_QUERY_ERROR, result
 
     def _sort_group_by_column(self, data):
-        result = {
-            "total_count": 0,
-            "total_page": 1,
-            "host_group_infos": []
-        }
-        host_group_infos = self.session.query(HostGroup.host_group_name,
-                                              HostGroup.description,
-                                              func.count(Host.host_id).label("host_count")) \
-            .outerjoin(Host, HostGroup.host_group_id == Host.host_group_id) \
-            .filter(HostGroup.username == data['username']) \
+        result = {"total_count": 0, "total_page": 1, "host_group_infos": []}
+        host_group_infos = (
+            self.session.query(
+                HostGroup.host_group_name, HostGroup.description, func.count(Host.host_id).label("host_count")
+            )
+            .outerjoin(Host, HostGroup.host_group_id == Host.host_group_id)
+            .filter(HostGroup.username == data['username'])
             .group_by(HostGroup.host_group_id)
+        )
         total_count = len(host_group_infos.all())
         if not total_count:
             return result
 
         sort_column = self._get_group_column(data.get('sort'))
-        direction, page, per_page = data.get(
-            'direction'), data.get('page'), data.get('per_page')
-        processed_query, total_page = sort_and_page(host_group_infos, sort_column, direction,
-                                                    per_page, page)
+        direction, page, per_page = data.get('direction'), data.get('page'), data.get('per_page')
+        processed_query, total_page = sort_and_page(host_group_infos, sort_column, direction, per_page, page)
         infos = processed_query.all()
         host_group_infos = self._group_info_row2dict(infos)
         result['total_count'] = total_count
@@ -543,11 +531,13 @@ class HostProxy(MysqlProxy):
     def _group_info_row2dict(rows):
         result = []
         for host_group in rows:
-            result.append({
-                "host_group_name": host_group.host_group_name,
-                "description": host_group.description,
-                "host_count": host_group.host_count
-            })
+            result.append(
+                {
+                    "host_group_name": host_group.host_group_name,
+                    "description": host_group.description,
+                    "host_count": host_group.host_count,
+                }
+            )
         return result
 
     def _sort_group_by_column_old(self, data):
@@ -560,49 +550,58 @@ class HostProxy(MysqlProxy):
         Returns:
             dict
         """
-        result = {
-            "total_count": 0,
-            "total_page": 0,
-            "host_group_infos": []
-        }
+        result = {"total_count": 0, "total_page": 0, "host_group_infos": []}
         sort = data.get('sort')
         direction = desc if data.get('direction') == 'desc' else asc
         page = data.get('page')
         per_page = data.get('per_page')
         total_page = 1
 
-        user = self.session.query(User).filter(
-            User.username == data['username']).first()
+        user = self.session.query(User).filter(User.username == data['username']).first()
         total_count = len(user.host_groups)
         if total_count == 0:
             return result
-        query_fields = [HostGroup.host_group_name,
-                        HostGroup.description, HostGroup.host_count]
+        query_fields = [HostGroup.host_group_name, HostGroup.description, HostGroup.host_count]
         filters = {HostGroup.username == data['username']}
         if sort:
             if page and per_page:
                 total_page = math.ceil(total_count / per_page)
-                host_groups = self.session.query(*query_fields).filter(*filters). \
-                    order_by(direction(getattr(HostGroup, sort))). \
-                    offset((page - 1) * per_page).limit(per_page).all()
+                host_groups = (
+                    self.session.query(*query_fields)
+                    .filter(*filters)
+                    .order_by(direction(getattr(HostGroup, sort)))
+                    .offset((page - 1) * per_page)
+                    .limit(per_page)
+                    .all()
+                )
             else:
-                host_groups = self.session.query(*query_fields).filter(*filters). \
-                    order_by(direction(getattr(HostGroup, sort))).all()
+                host_groups = (
+                    self.session.query(*query_fields)
+                    .filter(*filters)
+                    .order_by(direction(getattr(HostGroup, sort)))
+                    .all()
+                )
         else:
             if page and per_page:
                 total_page = math.ceil(total_count / per_page)
-                host_groups = self.session.query(*query_fields).filter(*filters). \
-                    offset((page - 1) * per_page).limit(per_page).all()
+                host_groups = (
+                    self.session.query(*query_fields)
+                    .filter(*filters)
+                    .offset((page - 1) * per_page)
+                    .limit(per_page)
+                    .all()
+                )
             else:
-                host_groups = self.session.query(
-                    *query_fields).filter(*filters).all()
+                host_groups = self.session.query(*query_fields).filter(*filters).all()
 
         for host_group in host_groups:
-            result['host_group_infos'].append({
-                "host_group_name": host_group.host_group_name,
-                "description": host_group.description,
-                "host_count": host_group.host_count
-            })
+            result['host_group_infos'].append(
+                {
+                    "host_group_name": host_group.host_group_name,
+                    "description": host_group.description,
+                    "host_count": host_group.host_count,
+                }
+            )
 
         result['total_page'] = total_page
         result['total_count'] = total_count
@@ -626,9 +625,7 @@ class HostProxy(MysqlProxy):
         scene = data.get("scene")
         host_id = data.get("host_id")
         try:
-
-            host = self.session.query(Host).filter(
-                Host.host_id == host_id).one()
+            host = self.session.query(Host).filter(Host.host_id == host_id).one()
             host.scene = scene
             self.session.commit()
             return SUCCEED
@@ -651,8 +648,7 @@ class HostProxy(MysqlProxy):
         """
         result = {}
         try:
-            query_list = self.session.query(
-                Host).filter(Host.host_id.in_(host_id_list)).all()
+            query_list = self.session.query(Host).filter(Host.host_id.in_(host_id_list)).all()
             self.session.commit()
 
             for host_info in query_list:
@@ -674,8 +670,7 @@ class HostProxy(MysqlProxy):
                 status_code, {group name : group id}
         """
         try:
-            query_list = self.session.query(HostGroup).filter(
-                HostGroup.username == username).all()
+            query_list = self.session.query(HostGroup).filter(HostGroup.username == username).all()
             result = {}
             for group_info in query_list:
                 result[group_info.host_group_name] = group_info.host_group_id
@@ -730,8 +725,7 @@ class HostProxy(MysqlProxy):
                 status_code, list of host object, list of group object
         """
         try:
-            user = self.session.query(User).filter(
-                User.username == username).one()
+            user = self.session.query(User).filter(User.username == username).one()
             return SUCCEED, user.hosts, user.host_groups
         except sqlalchemy.exc.SQLAlchemyError as error:
             LOGGER.error(error)
@@ -760,7 +754,7 @@ class HostProxy(MysqlProxy):
     def update_host_info(self, host_id: str, update_info: dict) -> str:
         """
         update host info to host table
-        
+
         Args:
             update_info(dict): e.g
                 {
@@ -769,7 +763,7 @@ class HostProxy(MysqlProxy):
                     "management": True,
                     ...
                 }
-        
+
         Returns:
             str: SUCCEED or DATABASE_UPDATE_ERROR
         """

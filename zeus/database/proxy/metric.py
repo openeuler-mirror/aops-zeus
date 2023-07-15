@@ -16,7 +16,6 @@ Author: YangYunYi
 Description: Query raw data from Prometheus
 """
 from typing import Dict, Tuple, List, Optional
-from datetime import datetime
 import datetime
 from prometheus_api_client import PrometheusApiClientException
 from vulcanus.database.proxy import PromDbProxy
@@ -39,10 +38,8 @@ class MetricProxy(PromDbProxy):
             port (int)
         """
         PromDbProxy.__init__(self, configuration, host, port)
-        self.default_instance_port = configuration.agent.get(
-            'DEFAULT_INSTANCE_PORT') or 9100
-        self.query_range_step = configuration.prometheus.get(
-            'QUERY_RANGE_STEP') or "15s"
+        self.default_instance_port = configuration.agent.get('DEFAULT_INSTANCE_PORT') or 9100
+        self.query_range_step = configuration.prometheus.get('QUERY_RANGE_STEP') or "15s"
 
     @staticmethod
     def __metric_dict2str(metric: Dict) -> str:
@@ -102,9 +99,7 @@ class MetricProxy(PromDbProxy):
         query_host = {"host_id": "query_host_id", "host_ip": query_ip}
 
         query_metric_names = []
-        res = {
-            'results': query_metric_names
-        }
+        res = {'results': query_metric_names}
 
         host_ip = query_host["host_ip"]
         host_port = query_host.get("instance_port", self.default_instance_port)
@@ -154,14 +149,15 @@ class MetricProxy(PromDbProxy):
         query_host = {"host_id": "query_host_id", "host_ip": query_ip}
 
         query_metric_list = {}
-        res = {
-            'results': query_metric_list
-        }
+        res = {'results': query_metric_list}
 
         host_ip = query_host["host_ip"]
         host_port = query_host.get("instance_port", self.default_instance_port)
 
-        ret, metric_list = self.query_metric_list_of_host(host_ip, host_port, )
+        ret, metric_list = self.query_metric_list_of_host(
+            host_ip,
+            host_port,
+        )
 
         if ret != SUCCEED:
             LOGGER.warning("Host metric list query error")
@@ -236,20 +232,18 @@ class MetricProxy(PromDbProxy):
 
         query_host_list = [query_host]
         query_data = {}
-        res = {
-            'results': query_data
-        }
+        res = {'results': query_data}
 
         # adjust query range step based on query time range
         # the default query range step is 15 seconds
         QUERY_RANGE_STEP = 15
         query_range_step = QUERY_RANGE_STEP
         query_range_seconds = time_range[1] - time_range[0]
-        total_query_times = query_range_seconds/query_range_step
+        total_query_times = query_range_seconds / query_range_step
 
-        while (total_query_times > 11000):
+        while total_query_times > 11000:
             query_range_step += 15
-            total_query_times = query_range_seconds/query_range_step
+            total_query_times = query_range_seconds / query_range_step
 
         def add_two_dim_dict(thedict, key_a, key_b, val):
             if key_a in thedict:
@@ -262,13 +256,16 @@ class MetricProxy(PromDbProxy):
 
         for metric_name, metric_list in query_info.items():
             if not metric_list:
-                _, metric_list = self.query_metric_list_of_host(
-                    host_ip, host_port, metric_name)
+                _, metric_list = self.query_metric_list_of_host(host_ip, host_port, metric_name)
             if not metric_list:
                 query_data[metric_name] = []
             for metric_info in metric_list:
                 data_status, monitor_data = self.query_data(
-                    time_range=time_range, host_list=query_host_list, metric=metric_info, adjusted_range_step=query_range_step)
+                    time_range=time_range,
+                    host_list=query_host_list,
+                    metric=metric_info,
+                    adjusted_range_step=query_range_step,
+                )
                 values = []
                 if data_status == SUCCEED:
                     values = monitor_data[query_host["host_id"]][metric_info]
@@ -276,7 +273,13 @@ class MetricProxy(PromDbProxy):
 
         return SUCCEED, res
 
-    def query_data(self, time_range: List[int], host_list: list, metric: Optional[str] = None, adjusted_range_step: Optional[int] = None) -> Tuple[int, Dict]:
+    def query_data(
+        self,
+        time_range: List[int],
+        host_list: list,
+        metric: Optional[str] = None,
+        adjusted_range_step: Optional[int] = None,
+    ) -> Tuple[int, Dict]:
         """
         Query data
         Args:
@@ -313,14 +316,12 @@ class MetricProxy(PromDbProxy):
             if host_id not in host_data_list.keys():
                 host_data_list[host_id] = None
 
-            ret, metric_list = self.query_metric_list_of_host(
-                host_ip, host_port, metric)
+            ret, metric_list = self.query_metric_list_of_host(host_ip, host_port, metric)
             if ret != SUCCEED:
                 status = PARTIAL_SUCCEED
                 host_data_list[host_id] = None
                 continue
-            ret, data_list = self.__query_data_by_host(
-                metric_list, time_range, adjusted_range_step)
+            ret, data_list = self.__query_data_by_host(metric_list, time_range, adjusted_range_step)
             if ret != SUCCEED:
                 status = PARTIAL_SUCCEED
             if not host_data_list[host_id]:
@@ -362,7 +363,9 @@ class MetricProxy(PromDbProxy):
 
         return metric_list
 
-    def query_metric_list_of_host(self, host_ip: str, host_port: Optional[int] = None, metric: Optional[str] = None) -> Tuple[int, List[str]]:
+    def query_metric_list_of_host(
+        self, host_ip: str, host_port: Optional[int] = None, metric: Optional[str] = None
+    ) -> Tuple[int, List[str]]:
         """
         Query metric list of a host
         Args:
@@ -385,23 +388,24 @@ class MetricProxy(PromDbProxy):
             else:
                 query_str = metric + query_str
         try:
-            data = self._prom.custom_query(
-                query=query_str
-            )
+            data = self._prom.custom_query(query=query_str)
             if not data:
                 if query_str.startswith('{'):
-                    LOGGER.error("Query metric list result is empty. "
-                                 "Can not get metric list of host %s:%s " % (host_ip, host_port))
+                    LOGGER.error(
+                        "Query metric list result is empty. "
+                        "Can not get metric list of host %s:%s " % (host_ip, host_port)
+                    )
                 return NO_DATA, []
             metric_list = self.__parse_metric_data(data)
             return SUCCEED, metric_list
 
         except (ValueError, TypeError, PrometheusApiClientException) as error:
-            LOGGER.error("host %s:%d Prometheus query metric list failed. %s" % (
-                host_ip, host_port, error))
+            LOGGER.error("host %s:%d Prometheus query metric list failed. %s" % (host_ip, host_port, error))
             return DATABASE_QUERY_ERROR, []
 
-    def __query_data_by_host(self, metrics_list: List[str], time_range: List[int], adjusted_range_step: Optional[int] = None) -> Tuple[int, Dict]:
+    def __query_data_by_host(
+        self, metrics_list: List[str], time_range: List[int], adjusted_range_step: Optional[int] = None
+    ) -> Tuple[int, Dict]:
         """
         Query data of a host
         Args:
@@ -432,23 +436,23 @@ class MetricProxy(PromDbProxy):
         for metric in metrics_list:
             try:
                 data = self._prom.custom_query_range(
-                    query=metric,
-                    start_time=start_time,
-                    end_time=end_time,
-                    step=query_range_step
+                    query=metric, start_time=start_time, end_time=end_time, step=query_range_step
                 )
                 if not data or "values" not in data[0]:
-                    LOGGER.debug("Query data result is empty. "
-                                 "metric %s in %d-%d doesn't record in the prometheus " % (
-                                     metric, time_range[0], time_range[1]))
+                    LOGGER.debug(
+                        "Query data result is empty. "
+                        "metric %s in %d-%d doesn't record in the prometheus " % (metric, time_range[0], time_range[1])
+                    )
                     data_list[metric] = None
                     ret = PARTIAL_SUCCEED
                     continue
                 data_list[metric] = data[0]["values"]
 
             except (ValueError, TypeError, PrometheusApiClientException) as error:
-                LOGGER.error("Prometheus metric %s in %d-%d query data failed. %s" % (
-                    metric, time_range[0], time_range[1], error))
+                LOGGER.error(
+                    "Prometheus metric %s in %d-%d query data failed. %s"
+                    % (metric, time_range[0], time_range[1], error)
+                )
                 data_list[metric] = None
                 ret = PARTIAL_SUCCEED
         return ret, data_list

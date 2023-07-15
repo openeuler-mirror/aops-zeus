@@ -18,7 +18,6 @@ import zeus
 
 
 class BaseTestCase(TestCase):
-
     @staticmethod
     def create_app():
         app = Flask("test")

@@ -76,24 +76,8 @@ class TestGetHostInfo(unittest.TestCase):
         mock_connect.return_value = None
         mock_host_basic_info.return_value = SUCCEED, self.mock_host_basic_info
         mock_get_result.return_value = [
-            {
-                "host_id": 1,
-                "host_info": {
-                    "cpu": {},
-                    "os": {},
-                    "memory": {},
-                    "disk": [{}]
-                }
-            },
-            {
-                "host_id": 2,
-                "host_info": {
-                    "cpu": {},
-                    "os": {},
-                    "memory": {},
-                    "disk": [{}]
-                }
-            }
+            {"host_id": 1, "host_info": {"cpu": {}, "os": {}, "memory": {}, "disk": [{}]}},
+            {"host_id": 2, "host_info": {"cpu": {}, "os": {}, "memory": {}, "disk": [{}]}},
         ]
         mock_close.return_value = None
         response = client.post(QUERY_HOST_DETAIL, data=json.dumps(self.mock_args), headers=header_with_token)
