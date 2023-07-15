@@ -23,7 +23,6 @@ from vulcanus.log.log import LOGGER
 from vulcanus.restful.resp import state
 from vulcanus.restful.response import BaseResponse
 from vulcanus.token import decode_token, generate_token
-from zeus.account_manager.cache import UserCache
 from zeus.conf import configuration
 from zeus.database.proxy.account import UserProxy
 from zeus.function.verify.acount import (
@@ -158,10 +157,7 @@ class ChangePassword(BaseResponse):
         Returns:
             dict: response body
         """
-        status_code, user = callback.change_password(params)
-        if status_code == state.SUCCEED:
-            UserCache.update(user.username, user)
-        return self.response(code=status_code)
+        return self.response(code=callback.change_password(params))
 
 
 class RefreshToken(BaseResponse):
