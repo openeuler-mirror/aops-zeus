@@ -15,7 +15,6 @@ Time: 2021-12-22 10:37:56
 Author: peixiaochao
 Description:
 """
-import secrets
 import uuid
 
 import sqlalchemy
@@ -66,9 +65,8 @@ class UserProxy(MysqlProxy):
         """
         username = data.get('username')
         password = data.get('password')
-        token = secrets.token_hex(16)
         password_hash = User.hash_password(password)
-        user = User(username=username, password=password_hash, token=token, email=data.get("email"))
+        user = User(username=username, password=password_hash, email=data.get("email"))
 
         try:
             self.session.add(user)
@@ -136,8 +134,7 @@ class UserProxy(MysqlProxy):
                 }
 
         Returns:
-            int: status code
-            User
+            str: status code
         """
         username = data.get('username')
         password = data.get('password')
@@ -147,23 +144,23 @@ class UserProxy(MysqlProxy):
             change_user = self.session.query(User).filter_by(username=username).one_or_none()
             if not change_user:
                 LOGGER.error("login with unknown username")
-                return LOGIN_ERROR, ""
+                return LOGIN_ERROR
 
             if not check_password_hash(change_user.password, old_password):
-                return LOGIN_ERROR, ""
+                return LOGIN_ERROR
 
             if check_password_hash(change_user.password, password):
-                return REPEAT_PASSWORD, ""
+                return REPEAT_PASSWORD
 
             change_user.password = generate_password_hash(password)
             self.session.commit()
             LOGGER.error("change password succeed")
-            return SUCCEED, change_user
+            return SUCCEED
 
         except sqlalchemy.exc.SQLAlchemyError as error:
             LOGGER.error(error)
             LOGGER.error("change password fail")
-            return DATABASE_QUERY_ERROR, ""
+            return DATABASE_QUERY_ERROR
 
     def auth_redirect_url(self):
         """

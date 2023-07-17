@@ -71,13 +71,11 @@ class TestAccountDatabase(unittest.TestCase):
         # =============change password===================
         # new password is the same as origin
         data = {"username": "test", "password": "123456", "old_password": "123456"}
-        res = self.proxy.change_password(data)
-        self.assertEqual(res[0], REPEAT_PASSWORD)
+        self.assertEqual(self.proxy.change_password(data), REPEAT_PASSWORD)
 
         # right
         data = {"username": "test", "password": "444", "old_password": "123456"}
-        res = self.proxy.change_password(data)
-        self.assertEqual(res[0], SUCCEED)
+        self.assertEqual(self.proxy.change_password(data), SUCCEED)
 
         res = self.proxy.login(data)
         self.assertEqual(res[0], SUCCEED)
