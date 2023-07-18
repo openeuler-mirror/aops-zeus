@@ -15,27 +15,20 @@ from unittest import mock
 
 from sqlalchemy.orm.collections import InstrumentedList
 
-from vulcanus.conf.constant import ADD_HOST_BATCH
-from vulcanus.database.proxy import MysqlProxy
-from vulcanus.database.table import Host, HostGroup
 from vulcanus.multi_thread_handler import MultiThreadHandler
 from vulcanus.restful.resp import state
+from zeus.conf.constant import ADD_HOST_BATCH
 from zeus.database.proxy.host import HostProxy
+from zeus.database.table import Host, HostGroup
 from zeus.host_manager.view import AddHostBatch
 from zeus.tests import BaseTestCase
 
 client = BaseTestCase.create_app()
-header = {
-    "Content-Type": "application/json; charset=UTF-8"
-}
-header_with_token = {
-    "Content-Type": "application/json; charset=UTF-8",
-    "access_token": "123456"
-}
+header = {"Content-Type": "application/json; charset=UTF-8"}
+header_with_token = {"Content-Type": "application/json; charset=UTF-8", "access_token": "123456"}
 
 
 class TestAddHostBatch(BaseTestCase):
-
     def setUp(self):
         self.mock_host_list = [
             {

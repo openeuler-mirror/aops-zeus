@@ -43,7 +43,7 @@ class AgentPluginInfo(BaseResponse):
     Interface for user get agent plugin info
     """
 
-    @BaseResponse.handle(schema=AgentPluginInfoSchema, proxy=HostProxy, config=configuration)
+    @BaseResponse.handle(schema=AgentPluginInfoSchema, proxy=HostProxy)
     def get(self, callback: HostProxy, **params: dict) -> Response:
         """
         Interface for get agent plugin info
@@ -120,7 +120,7 @@ class GetHostScene(BaseResponse):
                 host_scene_info["collect_items"][plugin_data.get("plugin_name")] = plugin_data.get("collect_items")
         return host_scene_info
 
-    @BaseResponse.handle(schema=GetHostSceneSchema, proxy=HostProxy, config=configuration)
+    @BaseResponse.handle(schema=GetHostSceneSchema, proxy=HostProxy)
     def get(self, callback: HostProxy, **params: dict) -> Response:
         """
         Get host scene
@@ -164,7 +164,7 @@ class SetAgentPluginStatus(BaseResponse):
 
     status_url_map = {"active": CERES_PLUGIN_START, "inactive": CERES_PLUGIN_STOP}
 
-    @BaseResponse.handle(schema=SetAgentPluginStatusSchema, proxy=HostProxy, config=configuration)
+    @BaseResponse.handle(schema=SetAgentPluginStatusSchema, proxy=HostProxy)
     def post(self, callback: HostProxy, **params: dict) -> Response:
         """
         Get host scene
@@ -209,7 +209,7 @@ class SetAgentMetricStatus(BaseResponse):
     Restful API: POST
     """
 
-    @BaseResponse.handle(schema=SetAgentMetricStatusSchema, proxy=HostProxy, config=configuration)
+    @BaseResponse.handle(schema=SetAgentMetricStatusSchema, proxy=HostProxy)
     def post(self, callback: HostProxy, **params: dict) -> Response:
         """
         Set agent metric status

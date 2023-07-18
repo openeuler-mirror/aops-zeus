@@ -14,53 +14,27 @@ import json
 import unittest
 from unittest import mock
 
-import sqlalchemy
-
-from vulcanus.conf.constant import QUERY_HOST_DETAIL
 from vulcanus.database.proxy import MysqlProxy
+from vulcanus.exceptions import DatabaseConnectionFailed
 from vulcanus.multi_thread_handler import MultiThreadHandler
-from vulcanus.restful.resp.state import (
-    SUCCEED,
-    TOKEN_ERROR,
-    DATABASE_CONNECT_ERROR,
-    PARAM_ERROR, SSH_CONNECTION_ERROR
-)
+from vulcanus.restful.resp.state import SUCCEED, TOKEN_ERROR, DATABASE_CONNECT_ERROR, PARAM_ERROR, SSH_CONNECTION_ERROR
 from vulcanus.restful.response import BaseResponse
+from zeus.conf.constant import QUERY_HOST_DETAIL
 from zeus.database.proxy.host import HostProxy
 from zeus.host_manager.view import GetHostInfo
 from zeus.tests import BaseTestCase
 
 client = BaseTestCase.create_app()
-header = {
-    "Content-Type": "application/json; charset=UTF-8"
-}
-header_with_token = {
-    "Content-Type": "application/json; charset=UTF-8",
-    "access_token": "mock_token"
-}
+header = {"Content-Type": "application/json; charset=UTF-8"}
+header_with_token = {"Content-Type": "application/json; charset=UTF-8", "access_token": "mock_token"}
 
 
 class TestGetHostInfo(unittest.TestCase):
     def setUp(self) -> None:
-        self.mock_args = {
-            "host_list": [1, 2],
-            "basic": False
-        }
+        self.mock_args = {"host_list": [1, 2], "basic": False}
         self.mock_host_basic_info = [
-            {
-                "host_id": 1,
-                "host_ip": "host_ip_1",
-                "pkey": "rsa-pkey-1",
-                "ssh_user": "root",
-                "ssh_port": 22
-            },
-            {
-                "host_id": 2,
-                "host_ip": "host_ip_2",
-                "pkey": "rsa-pkey-2",
-                "ssh_user": "root",
-                "ssh_port": 22
-            }
+            {"host_id": 1, "host_ip": "host_ip_1", "pkey": "rsa-pkey-1", "ssh_user": "root", "ssh_port": 22},
+            {"host_id": 2, "host_ip": "host_ip_2", "pkey": "rsa-pkey-2", "ssh_user": "root", "ssh_port": 22},
         ]
 
     @mock.patch.object(HostProxy, "__exit__")
@@ -70,7 +44,8 @@ class TestGetHostInfo(unittest.TestCase):
     @mock.patch.object(MysqlProxy, '_create_session')
     @mock.patch.object(BaseResponse, 'verify_request')
     def test_get_host_info_from_ceres_should_return_host_info_when_all_is_right(
-            self, mock_verify_request, mock_connect, mock_host_basic_info, mock_create_thread, mock_get_result, mock_close):
+        self, mock_verify_request, mock_connect, mock_host_basic_info, mock_create_thread, mock_get_result, mock_close
+    ):
         mock_verify_request.return_value = self.mock_args, SUCCEED
         mock_create_thread.return_value = None
         mock_connect.return_value = None
@@ -100,9 +75,10 @@ class TestGetHostInfo(unittest.TestCase):
     @mock.patch.object(MysqlProxy, '_create_session')
     @mock.patch.object(BaseResponse, 'verify_request')
     def test_get_host_info_from_ceres_should_return_connect_error_when_cannot_connect_database(
-            self, mock_verify_request, mock_connect):
+        self, mock_verify_request, mock_connect
+    ):
         mock_verify_request.return_value = self.mock_args, SUCCEED
-        mock_connect.side_effect = mock_connect.side_effect = sqlalchemy.exc.SQLAlchemyError("Connection error")
+        mock_connect.side_effect = mock_connect.side_effect = DatabaseConnectionFailed("Connection error")
         response = client.post(QUERY_HOST_DETAIL, data=json.dumps(self.mock_args), headers=header_with_token)
         self.assertEqual(DATABASE_CONNECT_ERROR, response.json.get('label'))
 
@@ -111,7 +87,8 @@ class TestGetHostInfo(unittest.TestCase):
     @mock.patch.object(MysqlProxy, '_create_session')
     @mock.patch.object(BaseResponse, 'verify_token')
     def test_get_host_info_from_ceres_should_return_all_host_info_is_empty_when_input_host_id_is_not_in_database(
-            self, mock_token, mock_connect, mock_host_basic_info, mock_close):
+        self, mock_token, mock_connect, mock_host_basic_info, mock_close
+    ):
         mock_token.return_value = SUCCEED
         mock_connect.return_value = None
         mock_host_basic_info.return_value = SUCCEED, []

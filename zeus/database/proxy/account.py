@@ -18,29 +18,30 @@ Description:
 import uuid
 
 import sqlalchemy
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
-from vulcanus.conf.constant import GITEE_OAUTH, GITEE_TOKEN, GITEE_USERINFO, REFRESH_TOKEN_EXP
+from vulcanus.conf.constant import REFRESH_TOKEN_EXP
 from vulcanus.database.proxy import MysqlProxy
-from vulcanus.database.table import User, Auth
 from vulcanus.log.log import LOGGER
 from vulcanus.restful.resp.state import (
-    DATABASE_INSERT_ERROR,
-    DATABASE_QUERY_ERROR,
-    LOGIN_ERROR,
-    REPEAT_PASSWORD,
-    SUCCEED,
     AUTH_ERROR,
     AUTH_USERINFO_SYNC_ERROR,
-    NO_BOUND,
-    GENERATION_TOKEN_ERROR,
-    NO_DATA,
+    DATABASE_INSERT_ERROR,
+    DATABASE_QUERY_ERROR,
     DATABASE_UPDATE_ERROR,
+    GENERATION_TOKEN_ERROR,
+    LOGIN_ERROR,
+    NO_BOUND,
+    NO_DATA,
     REPEAT_BIND,
+    REPEAT_PASSWORD,
+    SUCCEED,
 )
 from vulcanus.restful.response import BaseResponse
 from vulcanus.token import generate_token
 from zeus.conf import configuration
+from zeus.conf.constant import GITEE_OAUTH, GITEE_TOKEN, GITEE_USERINFO
+from zeus.database.table import Auth, User
 
 
 class UserProxy(MysqlProxy):

@@ -18,33 +18,31 @@ Description:
 import unittest
 from werkzeug.security import generate_password_hash
 
-from vulcanus.database.table import Host, User, Base, create_utils_tables
 from vulcanus.database.helper import drop_tables, create_database_engine
+from vulcanus.database.proxy import MysqlProxy
 from vulcanus.restful.resp.state import DATA_EXIST, PARTIAL_SUCCEED, SUCCEED, DATA_DEPENDENCY_ERROR
-from vulcanus.compare import compare_two_object
+from vulcanus.common import ValidateUtils
+from zeus.database.table import Host, User, Base, create_utils_tables
 from zeus.database.proxy.host import HostProxy
-from zeus.conf import configuration
 
 
 class TestHostDatabase(unittest.TestCase):
     def setUp(self):
         # create engine to database
-        self.proxy = HostProxy(configuration)
-        mysql_host = "10.50.180.47"
+        self.proxy = HostProxy()
+        mysql_host = "127.0.0.1"
         mysql_port = 3306
-        mysql_url_format = "mysql+pymysql://root:123456@%s:%s/%s"
+        mysql_url_format = "mysql+pymysql://@%s:%s/%s"
         mysql_database_name = "aops_test"
         engine_url = mysql_url_format % (mysql_host, mysql_port, mysql_database_name)
-        self.engine = create_database_engine(engine_url, 100, 7200)
-        self.proxy.engine = self.engine
+        MysqlProxy.engine = create_database_engine(engine_url, 100, 7200)
         self.proxy.connect()
         # create all tables
         create_utils_tables(Base, self.proxy.engine)
         # create user
         data = {"username": "admin", "password": "123456"}
         password_hash = generate_password_hash(data['password'])
-        token = ""
-        user = User(username=data['username'], password=password_hash, token=token)
+        user = User(username=data['username'], password=password_hash)
         self.proxy.session.add(user)
         self.proxy.session.commit()
 
@@ -68,21 +66,17 @@ class TestHostDatabase(unittest.TestCase):
             "host_group_id": 3
             # "host_count": 1
         }
-        group_data4 = {
-            "username": "admin",
-            "host_group_name": "group1",
-            "description": "xxx",
-            "host_group_id": 1
-        }
-        host = [{
-            "user": "admin",
-            "host_name": "host1",
-            "host_group_name": "group2",
-            "host_id": 1,
-            "host_ip": "127.0.0.1",
-            "management": False,
-            "os_version": "openEuler 2203",
-            "host_group_id": 2
+        group_data4 = {"username": "admin", "host_group_name": "group1", "description": "xxx", "host_group_id": 1}
+        host = [
+            {
+                "user": "admin",
+                "host_name": "host1",
+                "host_group_name": "group2",
+                "host_id": 1,
+                "host_ip": "127.0.0.1",
+                "management": False,
+                "os_version": "openEuler 2203",
+                "host_group_id": 2,
             },
             {
                 "user": "admin",
@@ -92,7 +86,7 @@ class TestHostDatabase(unittest.TestCase):
                 "host_ip": "127.0.0.2",
                 "management": False,
                 "os_version": "openEuler 2003",
-                "host_group_id": 2
+                "host_group_id": 2,
             },
             {
                 "user": "admin",
@@ -102,7 +96,7 @@ class TestHostDatabase(unittest.TestCase):
                 "host_ip": "127.0.0.3",
                 "management": False,
                 "os_version": "openEuler 2109",
-                "host_group_id": 2
+                "host_group_id": 2,
             },
             {
                 "user": "admin",
@@ -112,8 +106,9 @@ class TestHostDatabase(unittest.TestCase):
                 "host_ip": "127.0.0.4",
                 "management": False,
                 "os_version": "openEuler 2003",
-                "host_group_id": 3
-            }]
+                "host_group_id": 3,
+            },
+        ]
 
         res = self.proxy.add_host_group(group_data1)
         self.assertEqual(res, SUCCEED)
@@ -343,7 +338,7 @@ class TestHostDatabase(unittest.TestCase):
                 "os_version": "openEuler2003",
                 "ssh_port": 22,
                 "pkey": None,
-                "ssh_user": "root"
+                "ssh_user": "root",
             },
             {
                 "host_name": "host2",
@@ -356,11 +351,11 @@ class TestHostDatabase(unittest.TestCase):
                 "os_version": "openEuler2109",
                 "ssh_port": 22,
                 "pkey": None,
-                "ssh_user": "root"
-            }
+                "ssh_user": "root",
+            },
         ]
         res = self.proxy.get_host_info(args)
-        self.assertTrue(compare_two_object(expected_res, res[1]))
+        self.assertTrue(ValidateUtils.compare_two_object(expected_res, res[1]))
 
         # =====================get host info by user===============
         args = {}
@@ -374,7 +369,7 @@ class TestHostDatabase(unittest.TestCase):
             ]
         }
         res = self.proxy.get_total_host_info_by_user(args)
-        self.assertTrue(compare_two_object(expected_res, res[1]['host_infos']))
+        self.assertTrue(ValidateUtils.compare_two_object(expected_res, res[1]['host_infos']))
 
         # ==============delete host===================
         args = {"username": "admin", "host_list": [1, 9]}
