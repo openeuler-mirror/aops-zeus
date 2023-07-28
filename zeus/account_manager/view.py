@@ -23,7 +23,6 @@ from vulcanus.log.log import LOGGER
 from vulcanus.restful.resp import state
 from vulcanus.restful.response import BaseResponse
 from vulcanus.token import decode_token, generate_token
-from zeus.conf import configuration
 from zeus.database.proxy.account import UserProxy
 from zeus.function.verify.acount import (
     BindAuthAccountSchema,
@@ -41,7 +40,7 @@ class AddUser(BaseResponse):
     Restful API: post
     """
 
-    @BaseResponse.handle(schema=AddUserSchema, token=False, proxy=UserProxy, config=configuration)
+    @BaseResponse.handle(schema=AddUserSchema, token=False, proxy=UserProxy)
     def post(self, callback: UserProxy, **params):
         """
         Add user
@@ -64,7 +63,7 @@ class Login(BaseResponse):
     Restful API: post
     """
 
-    @BaseResponse.handle(schema=LoginSchema, token=False, proxy=UserProxy, config=configuration)
+    @BaseResponse.handle(schema=LoginSchema, token=False, proxy=UserProxy)
     def post(self, callback: UserProxy, **params):
         """
         User login
@@ -104,7 +103,7 @@ class AuthRedirectUrl(BaseResponse):
             }
 
         """
-        proxy = UserProxy(configuration)
+        proxy = UserProxy()
         redirect_url = proxy.auth_redirect_url()
         return self.response(code=state.SUCCEED, data=redirect_url)
 
@@ -115,7 +114,7 @@ class GiteeAuthLogin(BaseResponse):
     Restful API: post
     """
 
-    @BaseResponse.handle(schema=GiteeAuthLoginSchema, token=False, proxy=UserProxy, config=configuration)
+    @BaseResponse.handle(schema=GiteeAuthLoginSchema, token=False, proxy=UserProxy)
     def get(self, callback: UserProxy, **params: dict):
         status_code, auth_result = callback.gitee_auth_login(code=params["code"])
         if status_code == state.SUCCEED:
@@ -132,7 +131,7 @@ class BindAuthAccount(BaseResponse):
     Restful API: post
     """
 
-    @BaseResponse.handle(schema=BindAuthAccountSchema, token=False, proxy=UserProxy, config=configuration)
+    @BaseResponse.handle(schema=BindAuthAccountSchema, token=False, proxy=UserProxy)
     def post(self, callback: UserProxy, **params: dict):
         status_code, auth_result = callback.bind_auth_account(
             auth_account=params["auth_account"], username=params["username"], password=params["password"]
@@ -146,7 +145,7 @@ class ChangePassword(BaseResponse):
     Restful API: post
     """
 
-    @BaseResponse.handle(schema=ChangePasswordSchema, proxy=UserProxy, config=configuration)
+    @BaseResponse.handle(schema=ChangePasswordSchema, proxy=UserProxy)
     def post(self, callback: UserProxy, **params: dict):
         """
         Change password

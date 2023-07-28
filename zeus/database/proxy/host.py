@@ -25,7 +25,6 @@ from sqlalchemy.orm.collections import InstrumentedList
 
 from vulcanus.database.helper import judge_return_code, sort_and_page
 from vulcanus.database.proxy import MysqlProxy
-from vulcanus.database.table import Host, HostGroup, User
 from vulcanus.log.log import LOGGER
 from vulcanus.restful.resp.state import (
     DATABASE_DELETE_ERROR,
@@ -37,6 +36,7 @@ from vulcanus.restful.resp.state import (
     NO_DATA,
     SUCCEED,
 )
+from zeus.database.table import Host, HostGroup, User
 
 
 class HostProxy(MysqlProxy):

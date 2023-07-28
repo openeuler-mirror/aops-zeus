@@ -27,15 +27,14 @@ from marshmallow import Schema
 from marshmallow.fields import Boolean
 from sqlalchemy.orm.collections import InstrumentedList
 
-from vulcanus.database.table import Host
 from vulcanus.log.log import LOGGER
 from vulcanus.multi_thread_handler import MultiThreadHandler
 from vulcanus.restful.resp import state
 from vulcanus.restful.response import BaseResponse
 from vulcanus.restful.serialize.validate import validate
-from zeus.conf import configuration
 from zeus.conf.constant import CERES_HOST_INFO, HOST_TEMPLATE_FILE_CONTENT, HostStatus
 from zeus.database.proxy.host import HostProxy
+from zeus.database.table import Host
 from zeus.function.model import ClientConnectArgs
 from zeus.function.verify.host import (
     AddHostBatchSchema,
@@ -57,7 +56,7 @@ class DeleteHost(BaseResponse):
     Restful API: DELETE
     """
 
-    @BaseResponse.handle(schema=DeleteHostSchema, proxy=HostProxy, config=configuration)
+    @BaseResponse.handle(schema=DeleteHostSchema, proxy=HostProxy)
     def delete(self, callback: HostProxy, **params: dict):
         """
         Delete host
@@ -78,7 +77,7 @@ class GetHost(BaseResponse):
     Restful API: POST
     """
 
-    @BaseResponse.handle(schema=GetHostSchema, proxy=HostProxy, config=configuration)
+    @BaseResponse.handle(schema=GetHostSchema, proxy=HostProxy)
     def post(self, callback: HostProxy, **params):
         """
         Get host
@@ -104,7 +103,7 @@ class GetHostCount(BaseResponse):
     Restful API: POST
     """
 
-    @BaseResponse.handle(proxy=HostProxy, config=configuration)
+    @BaseResponse.handle(proxy=HostProxy)
     def post(self, callback: HostProxy, **params):
         """
         Get host
@@ -124,7 +123,7 @@ class AddHostGroup(BaseResponse):
     Restful API: POST
     """
 
-    @BaseResponse.handle(schema=AddHostGroupSchema, proxy=HostProxy, config=configuration)
+    @BaseResponse.handle(schema=AddHostGroupSchema, proxy=HostProxy)
     def post(self, callback: HostProxy, **params):
         """
         Add host group
@@ -146,7 +145,7 @@ class DeleteHostGroup(BaseResponse):
     Restful API: DELETE
     """
 
-    @BaseResponse.handle(schema=DeleteHostGroupSchema, proxy=HostProxy, config=configuration)
+    @BaseResponse.handle(schema=DeleteHostGroupSchema, proxy=HostProxy)
     def delete(self, callback: HostProxy, **params):
         """
         Delete host group
@@ -168,7 +167,7 @@ class GetHostGroup(BaseResponse):
     Restful API: POST
     """
 
-    @BaseResponse.handle(schema=GetHostGroupSchema, proxy=HostProxy, config=configuration)
+    @BaseResponse.handle(schema=GetHostGroupSchema, proxy=HostProxy)
     def post(self, callback: HostProxy, **params):
         """
         Get host group
@@ -277,7 +276,7 @@ class GetHostInfo(BaseResponse):
         host_infos.extend(self.generate_fail_data(fail_host))
         return host_infos
 
-    @BaseResponse.handle(schema=GetHostInfoSchema, proxy=HostProxy, config=configuration)
+    @BaseResponse.handle(schema=GetHostInfoSchema, proxy=HostProxy)
     def post(self, callback: HostProxy, **params):
         """
         Get host info
@@ -370,7 +369,7 @@ class AddHost(BaseResponse):
             return state.DATA_EXIST, Host()
         return state.SUCCEED, host
 
-    @BaseResponse.handle(schema=AddHostSchema, proxy=HostProxy, config=configuration)
+    @BaseResponse.handle(schema=AddHostSchema, proxy=HostProxy)
     def post(self, callback: HostProxy, **params):
         """
         Get host info
@@ -459,7 +458,7 @@ class GetHostTemplateFile(BaseResponse):
         Returns:
             BytesIO
         """
-        args, verify_code = self.verify_request()
+        _, verify_code = self.verify_request()
         if verify_code != state.SUCCEED:
             return self.response(code=state.TOKEN_ERROR)
 
@@ -496,7 +495,7 @@ class AddHostBatch(BaseResponse):
             return self.response(code=status, data=self.add_result)
 
         # Connect database
-        proxy = HostProxy(configuration)
+        proxy = HostProxy()
         if not proxy.connect():
             LOGGER.error("connect to database error")
             self.update_add_result(
@@ -832,7 +831,7 @@ class UpdateHost(BaseResponse):
 
         return state.SUCCEED, ""
 
-    @BaseResponse.handle(schema=UpdateHostSchema, proxy=HostProxy, config=configuration, debug=False)
+    @BaseResponse.handle(schema=UpdateHostSchema, proxy=HostProxy)
     def post(self, callback: HostProxy, **params: dict):
         """
         update host info

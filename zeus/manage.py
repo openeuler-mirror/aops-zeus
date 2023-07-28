@@ -21,73 +21,13 @@ try:
     monkey.patch_all(ssl=False)
 except:
     pass
-import redis
-import sqlalchemy
-from redis import RedisError
-from vulcanus.database.proxy import RedisProxy
-from vulcanus.database.table import User, Base, create_utils_tables
-from vulcanus.log.log import LOGGER
-from vulcanus.manage import init_app
-from vulcanus.restful.resp.state import SUCCEED
 
+from vulcanus import init_application
 from zeus.conf import configuration
-from zeus.database import ENGINE
-from zeus.database.proxy.account import UserProxy
+from zeus.url import URLS
 
+app = init_application(name="zeus", settings=configuration, register_urls=URLS)
 
-def init_user():
-    """
-    Initialize user, add a default user: admin
-    """
-    try:
-        create_utils_tables(Base, ENGINE)
-    except sqlalchemy.exc.SQLAlchemyError:
-        raise sqlalchemy.exc.SQLAlchemyError("create tables fail")
-
-    proxy = UserProxy(configuration)
-    if not proxy.connect():
-        raise ValueError("connect to mysql fail")
-
-    data = {"username": "admin", "password": "changeme"}
-    res = proxy.select([User.username], {"username": data['username']})
-    # user has been added to database, return
-    if res[1]:
-        return
-
-    res = proxy.add_user(data)
-    if res != SUCCEED:
-        raise ValueError("add admin user fail")
-
-    LOGGER.info("initialize default admin user succeed")
-
-
-def init_database():
-    """
-    Initialize database
-    """
-    init_user()
-
-
-def init_redis_connect():
-    """
-    Init redis connect
-    """
-    try:
-        redis_connect = RedisProxy(configuration)
-        redis_connect.connect()
-    except (RedisError, redis.ConnectionError):
-        raise RedisError("redis connect error.")
-
-
-def main():
-    init_database()
-    init_redis_connect()
-    return init_app('zeus')
-
-
-app, config = main()
 
 if __name__ == "__main__":
-    ip = config.get('IP')
-    port = config.get('PORT')
-    app.run(host=ip, port=port)
+    app.run(host=configuration.zeus.get('IP'), port=configuration.zeus.get('PORT'))

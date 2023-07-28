@@ -13,15 +13,15 @@
 import json
 from unittest import mock
 
-import sqlalchemy
 from sqlalchemy.orm.collections import InstrumentedList
 
-from vulcanus.conf.constant import UPDATE_HOST
 from vulcanus.database.proxy import MysqlProxy
-from vulcanus.database.table import Host, HostGroup
+from vulcanus.exceptions import DatabaseConnectionFailed
 from vulcanus.restful.resp import state
 from vulcanus.restful.response import BaseResponse
+from zeus.conf.constant import UPDATE_HOST
 from zeus.database.proxy.host import HostProxy
+from zeus.database.table import Host, HostGroup
 from zeus.tests import BaseTestCase
 
 
@@ -88,26 +88,29 @@ class TestConfigManage(BaseTestCase):
     @mock.patch.object(HostProxy, "get_hosts_and_groups")
     @mock.patch.object(MysqlProxy, "_create_session")
     def test_update_host_should_return_update_succeed_when_all_right(
-            self, mock_connect, mock_hosts_and_groups, mock_save_keys, mock_verify_request, mock_update, mock_close):
+        self, mock_connect, mock_hosts_and_groups, mock_save_keys, mock_verify_request, mock_update, mock_close
+    ):
         mock_connect.return_value = None
-        mock_hosts_and_groups.return_value = state.SUCCEED, InstrumentedList(
-            self.mock_host_list), InstrumentedList(self.group_list)
+        mock_hosts_and_groups.return_value = (
+            state.SUCCEED,
+            InstrumentedList(self.mock_host_list),
+            InstrumentedList(self.group_list),
+        )
         mock_save_keys.return_value = state.SUCCEED, "pkey"
         mock_verify_request.return_value = self.mock_args, state.SUCCEED
         mock_update.return_value = state.SUCCEED
         mock_close.return_value = None
-        response = self.client.post(UPDATE_HOST, data=json.dumps(self.mock_args),
-                                    headers=self.header)
+        response = self.client.post(UPDATE_HOST, data=json.dumps(self.mock_args), headers=self.header)
         self.assertEqual(state.SUCCEED, response.json.get("label"), response.json)
 
     @mock.patch.object(MysqlProxy, "_create_session")
     @mock.patch.object(BaseResponse, "verify_request")
     def test_update_host_should_return_database_connect_error_when_connect_database_fail(
-            self, mock_verify_request, mock_connect):
+        self, mock_verify_request, mock_connect
+    ):
         mock_verify_request.return_value = self.mock_args, state.SUCCEED
-        mock_connect.side_effect = sqlalchemy.exc.SQLAlchemyError("Connection error")
-        response = self.client.post(UPDATE_HOST, data=json.dumps(self.mock_args),
-                                    headers=self.header)
+        mock_connect.side_effect = DatabaseConnectionFailed("Connection error")
+        response = self.client.post(UPDATE_HOST, data=json.dumps(self.mock_args), headers=self.header)
         self.assertEqual(state.DATABASE_CONNECT_ERROR, response.json.get("label"), response.json)
 
     @mock.patch.object(HostProxy, "__exit__")
@@ -115,13 +118,13 @@ class TestConfigManage(BaseTestCase):
     @mock.patch.object(BaseResponse, "verify_request")
     @mock.patch.object(MysqlProxy, "_create_session")
     def test_update_host_should_return_database_query_error_when_query_host_infos_fail(
-            self, mock_connect, mock_verify_request, mock_hosts_and_groups, mock_close):
+        self, mock_connect, mock_verify_request, mock_hosts_and_groups, mock_close
+    ):
         mock_verify_request.return_value = self.mock_args, state.SUCCEED
         mock_hosts_and_groups.return_value = state.DATABASE_QUERY_ERROR, InstrumentedList(), InstrumentedList()
         mock_connect.return_value = None
         mock_close.return_value = None
-        response = self.client.post(UPDATE_HOST, data=json.dumps(self.mock_args),
-                                    headers=self.header)
+        response = self.client.post(UPDATE_HOST, data=json.dumps(self.mock_args), headers=self.header)
         self.assertEqual(state.DATABASE_QUERY_ERROR, response.json.get("label"), response.json)
 
     @mock.patch.object(HostProxy, "__exit__")
@@ -129,10 +132,14 @@ class TestConfigManage(BaseTestCase):
     @mock.patch.object(BaseResponse, "verify_request")
     @mock.patch.object(MysqlProxy, "_create_session")
     def test_update_host_should_return_no_data_in_database_when_input_host_id_not_in_database(
-            self, mock_connect, mock_verify_request, mock_hosts_and_groups, mock_close):
+        self, mock_connect, mock_verify_request, mock_hosts_and_groups, mock_close
+    ):
         mock_verify_request.return_value = self.mock_args, state.SUCCEED
-        mock_hosts_and_groups.return_value = state.SUCCEED, InstrumentedList(
-            self.mock_host_list), InstrumentedList(self.group_list)
+        mock_hosts_and_groups.return_value = (
+            state.SUCCEED,
+            InstrumentedList(self.mock_host_list),
+            InstrumentedList(self.group_list),
+        )
         mock_connect.return_value = None
         mock_close.return_value = None
         self.mock_args.update({"host_id": self.incorrect_host_id})
@@ -144,10 +151,14 @@ class TestConfigManage(BaseTestCase):
     @mock.patch.object(BaseResponse, "verify_request")
     @mock.patch.object(MysqlProxy, "_create_session")
     def test_update_host_should_return_param_error_when_input_host_name_in_database(
-            self, mock_connect, mock_verify_request, mock_hosts_and_groups, mock_close):
+        self, mock_connect, mock_verify_request, mock_hosts_and_groups, mock_close
+    ):
         mock_verify_request.return_value = self.mock_args, state.SUCCEED
-        mock_hosts_and_groups.return_value = state.SUCCEED, InstrumentedList(
-            self.mock_host_list), InstrumentedList(self.group_list)
+        mock_hosts_and_groups.return_value = (
+            state.SUCCEED,
+            InstrumentedList(self.mock_host_list),
+            InstrumentedList(self.group_list),
+        )
         mock_connect.return_value = None
         mock_close.return_value = None
         self.mock_args.update({"host_name": "mock_host_1"})
@@ -159,10 +170,14 @@ class TestConfigManage(BaseTestCase):
     @mock.patch.object(BaseResponse, "verify_request")
     @mock.patch.object(MysqlProxy, "_create_session")
     def test_update_host_should_return_param_error_when_input_host_group_name_not_in_database(
-            self, mock_connect, mock_verify_request, mock_hosts_and_groups, mock_close):
+        self, mock_connect, mock_verify_request, mock_hosts_and_groups, mock_close
+    ):
         mock_verify_request.return_value = self.mock_args, state.SUCCEED
-        mock_hosts_and_groups.return_value = state.SUCCEED, InstrumentedList(
-            self.mock_host_list), InstrumentedList(self.group_list)
+        mock_hosts_and_groups.return_value = (
+            state.SUCCEED,
+            InstrumentedList(self.mock_host_list),
+            InstrumentedList(self.group_list),
+        )
         mock_connect.return_value = None
         mock_close.return_value = None
         self.mock_args.update({"host_group_name": "group3"})
@@ -174,10 +189,14 @@ class TestConfigManage(BaseTestCase):
     @mock.patch.object(BaseResponse, "verify_request")
     @mock.patch.object(MysqlProxy, "_create_session")
     def test_update_host_should_return_param_error_when_input_ssh_address_in_database(
-            self, mock_connect, mock_verify_request, mock_hosts_and_groups, mock_close):
+        self, mock_connect, mock_verify_request, mock_hosts_and_groups, mock_close
+    ):
         mock_verify_request.return_value = self.mock_args, state.SUCCEED
-        mock_hosts_and_groups.return_value = state.SUCCEED, InstrumentedList(
-            self.mock_host_list), InstrumentedList(self.group_list)
+        mock_hosts_and_groups.return_value = (
+            state.SUCCEED,
+            InstrumentedList(self.mock_host_list),
+            InstrumentedList(self.group_list),
+        )
         mock_connect.return_value = None
         mock_close.return_value = None
         self.mock_args.update({"ssh_port": "22"})
@@ -191,10 +210,14 @@ class TestConfigManage(BaseTestCase):
     @mock.patch.object(BaseResponse, "verify_request")
     @mock.patch.object(MysqlProxy, "_create_session")
     def test_update_host_should_return_database_update_error_when_update_host_info_fail(
-            self, mock_connect, mock_verify_request, mock_hosts_and_groups, mock_ssh_key, mock_update_host, mock_close):
+        self, mock_connect, mock_verify_request, mock_hosts_and_groups, mock_ssh_key, mock_update_host, mock_close
+    ):
         mock_verify_request.return_value = self.mock_args, state.SUCCEED
-        mock_hosts_and_groups.return_value = state.SUCCEED, InstrumentedList(
-            self.mock_host_list), InstrumentedList(self.group_list)
+        mock_hosts_and_groups.return_value = (
+            state.SUCCEED,
+            InstrumentedList(self.mock_host_list),
+            InstrumentedList(self.group_list),
+        )
         mock_connect.return_value = None
         mock_close.return_value = None
         mock_ssh_key.return_value = state.SUCCEED, "pkey"

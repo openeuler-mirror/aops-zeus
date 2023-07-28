@@ -17,31 +17,30 @@ Description:
 """
 import unittest
 
-from vulcanus.database.table import User, Base, create_utils_tables
 from vulcanus.database.helper import drop_tables, create_database_engine
+from vulcanus.database.proxy import MysqlProxy
 from vulcanus.restful.resp.state import LOGIN_ERROR, REPEAT_PASSWORD, SUCCEED
 from zeus.database.proxy.account import UserProxy
-from zeus.conf import configuration
+from zeus.database.table import User, Base, create_utils_tables
 
 
 class TestAccountDatabase(unittest.TestCase):
     def setUp(self):
         # create engine to database
-        self.proxy = UserProxy(configuration)
+        self.proxy = UserProxy()
         mysql_host = "127.0.0.1"
         mysql_port = 3306
-        mysql_url_format = "mysql+pymysql://%s:%s/%s"
+        mysql_url_format = "mysql+pymysql://@%s:%s/%s"
         mysql_database_name = "aops_test"
         engine_url = mysql_url_format % (mysql_host, mysql_port, mysql_database_name)
-        self.engine = create_database_engine(engine_url, 100, 7200)
-        self.proxy.engine = self.engine
+        MysqlProxy.engine = create_database_engine(engine_url, 100, 7200)
         self.proxy.connect()
         # create all tables
         create_utils_tables(Base, self.proxy.engine)
 
     def tearDown(self):
-        del self.proxy
-        drop_tables(Base, self.engine)
+        self.proxy.session.close()
+        drop_tables(Base, MysqlProxy.engine)
 
     def test_api_user(self):
         # ==============add user ===================
@@ -49,7 +48,6 @@ class TestAccountDatabase(unittest.TestCase):
         for user in data:
             res = self.proxy.add_user(user)
             self.assertEqual(res, SUCCEED)
-
         condition = {}
         res = self.proxy.select([User], condition)
         self.assertEqual(len(res[1]), 2)

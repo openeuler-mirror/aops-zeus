@@ -13,7 +13,6 @@
 from vulcanus.restful.response import BaseResponse
 from zeus.database.proxy.metric import MetricProxy
 from zeus.function.verify.metric import QueryHostMetricDataSchema, QueryHostMetricListSchema, QueryHostMetricNamesSchema
-from zeus.conf import configuration
 
 
 class QueryHostMetricNames(BaseResponse):
@@ -22,7 +21,7 @@ class QueryHostMetricNames(BaseResponse):
     Restful API: GET
     """
 
-    @BaseResponse.handle(schema=QueryHostMetricNamesSchema, proxy=MetricProxy, config=configuration)
+    @BaseResponse.handle(schema=QueryHostMetricNamesSchema, proxy=MetricProxy)
     def get(self, callback: MetricProxy, **params):
         status_code, result = callback.query_metric_names(params)
         return self.response(code=status_code, data=result)
@@ -34,7 +33,7 @@ class QueryHostMetricData(BaseResponse):
     Restful API: POST
     """
 
-    @BaseResponse.handle(schema=QueryHostMetricDataSchema, proxy=MetricProxy, config=configuration)
+    @BaseResponse.handle(schema=QueryHostMetricDataSchema, proxy=MetricProxy)
     def post(self, callback: MetricProxy, **params):
         status_code, result = callback.query_metric_data(params)
         return self.response(code=status_code, data=result)
@@ -46,7 +45,7 @@ class QueryHostMetricList(BaseResponse):
     Restful API: POST
     """
 
-    @BaseResponse.handle(schema=QueryHostMetricListSchema, proxy=MetricProxy, config=configuration)
+    @BaseResponse.handle(schema=QueryHostMetricListSchema, proxy=MetricProxy)
     def post(self, callback: MetricProxy, **params):
         status_code, result = callback.query_metric_list(params)
         return self.response(code=status_code, data=result)

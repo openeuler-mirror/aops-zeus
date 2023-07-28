@@ -18,15 +18,16 @@ Description:
 import json
 from unittest import mock
 
-from vulcanus.conf.constant import COLLECT_CONFIG
 from vulcanus.database.proxy import MysqlProxy
 from vulcanus.multi_thread_handler import MultiThreadHandler
 from vulcanus.restful.resp.state import (
-    SUCCEED, PARAM_ERROR,
+    SUCCEED,
+    PARAM_ERROR,
     DATABASE_CONNECT_ERROR,
     DATABASE_QUERY_ERROR,
-    SSH_CONNECTION_ERROR
+    SSH_CONNECTION_ERROR,
 )
+from zeus.conf.constant import COLLECT_CONFIG
 from zeus.config_manager.view import CollectConfig
 from zeus.database.proxy.host import HostProxy
 from zeus.tests import BaseTestCase
@@ -44,20 +45,8 @@ class TestConfigManage(BaseTestCase):
     }
 
     MOCK_HOST_INFO = [
-        {
-            "host_id": 1,
-            "host_ip": "host_ip2",
-            "ssh_port": 22,
-            "pkey": "mock_rsa_key",
-            "ssh_user": "root"
-        },
-        {
-            "host_id": 2,
-            "host_ip": "host_ip2",
-            "ssh_port": 22,
-            "pkey": "mock_rsa_key",
-            "ssh_user": "root"
-        }
+        {"host_id": 1, "host_ip": "host_ip2", "ssh_port": 22, "pkey": "mock_rsa_key", "ssh_user": "root"},
+        {"host_id": 2, "host_ip": "host_ip2", "ssh_port": 22, "pkey": "mock_rsa_key", "ssh_user": "root"},
     ]
 
     @mock.patch.object(MultiThreadHandler, "get_result")
@@ -65,22 +54,24 @@ class TestConfigManage(BaseTestCase):
     @mock.patch.object(HostProxy, 'get_host_info')
     @mock.patch.object(MysqlProxy, 'connect')
     def test_collect_config_should_return_get_all_file_content_when_all_is_right(
-            self, mock_connect, mock_host_info, mock_create_thread, mock_get_result):
+        self, mock_connect, mock_host_info, mock_create_thread, mock_get_result
+    ):
         mock_create_thread.return_value = None
         mock_connect.return_value = True
         mock_host_info.return_value = SUCCEED, self.MOCK_HOST_INFO
-        mock_file_content = [{
-            'fail_files': [],
-            'infos': [],
-            'success_files': ['mock_path'],
-            'host_id': 1,
-        },
+        mock_file_content = [
+            {
+                'fail_files': [],
+                'infos': [],
+                'success_files': ['mock_path'],
+                'host_id': 1,
+            },
             {
                 'fail_files': [],
                 'infos': [],
                 'success_files': ['mock_path'],
                 'host_id': 2,
-            }
+            },
         ]
         mock_get_result.return_value = mock_file_content
         resp = self.client.post(
@@ -92,10 +83,8 @@ class TestConfigManage(BaseTestCase):
         self.assertEqual([], all_fail_file_list, resp.json)
 
     def test_collect_config_should_return_param_error_when_input_is_incorrect(self):
-        mock_args = {
-            "infos": [{"host_id": "id1", "config_list": ["test_config_path"]}]}
-        resp = self.client.post('/manage/config/collect', data=json.dumps(mock_args),
-                                headers=header)
+        mock_args = {"infos": [{"host_id": "id1", "config_list": ["test_config_path"]}]}
+        resp = self.client.post('/manage/config/collect', data=json.dumps(mock_args), headers=header)
         self.assertEqual(PARAM_ERROR, resp.json.get('label'), resp.json)
 
     def test_collect_config_should_return_400_when_no_input(self):
@@ -107,23 +96,25 @@ class TestConfigManage(BaseTestCase):
     @mock.patch.object(HostProxy, 'get_host_info')
     @mock.patch.object(MysqlProxy, 'connect')
     def test_collect_config_should_return_fail_list_when_input_host_id_not_in_database(
-            self, mock_connect, mock_host_info, mock_create_thread, mock_get_result):
+        self, mock_connect, mock_host_info, mock_create_thread, mock_get_result
+    ):
         mock_create_thread.return_value = None
         mock_connect.return_value = True
         mock_host_info.return_value = SUCCEED, [self.MOCK_HOST_INFO[0]]
-        mock_file_content = [{
-            'fail_files': [],
-            'infos': [{
-                'content': 'mock_str',
-                'file_attr': {
-                    'group': 'mock',
-                    'mode': 'mock',
-                    'owner': 'mock'},
-                'path': 'mock_path1'
-            }],
-            'success_files': ['mock_path'],
-            'host_id': 1
-        }]
+        mock_file_content = [
+            {
+                'fail_files': [],
+                'infos': [
+                    {
+                        'content': 'mock_str',
+                        'file_attr': {'group': 'mock', 'mode': 'mock', 'owner': 'mock'},
+                        'path': 'mock_path1',
+                    }
+                ],
+                'success_files': ['mock_path'],
+                'host_id': 1,
+            }
+        ]
         mock_get_result.return_value = mock_file_content
         resp = self.client.post(
             '/manage/config/collect', data=json.dumps(self.MOCK_GET_FILE_CONTENT_ARGS), headers=header
@@ -139,7 +130,8 @@ class TestConfigManage(BaseTestCase):
     @mock.patch.object(HostProxy, 'get_host_info')
     @mock.patch.object(MysqlProxy, 'connect')
     def test_collect_config_should_return_fail_list_when_get_file_failed_from_ceres(
-            self, mock_connect, mock_host_info, mock_create_thread, mock_get_result):
+        self, mock_connect, mock_host_info, mock_create_thread, mock_get_result
+    ):
         mock_create_thread.return_value = None
         mock_connect.return_value = True
         mock_host_info.return_value = SUCCEED, self.MOCK_HOST_INFO
@@ -161,7 +153,7 @@ class TestConfigManage(BaseTestCase):
             "host_ip": "host_ip2",
             "ssh_port": 22,
             "pkey": "mock_rsa_key",
-            "ssh_user": "root"
+            "ssh_user": "root",
         }
         mock_file_list = ["xx"]
         res = CollectConfig.get_file_content(mock_host_info, mock_file_list)
@@ -171,16 +163,15 @@ class TestConfigManage(BaseTestCase):
     def test_get_file_content_should_return_no_fail_files_when_read_file_content_successfully(self, mock_execute):
         mock_file_content = {
             'fail_files': [],
-            'infos': [{
-                'content': 'mock_str',
-                'file_attr': {
-                    'group': 'mock',
-                    'mode': 'mock',
-                    'owner': 'mock'},
-                'path': 'mock_path1'
-            }],
+            'infos': [
+                {
+                    'content': 'mock_str',
+                    'file_attr': {'group': 'mock', 'mode': 'mock', 'owner': 'mock'},
+                    'path': 'mock_path1',
+                }
+            ],
             'success_files': ['mock_path'],
-            'host_id': 1
+            'host_id': 1,
         }
         mock_execute.return_value = SUCCEED, json.dumps(mock_file_content)
         mock_host_info = {
@@ -188,7 +179,7 @@ class TestConfigManage(BaseTestCase):
             "host_ip": "host_ip2",
             "ssh_port": 22,
             "pkey": "mock_rsa_key",
-            "ssh_user": "root"
+            "ssh_user": "root",
         }
         mock_file_list = ["mock_path1"]
 
@@ -204,7 +195,8 @@ class TestConfigManage(BaseTestCase):
     @mock.patch.object(HostProxy, 'get_host_info')
     @mock.patch.object(MysqlProxy, 'connect')
     def test_collect_config_should_return_database_query_error_when_query_host_info_failed(
-            self, mock_connect, mock_query_host):
+        self, mock_connect, mock_query_host
+    ):
         mock_connect.return_value = True
         mock_query_host.return_value = DATABASE_QUERY_ERROR, []
         resp = self.client.post(COLLECT_CONFIG, data=json.dumps(self.MOCK_GET_FILE_CONTENT_ARGS), headers=header)

@@ -15,7 +15,9 @@ Time:
 Author:
 Description: url set
 """
-from vulcanus.conf.constant import (
+from zeus.account_manager import view as account_view
+from zeus.agent_manager import view as agent_view
+from zeus.conf.constant import (
     ADD_GROUP,
     ADD_HOST,
     ADD_HOST_BATCH,
@@ -30,6 +32,7 @@ from vulcanus.conf.constant import (
     DELETE_GROUP,
     DELETE_HOST,
     EXECUTE_CVE_FIX,
+    EXECUTE_CVE_ROLLBACK,
     EXECUTE_CVE_SCAN,
     EXECUTE_REPO_SET,
     GET_GROUP,
@@ -37,19 +40,16 @@ from vulcanus.conf.constant import (
     GET_HOST_TEMPLATE_FILE,
     GITEE_AUTH_LOGIN,
     HOST_SCENE_GET,
+    LOGOUT,
     QUERY_HOST,
     QUERY_HOST_DETAIL,
-    UPDATE_HOST,
-    USER_LOGIN,
-    QUERY_METRIC_NAMES,
     QUERY_METRIC_DATA,
     QUERY_METRIC_LIST,
+    QUERY_METRIC_NAMES,
     REFRESH_TOKEN,
-    LOGOUT,
-    EXECUTE_CVE_ROLLBACK,
+    UPDATE_HOST,
+    USER_LOGIN,
 )
-from zeus.account_manager import view as account_view
-from zeus.agent_manager import view as agent_view
 from zeus.config_manager import view as config_view
 from zeus.host_manager import view as host_view
 from zeus.metric_manager import view as metric_view

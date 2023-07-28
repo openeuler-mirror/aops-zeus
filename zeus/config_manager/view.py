@@ -21,7 +21,6 @@ from typing import List, Dict
 from vulcanus.multi_thread_handler import MultiThreadHandler
 from vulcanus.restful.resp import state
 from vulcanus.restful.response import BaseResponse
-from zeus.conf import configuration
 from zeus.conf.constant import CERES_COLLECT_FILE
 from zeus.database.proxy.host import HostProxy
 from zeus.function.model import ClientConnectArgs
@@ -196,7 +195,7 @@ class CollectConfig(BaseResponse):
             host_id_with_config_file[host.get('host_id')] = host.get('config_list')
 
         # Query host address from database
-        proxy = HostProxy(configuration)
+        proxy = HostProxy()
         if not proxy.connect():
             file_content = self.convert_host_id_to_failed_data_format(
                 list(host_id_with_config_file.keys()), host_id_with_config_file
