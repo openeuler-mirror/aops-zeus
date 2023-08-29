@@ -30,6 +30,8 @@ A host and user manager service which is the foundation of aops.
 
 # install for aops-zeus
 %py3_install
+mkdir -p %{buildroot}/opt/aops/
+cp -r database %{buildroot}/opt/aops/
 
 
 %files
@@ -39,6 +41,7 @@ A host and user manager service which is the foundation of aops.
 %attr(0755,root,root) %{_unitdir}/aops-zeus.service
 %{python3_sitelib}/aops_zeus*.egg-info
 %{python3_sitelib}/zeus/*
+%attr(0755, root, root) /opt/aops/database/*
 
 
 %changelog
