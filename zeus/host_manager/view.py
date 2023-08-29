@@ -465,10 +465,9 @@ class GetHostTemplateFile(BaseResponse):
         file = BytesIO()
         file.write(HOST_TEMPLATE_FILE_CONTENT.encode('utf-8'))
         file.seek(0)
-
-        return send_file(
-            file, as_attachment=True, attachment_filename="template.csv", mimetype="application/octet-stream"
-        )
+        response = send_file(file,mimetype="application/octet-stream")
+        response.headers['Content-Disposition'] = 'attachment; filename=template.csv'
+        return response
 
 
 class AddHostBatch(BaseResponse):
