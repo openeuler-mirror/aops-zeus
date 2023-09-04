@@ -80,6 +80,9 @@ GITEE_OAUTH = "https://gitee.com/oauth/authorize"
 GITEE_TOKEN = "https://gitee.com/oauth/token?grant_type=authorization_code"
 GITEE_USERINFO = "https://gitee.com/api/v5/user"
 
+# apollo
+VUL_TASK_CVE_SCAN_NOTICE = "/vulnerability/task/callback/cve/scan/notice"
+
 # check
 CHECK_IDENTIFY_SCENE = "/check/scene/identify"
 CHECK_WORKFLOW_HOST_EXIST = '/check/workflow/host/exist'
