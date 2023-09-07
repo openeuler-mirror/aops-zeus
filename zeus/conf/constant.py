@@ -33,6 +33,7 @@ CERES_CVE_REPO_SET = "aops-ceres apollo --set-repo '%s'"
 CERES_CVE_SCAN = "aops-ceres apollo --scan '%s'"
 CERES_CVE_FIX = "aops-ceres apollo --fix '%s'"
 CERES_CVE_ROLLBACK = "aops-ceres apollo --rollback '%s'"
+CERES_SYNC_CONF = "aops-ceres sync --conf '%s'"
 
 # zeus route
 ADD_HOST = "/manage/host/add"
@@ -54,6 +55,7 @@ DELETE_GROUP = "/manage/host/group/delete"
 GET_GROUP = "/manage/host/group/get"
 
 COLLECT_CONFIG = '/manage/config/collect'
+SYNC_CONFIG = '/manage/config/sync'
 
 USER_LOGIN = "/manage/account/login"
 LOGOUT = "/manage/account/logout"

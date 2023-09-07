@@ -36,3 +36,12 @@ class CollectConfigSchema(Schema):
     """
 
     infos = fields.List(fields.Nested(ConfigSchema(), required=True), required=True, validate=lambda s: len(s) > 0)
+
+
+class SyncConfigSchema(Schema):
+    """
+        validators for SyncConfigSchema
+    """
+    host_id = fields.Integer(required=True, validate=lambda s: s > 0)
+    file_path = fields.String(required=True, validate=lambda s: len(s) > 0)
+    content = fields.String(required=True, validate=lambda s: len(s) > 0)
