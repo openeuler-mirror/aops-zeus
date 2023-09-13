@@ -21,10 +21,11 @@ from typing import List, Dict
 from vulcanus.multi_thread_handler import MultiThreadHandler
 from vulcanus.restful.resp import state
 from vulcanus.restful.response import BaseResponse
-from zeus.conf.constant import CERES_COLLECT_FILE
+from zeus.conf import configuration
+from zeus.conf.constant import CERES_COLLECT_FILE, CERES_SYNC_CONF
 from zeus.database.proxy.host import HostProxy
 from zeus.function.model import ClientConnectArgs
-from zeus.function.verify.config import CollectConfigSchema
+from zeus.function.verify.config import CollectConfigSchema, SyncConfigSchema
 from zeus.host_manager.ssh import execute_command_and_parse_its_result
 
 
@@ -218,3 +219,43 @@ class CollectConfig(BaseResponse):
         return self.response(
             state.SUCCEED, None, self.generate_target_data_format(multi_thread.get_result(), host_id_with_config_file)
         )
+
+
+class SyncConfig(BaseResponse):
+
+    @staticmethod
+    def sync_config_content(host_info: Dict, sync_config_info: Dict):
+        command = CERES_SYNC_CONF % json.dumps(sync_config_info)
+        status, content = execute_command_and_parse_its_result(
+            ClientConnectArgs(host_info.get("host_ip"), host_info.get("ssh_port"),
+                              host_info.get("ssh_user"), host_info.get("pkey")), command)
+        return status
+
+    @BaseResponse.handle(schema=SyncConfigSchema, token=False)
+    def put(self, **params):
+
+        sync_config_info = dict()
+        sync_config_info['file_path'] = params.get('file_path')
+        sync_config_info['content'] = params.get('content')
+
+        sync_result = {
+            "file_path": sync_config_info['file_path'],
+            "sync_result": False
+        }
+
+        # Query host address from database
+        proxy = HostProxy(configuration)
+        if not proxy.connect():
+            return self.response(code=state.DATABASE_CONNECT_ERROR, data={"resp": sync_result})
+
+        status, host_list = proxy.get_host_info(
+            {"username": "admin", "host_list": [params.get('host_id')]}, True)
+        if status != state.SUCCEED or len(host_list) == 1:
+            return self.response(code=status, data={"resp": sync_result})
+
+        host_info = host_list[0]
+        status = self.sync_config_content(host_info, sync_config_info)
+        if status == state.SUCCEED:
+            sync_result['sync_result'] = True
+            return self.response(code=state.SUCCEED, data={"resp": sync_result})
+        return self.response(code=state.UNKNOWN_ERROR, data={"resp": sync_result})

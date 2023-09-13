@@ -49,6 +49,7 @@ from zeus.conf.constant import (
     REFRESH_TOKEN,
     UPDATE_HOST,
     USER_LOGIN,
+    SYNC_CONFIG,
 )
 from zeus.config_manager import view as config_view
 from zeus.host_manager import view as host_view
@@ -83,7 +84,10 @@ SPECIFIC_URLS = {
         (host_view.DeleteHostGroup, DELETE_GROUP),
         (host_view.GetHostGroup, GET_GROUP),
     ],
-    "CONFIG_URLS": [(config_view.CollectConfig, COLLECT_CONFIG)],
+    "CONFIG_URLS": [
+        (config_view.CollectConfig, COLLECT_CONFIG),
+        (config_view.SyncConfig, SYNC_CONFIG)
+    ],
     'AGENT_URLS': [
         (agent_view.AgentPluginInfo, AGENT_PLUGIN_INFO),
         (agent_view.SetAgentPluginStatus, AGENT_PLUGIN_SET),
