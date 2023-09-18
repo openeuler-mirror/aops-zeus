@@ -16,6 +16,7 @@ Author:
 Description: Restful APIs for host
 """
 import json
+import os
 from typing import List, Dict
 
 from vulcanus.multi_thread_handler import MultiThreadHandler
@@ -26,7 +27,7 @@ from zeus.conf.constant import CERES_COLLECT_FILE, CERES_SYNC_CONF
 from zeus.database.proxy.host import HostProxy
 from zeus.function.model import ClientConnectArgs
 from zeus.function.verify.config import CollectConfigSchema, SyncConfigSchema
-from zeus.host_manager.ssh import execute_command_and_parse_its_result
+from zeus.host_manager.ssh import execute_command_and_parse_its_result, execute_command_sftp_result
 
 
 class CollectConfig(BaseResponse):
@@ -222,14 +223,45 @@ class CollectConfig(BaseResponse):
 
 
 class SyncConfig(BaseResponse):
+    @staticmethod
+    def sync_config_by_execute_command_sftp(host_info: Dict, sync_config_info: Dict, local_path: str,
+                                            remote_path: str):
+        content = sync_config_info.get("content")
+        with open(local_path, "w", encoding="UTF-8") as f:
+            f.write(content)
+        status = execute_command_sftp_result(
+            ClientConnectArgs(host_info.get("host_ip"), host_info.get("ssh_port"),
+                              host_info.get("ssh_user"), host_info.get("pkey")), local_path, remote_path)
+        return status
 
     @staticmethod
     def sync_config_content(host_info: Dict, sync_config_info: Dict):
-        command = CERES_SYNC_CONF % json.dumps(sync_config_info)
-        status, content = execute_command_and_parse_its_result(
-            ClientConnectArgs(host_info.get("host_ip"), host_info.get("ssh_port"),
-                              host_info.get("ssh_user"), host_info.get("pkey")), command)
-        return status
+        join_path = "/tmp"
+        if sync_config_info.get("file_path") == "/etc/profile":
+            local_path = os.path.join(join_path, "profile")
+            remote_path = "/etc/profile"
+            status = SyncConfig.sync_config_by_execute_command_sftp(host_info, sync_config_info, local_path,
+                                                                    remote_path)
+            return status
+        elif sync_config_info.get("file_path") == "/etc/rc.local":
+            local_path = os.path.join(join_path, "rc.local")
+            remote_path = "/etc/rc.local"
+            status = SyncConfig.sync_config_by_execute_command_sftp(host_info, sync_config_info, local_path,
+                                                                    remote_path)
+            return status
+        elif sync_config_info.get("file_path") == "/etc/bashrc":
+            local_path = os.path.join(join_path, "bashrc")
+            remote_path = "/etc/bashrc"
+            status = SyncConfig.sync_config_by_execute_command_sftp(host_info, sync_config_info, local_path,
+                                                                    remote_path)
+            return status
+        else:
+            command = CERES_SYNC_CONF % json.dumps(sync_config_info)
+
+            status, content = execute_command_and_parse_its_result(
+                ClientConnectArgs(host_info.get("host_ip"), host_info.get("ssh_port"),
+                                  host_info.get("ssh_user"), host_info.get("pkey")), command)
+            return status
 
     @BaseResponse.handle(schema=SyncConfigSchema, token=False)
     def put(self, **params):
@@ -244,13 +276,13 @@ class SyncConfig(BaseResponse):
         }
 
         # Query host address from database
-        proxy = HostProxy(configuration)
+        proxy = HostProxy()
         if not proxy.connect():
             return self.response(code=state.DATABASE_CONNECT_ERROR, data={"resp": sync_result})
 
         status, host_list = proxy.get_host_info(
             {"username": "admin", "host_list": [params.get('host_id')]}, True)
-        if status != state.SUCCEED or len(host_list) == 1:
+        if status != state.SUCCEED:
             return self.response(code=status, data={"resp": sync_result})
 
         host_info = host_list[0]
