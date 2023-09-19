@@ -15,6 +15,7 @@ from io import StringIO
 from typing import Tuple
 
 import paramiko
+from paramiko import sftp
 
 from vulcanus.log.log import LOGGER
 from vulcanus.restful.resp import state
@@ -57,7 +58,13 @@ class SSH:
     """
 
     def __init__(self, ip, username, port, password=None, pkey=None):
-        self._client_args = {'hostname': ip, 'username': username, 'port': port, "password": password, "pkey": pkey}
+        self._client_args = {
+            'hostname': ip,
+            'username': username,
+            'port': port,
+            "password": password,
+            "pkey": pkey
+        }
         self._client = self.client()
 
     def client(self):
@@ -71,15 +78,15 @@ class SSH:
 
     def execute_command(self, command: str, timeout: float = None) -> tuple:
         """
-        create a ssh client, execute command and parse result
+            create a ssh client, execute command and parse result
 
-        Args:
-            command(str): shell command
-            timeout(float): the maximum time to wait for the result of command execution
+            Args:
+                command(str): shell command
+                timeout(float): the maximum time to wait for the result of command execution
 
-        Returns:
-            tuple:
-                status, result, error message
+            Returns:
+                tuple:
+                    status, result, error message
         """
         open_channel = self._client.get_transport().open_session(timeout=timeout)
         open_channel.set_combine_stderr(False)
@@ -110,13 +117,14 @@ def execute_command_and_parse_its_result(connect_args: ClientConnectArgs, comman
             status, result
     """
     if not connect_args.pkey:
-        return state.SSH_AUTHENTICATION_ERROR, f"ssh authentication failed when connect host " f"{connect_args.host_ip}"
+        return state.SSH_AUTHENTICATION_ERROR, f"ssh authentication failed when connect host " \
+                                               f"{connect_args.host_ip}"
     try:
         client = SSH(
             ip=connect_args.host_ip,
             username=connect_args.ssh_user,
             port=connect_args.ssh_port,
-            pkey=paramiko.RSAKey.from_private_key(StringIO(connect_args.pkey)),
+            pkey=paramiko.RSAKey.from_private_key(StringIO(connect_args.pkey))
         )
         exit_status, stdout, stderr = client.execute_command(command, connect_args.timeout)
     except socket.error as error:
@@ -131,3 +139,47 @@ def execute_command_and_parse_its_result(connect_args: ClientConnectArgs, comman
         return state.SUCCEED, stdout
     LOGGER.error(stderr)
     return state.EXECUTE_COMMAND_ERROR, stderr
+
+
+def execute_command_sftp_result(connect_args: ClientConnectArgs, local_path=None, remote_path=None):
+    """
+    create a ssh client, execute command and parse result
+
+    Args:
+        connect_args(ClientConnectArgs): e.g
+            ClientArgs(host_ip='127.0.0.1', ssh_port=22, ssh_user='root', pkey=RSAKey string)
+        command(str): shell command
+
+    Returns:
+        tuple:
+            status, result
+    """
+    global sftp_client, client
+    if not connect_args.pkey:
+        return state.SSH_AUTHENTICATION_ERROR, f"ssh authentication failed when connect host " \
+                                               f"{connect_args.host_ip}"
+    try:
+        client = SSH(
+            ip=connect_args.host_ip,
+            username=connect_args.ssh_user,
+            port=connect_args.ssh_port,
+            pkey=paramiko.RSAKey.from_private_key(StringIO(connect_args.pkey))
+        )
+        sftp_client = client.client().open_sftp()
+
+        # Specifies the path to the local file and the remote file
+        # Upload files to a remote server
+        sftp_client.put(local_path, remote_path)
+        return state.SUCCEED
+    except socket.error as error:
+        LOGGER.error(error)
+        return state.SSH_CONNECTION_ERROR, "SSH.Connection.Error"
+    except paramiko.ssh_exception.SSHException as error:
+        LOGGER.error(error)
+        return state.SSH_AUTHENTICATION_ERROR, "SSH.Authentication.Error"
+    except Exception as error:
+        LOGGER.error(error)
+        return state.SSH_AUTHENTICATION_ERROR, "SSH.Authentication.Error"
+    finally:
+        sftp_client.close()
+        client.close()
