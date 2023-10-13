@@ -21,6 +21,7 @@ from prometheus_api_client import PrometheusApiClientException
 from vulcanus.database.proxy import PromDbProxy
 from vulcanus.log.log import LOGGER
 from vulcanus.restful.resp.state import SUCCEED, DATABASE_QUERY_ERROR, NO_DATA, PARAM_ERROR, PARTIAL_SUCCEED
+from zeus.conf import configuration
 
 
 class MetricProxy(PromDbProxy):
@@ -28,16 +29,15 @@ class MetricProxy(PromDbProxy):
     Proxy of prometheus time series database
     """
 
-    def __init__(self, configuration, host=None, port=None):
+    def __init__(self, host=None, port=None):
         """
         Init MetricProxy
 
         Args:
-            configuration (Config)
             host (str)
             port (int)
         """
-        PromDbProxy.__init__(self, configuration, host, port)
+        PromDbProxy.__init__(self, host, port)
         self.default_instance_port = configuration.agent.get('DEFAULT_INSTANCE_PORT') or 9100
         self.query_range_step = configuration.prometheus.get('QUERY_RANGE_STEP') or "15s"
 
