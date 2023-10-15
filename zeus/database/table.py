@@ -59,7 +59,7 @@ class Host(Base, MyBase):  # pylint: disable=R0903
     os_version = Column(String(40))
     ssh_user = Column(String(40), default="root")
     ssh_port = Column(Integer(), default=22)
-    pkey = Column(String(2048))
+    pkey = Column(String(4096))
     status = Column(Integer(), default=2)
 
     user = Column(String(40), ForeignKey('user.username'))

@@ -90,9 +90,9 @@ CHECK_IDENTIFY_SCENE = "/check/scene/identify"
 CHECK_WORKFLOW_HOST_EXIST = '/check/workflow/host/exist'
 
 # host template file content
-HOST_TEMPLATE_FILE_CONTENT = """host_ip,ssh_port,ssh_user,password,host_name,host_group_name,management
-test_ip_1,22,root,password,test_host,test_host_group,False
-test_ip_2,22,root,password,test_host,test_host_group,False
+HOST_TEMPLATE_FILE_CONTENT = """host_ip,ssh_port,ssh_user,password,ssh_pkey,host_name,host_group_name,management
+test_ip_1,22,root,password,ssh_pkey,test_host,test_host_group,False
+test_ip_2,22,root,password,ssh_pkey,test_host,test_host_group,False
 """
 
 

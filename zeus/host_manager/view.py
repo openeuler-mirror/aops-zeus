@@ -16,12 +16,13 @@ Author:
 Description: Restful APIs for host
 """
 import json
-from io import BytesIO
+from io import BytesIO, StringIO
 from typing import Iterable, List, Tuple, Union
 import socket
 
 import gevent
 import paramiko
+from paramiko.ssh_exception import SSHException
 from flask import request, send_file
 from marshmallow import Schema
 from marshmallow.fields import Boolean
@@ -333,7 +334,8 @@ class AddHost(BaseResponse):
                 "host_ip":"127.0.0.1",
                 "ssh_port":"22",
                 "management":false,
-                "username": "admin"
+                "username": "admin",
+                "ssh_pkey": "RSA key"
             }
 
         Returns:
@@ -363,6 +365,7 @@ class AddHost(BaseResponse):
                 "ssh_port": host_info.get("ssh_port"),
                 "user": host_info.get("username"),
                 "management": host_info.get("management"),
+                "pkey": host_info.get("ssh_pkey"),
             }
         )
         if host in hosts:
@@ -384,7 +387,8 @@ class AddHost(BaseResponse):
                 "host_ip":"127.0.0.1",
                 "ssh_port":"22",
                 "management":false,
-                "username": "admin"
+                "username": "admin",
+                "ssh_pkey": "RSA key"
             }
 
         Returns:
@@ -396,13 +400,53 @@ class AddHost(BaseResponse):
         if status != state.SUCCEED:
             return self.response(code=status)
 
-        status, private_key = save_ssh_public_key_to_client(
-            params.get('host_ip'), params.get('ssh_port'), params.get('ssh_user'), params.get('password')
-        )
-        if status == state.SUCCEED:
-            host.pkey = private_key
-            host.status = HostStatus.ONLINE
+        if params.get("ssh_pkey"):
+            status = verify_ssh_login_info(
+                ClientConnectArgs(
+                    params.get("host_ip"), params.get("ssh_port"), params.get("ssh_user"), params.get("ssh_pkey")
+                )
+            )
+            host.status = HostStatus.ONLINE if status == state.SUCCEED else HostStatus.UNESTABLISHED
+        else:
+            status, private_key = save_ssh_public_key_to_client(
+                params.get('host_ip'), params.get('ssh_port'), params.get('ssh_user'), params.get('password')
+            )
+            if status == state.SUCCEED:
+                host.pkey = private_key
+                host.status = HostStatus.ONLINE
         return self.response(code=self.proxy.add_host(host))
+
+
+def verify_ssh_login_info(ssh_login_info: ClientConnectArgs) -> str:
+    """
+    Verify that the ssh login information is correct
+
+    Args:
+        ssh_login_info(ClientConnectArgs): e.g
+            ClientConnectArgs(host_ip='127.0.0.1', ssh_port=22, ssh_user='root', pkey=RSAKey string)
+
+    Returns:
+        status code
+    """
+    try:
+        client = SSH(
+            ip=ssh_login_info.host_ip,
+            username=ssh_login_info.ssh_user,
+            port=ssh_login_info.ssh_port,
+            pkey=paramiko.RSAKey.from_private_key(StringIO(ssh_login_info.pkey)),
+        )
+        client.close()
+    except socket.error as error:
+        LOGGER.error(error)
+        return state.SSH_CONNECTION_ERROR
+    except SSHException as error:
+        LOGGER.error(error)
+        return state.SSH_AUTHENTICATION_ERROR
+    except Exception as error:
+        LOGGER.error(error)
+        return state.SSH_CONNECTION_ERROR
+
+    return state.SUCCEED
 
 
 def save_ssh_public_key_to_client(ip: str, port: int, username: str, password: str) -> tuple:
@@ -465,7 +509,7 @@ class GetHostTemplateFile(BaseResponse):
         file = BytesIO()
         file.write(HOST_TEMPLATE_FILE_CONTENT.encode('utf-8'))
         file.seek(0)
-        response = send_file(file,mimetype="application/octet-stream")
+        response = send_file(file, mimetype="application/octet-stream")
         response.headers['Content-Disposition'] = 'attachment; filename=template.csv'
         return response
 
@@ -574,6 +618,7 @@ class AddHostBatch(BaseResponse):
                 continue
 
             password = host_info.pop("password")
+            pkey = host_info.pop("ssh_pkey", None)
             host_info.update(
                 {"host_group_id": group_id_info.get(host_info['host_group_name']), "user": data["username"]}
             )
@@ -585,7 +630,7 @@ class AddHostBatch(BaseResponse):
                 )
                 continue
 
-            valid_host.append((host, password))
+            valid_host.append((host, password, pkey))
         return valid_host
 
     def save_key_to_client(self, host_connect_infos: List[tuple]) -> list:
@@ -598,8 +643,8 @@ class AddHostBatch(BaseResponse):
         Returns:
             host object list
         """
-        # 30 connections are created at a time.
-        tasks = [host_connect_infos[index : index + 30] for index in range(0, len(host_connect_infos), 30)]
+        # 100 connections are created at a time.
+        tasks = [host_connect_infos[index : index + 100] for index in range(0, len(host_connect_infos), 100)]
         result = []
 
         for task in tasks:
@@ -612,18 +657,23 @@ class AddHostBatch(BaseResponse):
         return result
 
     @staticmethod
-    def update_rsa_key_to_host(host: Host, password: str) -> Host:
+    def update_rsa_key_to_host(host: Host, password: str = None, pkey: str = None) -> Host:
         """
         save ssh public key to client and update its private key in host
 
         Args:
             host(Host): host object
             password(str): password for ssh login
+            pkey(str): rsa key for ssh login
 
         Returns:
             host object
         """
-        status, pkey = save_ssh_public_key_to_client(host.host_ip, host.ssh_port, host.ssh_user, password)
+        if pkey:
+            status = verify_ssh_login_info(ClientConnectArgs(host.host_ip, host.ssh_port, host.ssh_user, pkey))
+        else:
+            status, pkey = save_ssh_public_key_to_client(host.host_ip, host.ssh_port, host.ssh_user, password)
+
         if status == state.SUCCEED:
             host.status = HostStatus.ONLINE
             host.pkey = pkey
@@ -654,7 +704,7 @@ class AddHostBatch(BaseResponse):
                 new_host.update(update_info)
                 self.add_result.append(new_host)
         else:
-            for host, _ in hosts:
+            for host, _, _ in hosts:
                 new_host = {
                     "host_ip": host.host_ip,
                     "ssh_port": host.ssh_port,
@@ -789,9 +839,14 @@ class UpdateHost(BaseResponse):
         """
         ssh_user = params.get("ssh_user") or self.host.ssh_user
         ssh_port = params.get("ssh_port") or self.host.ssh_port
-        status, private_key = save_ssh_public_key_to_client(
-            self.host.host_ip, ssh_port, ssh_user, params.pop("password", None)
-        )
+        private_key = params.pop("ssh_pkey", None)
+        if private_key:
+            status = verify_ssh_login_info(ClientConnectArgs(self.host.host_ip, ssh_port, ssh_user, private_key))
+        else:
+            status, private_key = save_ssh_public_key_to_client(
+                self.host.host_ip, ssh_port, ssh_user, params.pop("password", None)
+            )
+
         params.update(
             {
                 "ssh_user": ssh_user,
@@ -876,10 +931,10 @@ class UpdateHost(BaseResponse):
             return self.response(code=state.PARAM_ERROR, message="there is a duplicate host ssh address in database!")
 
         if params.get("ssh_user") or params.get("ssh_port"):
-            if not params.get("password"):
-                return self.response(code=state.PARAM_ERROR, message="please update password")
+            if not params.get("password") or not params.get("ssh_pkey"):
+                return self.response(code=state.PARAM_ERROR, message="please update password or authentication key.")
             self._save_ssh_key(params)
-        elif params.get("password"):
+        elif params.get("password") or params.get("ssh_pkey"):
             self._save_ssh_key(params)
 
         return self.response(callback.update_host_info(params.pop("host_id"), params))

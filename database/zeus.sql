@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS `host`  (
   `os_version` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `ssh_user` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `ssh_port` int(11) NULL DEFAULT NULL,
-  `pkey` varchar(2048) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `pkey` varchar(4096) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `status` int(11) NULL DEFAULT NULL,
   `user` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `host_group_id` int(11) NULL DEFAULT NULL,
