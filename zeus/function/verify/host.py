@@ -103,11 +103,12 @@ class AddHostSchema(Schema):
     """
 
     ssh_user = fields.String(required=True, validate=lambda s: len(s) > 0)
-    password = fields.String(required=True, validate=lambda s: len(s) > 0)
+    password = fields.String(required=True, allow_none=True, validate=lambda s: len(s) >= 0)
     host_name = fields.String(
         required=True, validate=[validate.Length(min=1, max=50), ValidateRules.space_character_check]
     )
     host_ip = fields.IP(required=True)
+    ssh_pkey = fields.String(required=True, allow_none=True, validate=lambda s: 4096 >= len(s) >= 0)
     ssh_port = fields.Integer(required=True, validate=lambda s: 65535 >= s > 0)
     host_group_name = fields.String(required=True, validate=lambda s: len(s) > 0)
     management = fields.Boolean(required=True)
@@ -133,3 +134,4 @@ class UpdateHostSchema(Schema):
     host_name = fields.String(required=False, validate=lambda s: len(s) > 0)
     host_group_name = fields.String(required=False, validate=lambda s: len(s) > 0)
     management = fields.Boolean(required=False)
+    ssh_pkey = fields.String(required=False, validate=lambda s: 4096 >= len(s) >= 0)
