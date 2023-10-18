@@ -12,8 +12,6 @@
 # ******************************************************************************/
 from unittest import mock
 
-import sqlalchemy
-
 from vulcanus.exceptions import DatabaseConnectionFailed
 from vulcanus.restful.resp import state
 from vulcanus.restful.response import BaseResponse
