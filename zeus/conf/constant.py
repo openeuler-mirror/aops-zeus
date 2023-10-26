@@ -91,8 +91,14 @@ CHECK_WORKFLOW_HOST_EXIST = '/check/workflow/host/exist'
 
 # host template file content
 HOST_TEMPLATE_FILE_CONTENT = """host_ip,ssh_port,ssh_user,password,ssh_pkey,host_name,host_group_name,management
-test_ip_1,22,root,password,ssh_pkey,test_host,test_host_group,False
-test_ip_2,22,root,password,ssh_pkey,test_host,test_host_group,False
+127.0.0.1,22,root,password,private key,test_host,test_host_group,FALSE
+127.0.0.1,23,root,password,private key,test_host,test_host_group,FALSE
+,,,,,,,
+"提示:",,,,,,,
+"1. 除登录密码与SSH登录秘钥外,其余信息都应提供有效值",,,,,,,
+"2. 登录密码与SSH登录秘钥可选择一种填入,当两者都提供时,以SSH登录秘钥为准",,,,,,,
+"3. 添加的主机信息不应存在重复信息(主机名称重复或者主机IP+端口重复)",,,,,,,
+"4. 上传本文件前,请删除此部分提示内容",,,,,,,
 """
 
 
