@@ -930,11 +930,11 @@ class UpdateHost(BaseResponse):
             LOGGER.warning(f"there is a duplicate host address in database " f"when update host {self.host.host_id}!")
             return self.response(code=state.PARAM_ERROR, message="there is a duplicate host ssh address in database!")
 
+        if params.get("password") or params.get("ssh_pkey"):
+            self._save_ssh_key(params)
+            return self.response(callback.update_host_info(params.pop("host_id"), params))
+
         if params.get("ssh_user") or params.get("ssh_port"):
-            if not params.get("password") or not params.get("ssh_pkey"):
-                return self.response(code=state.PARAM_ERROR, message="please update password or authentication key.")
-            self._save_ssh_key(params)
-        elif params.get("password") or params.get("ssh_pkey"):
-            self._save_ssh_key(params)
+            return self.response(code=state.PARAM_ERROR, message="please update password or authentication key.")
 
         return self.response(callback.update_host_info(params.pop("host_id"), params))
