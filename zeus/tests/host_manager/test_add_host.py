@@ -17,7 +17,6 @@ from io import BytesIO
 from unittest import mock
 
 import paramiko
-import sqlalchemy
 from paramiko import AuthenticationException
 from sqlalchemy.orm.collections import InstrumentedList
 

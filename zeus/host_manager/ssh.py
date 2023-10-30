@@ -15,7 +15,6 @@ from io import StringIO
 from typing import Tuple
 
 import paramiko
-from paramiko import sftp
 
 from vulcanus.log.log import LOGGER
 from vulcanus.restful.resp import state
