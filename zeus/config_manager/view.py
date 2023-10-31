@@ -22,10 +22,10 @@ from typing import List, Dict
 from vulcanus.multi_thread_handler import MultiThreadHandler
 from vulcanus.restful.resp import state
 from vulcanus.restful.response import BaseResponse
-from zeus.conf.constant import CERES_COLLECT_FILE, CERES_SYNC_CONF
+from zeus.conf.constant import CERES_COLLECT_FILE, CERES_SYNC_CONF, OBJECT_FILE_CONF, CERES_OBJECT_FILE_CONF
 from zeus.database.proxy.host import HostProxy
 from zeus.function.model import ClientConnectArgs
-from zeus.function.verify.config import CollectConfigSchema, SyncConfigSchema
+from zeus.function.verify.config import CollectConfigSchema, SyncConfigSchema, ObjectFileConfigSchema
 from zeus.host_manager.ssh import execute_command_and_parse_its_result, execute_command_sftp_result
 
 
@@ -290,3 +290,41 @@ class SyncConfig(BaseResponse):
             sync_result['sync_result'] = True
             return self.response(code=state.SUCCEED, data={"resp": sync_result})
         return self.response(code=state.UNKNOWN_ERROR, data={"resp": sync_result})
+
+
+class ObjectFileConfig(BaseResponse):
+
+    @staticmethod
+    def object_file_config_content(host_info: Dict, file_directory: str):
+        command = CERES_OBJECT_FILE_CONF % file_directory
+        status, content = execute_command_and_parse_its_result(
+            ClientConnectArgs(host_info.get("host_ip"), host_info.get("ssh_port"),
+                              host_info.get("ssh_user"), host_info.get("pkey")), command)
+        return status, content
+
+    @BaseResponse.handle(schema=ObjectFileConfigSchema, token=False)
+    def post(self, **params):
+        object_file_result = {
+            "object_file_paths": list(),
+            "object_file_result": False
+        }
+        # Query host address from database
+        proxy = HostProxy()
+        if not proxy.connect():
+            return self.response(code=state.DATABASE_CONNECT_ERROR, data={"resp": object_file_result})
+
+        status, host_list = proxy.get_host_info(
+            {"username": "admin", "host_list": [params.get('host_id')]}, True)
+        if status != state.SUCCEED:
+            return self.response(code=status, data={"resp": object_file_result})
+
+        host_info = host_list[0]
+        status, content = self.object_file_config_content(host_info, params.get('file_directory'))
+        if status == state.SUCCEED:
+            object_file_result['object_file_result'] = True
+            content_res = json.loads(content)
+            if content_res.get("resp"):
+                resp = content_res.get("resp")
+                object_file_result['object_file_paths'] = resp
+            return self.response(code=state.SUCCEED, data={"resp": object_file_result})
+        return self.response(code=state.UNKNOWN_ERROR, data={"resp": object_file_result})

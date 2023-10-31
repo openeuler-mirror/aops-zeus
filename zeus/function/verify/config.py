@@ -45,3 +45,11 @@ class SyncConfigSchema(Schema):
     host_id = fields.Integer(required=True, validate=lambda s: s > 0)
     file_path = fields.String(required=True, validate=lambda s: len(s) > 0)
     content = fields.String(required=True, validate=lambda s: len(s) > 0)
+
+
+class ObjectFileConfigSchema(Schema):
+    """
+        validators for ObjectFileConfigSchema
+    """
+    host_id = fields.Integer(required=True, validate=lambda s: s > 0)
+    file_directory = fields.String(required=True, validate=lambda s: len(s) > 0)
