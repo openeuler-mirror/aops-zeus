@@ -22,7 +22,7 @@ from typing import List, Dict
 from vulcanus.multi_thread_handler import MultiThreadHandler
 from vulcanus.restful.resp import state
 from vulcanus.restful.response import BaseResponse
-from zeus.conf.constant import CERES_COLLECT_FILE, CERES_SYNC_CONF, OBJECT_FILE_CONF, CERES_OBJECT_FILE_CONF
+from zeus.conf.constant import CERES_COLLECT_FILE, CERES_SYNC_CONF, CERES_OBJECT_FILE_CONF
 from zeus.database.proxy.host import HostProxy
 from zeus.function.model import ClientConnectArgs
 from zeus.function.verify.config import CollectConfigSchema, SyncConfigSchema, ObjectFileConfigSchema
