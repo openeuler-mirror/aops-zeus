@@ -58,7 +58,7 @@
    安装mysql与redis，并在mysql中建立aops数据库。
 
    ```sql
-   create database aops default character set utf8mb4 collate utf8mb4_unicode_ci;
+   create database aops default character set utf8mb4 collate utf8mb4_bin;
    ```
 
    安装完成后按照下述流程进行mysql与redis的配置。
