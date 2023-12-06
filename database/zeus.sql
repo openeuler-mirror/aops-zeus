@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS `host`  (
   `status` int(11) NULL DEFAULT NULL,
   `user` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL,
   `host_group_id` int(11) NULL DEFAULT NULL,
+  `reboot` tinyint(1) NOT NULL,
   PRIMARY KEY (`host_id`) USING BTREE,
   INDEX `user`(`user`) USING BTREE,
   INDEX `host_group_id`(`host_group_id`) USING BTREE,

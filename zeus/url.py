@@ -34,6 +34,7 @@ from zeus.conf.constant import (
     EXECUTE_CVE_FIX,
     EXECUTE_CVE_ROLLBACK,
     EXECUTE_CVE_SCAN,
+    EXECUTE_HOTPATCH_REMOVE,
     EXECUTE_REPO_SET,
     GET_GROUP,
     GET_HOST_COUNT,
@@ -50,7 +51,7 @@ from zeus.conf.constant import (
     UPDATE_HOST,
     USER_LOGIN,
     SYNC_CONFIG,
-    OBJECT_FILE_CONFIG
+    OBJECT_FILE_CONFIG,
 )
 from zeus.config_manager import view as config_view
 from zeus.host_manager import view as host_view
@@ -88,7 +89,7 @@ SPECIFIC_URLS = {
     "CONFIG_URLS": [
         (config_view.CollectConfig, COLLECT_CONFIG),
         (config_view.SyncConfig, SYNC_CONFIG),
-        (config_view.ObjectFileConfig, OBJECT_FILE_CONFIG)
+        (config_view.ObjectFileConfig, OBJECT_FILE_CONFIG),
     ],
     'AGENT_URLS': [
         (agent_view.AgentPluginInfo, AGENT_PLUGIN_INFO),
@@ -100,7 +101,7 @@ SPECIFIC_URLS = {
         (vulnerability_view.ExecuteRepoSetTask, EXECUTE_REPO_SET),
         (vulnerability_view.ExecuteCveScanTask, EXECUTE_CVE_SCAN),
         (vulnerability_view.ExecuteCveFixTask, EXECUTE_CVE_FIX),
-        (vulnerability_view.ExecuteCveRollbackTask, EXECUTE_CVE_ROLLBACK),
+        (vulnerability_view.ExecuteHotpatchRemoveTask, EXECUTE_HOTPATCH_REMOVE),
     ],
     'METRIC': [
         (metric_view.QueryHostMetricNames, QUERY_METRIC_NAMES),
