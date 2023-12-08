@@ -32,7 +32,7 @@ CERES_HOST_INFO = "aops-ceres collect --host '%s'"
 CERES_CVE_REPO_SET = "aops-ceres apollo --set-repo '%s'"
 CERES_CVE_SCAN = "aops-ceres apollo --scan '%s'"
 CERES_CVE_FIX = "aops-ceres apollo --fix '%s'"
-CERES_CVE_ROLLBACK = "aops-ceres apollo --rollback '%s'"
+CERES_HOTPATCH_REMOVE = "aops-ceres apollo --remove-hotpatch '%s'"
 CERES_SYNC_CONF = "aops-ceres sync --conf '%s'"
 CERES_OBJECT_FILE_CONF = "aops-ceres ragdoll --list '%s'"
 
@@ -73,6 +73,7 @@ EXECUTE_REPO_SET = '/manage/vulnerability/repo/set'
 EXECUTE_CVE_FIX = '/manage/vulnerability/cve/fix'
 EXECUTE_CVE_SCAN = '/manage/vulnerability/cve/scan'
 EXECUTE_CVE_ROLLBACK = "/manage/vulnerability/cve/rollback"
+EXECUTE_HOTPATCH_REMOVE = "/manage/vulnerability/cve/hotpatch-remove"
 
 # metric config
 QUERY_METRIC_NAMES = '/manage/host/metric/names'
