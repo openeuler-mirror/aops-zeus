@@ -61,7 +61,7 @@ class Host(Base, MyBase):  # pylint: disable=R0903
     ssh_port = Column(Integer(), default=22)
     pkey = Column(String(4096))
     status = Column(Integer(), default=2)
-    reboot = Column(Boolean, nullable=False)
+    reboot = Column(Boolean, nullable=False, default=False)
 
     user = Column(String(40), ForeignKey('user.username'))
     host_group_id = Column(Integer, ForeignKey('host_group.host_group_id'))
