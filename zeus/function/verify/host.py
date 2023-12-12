@@ -60,6 +60,14 @@ class GetHostSchema(Schema):
     per_page = fields.Integer(required=False, validate=lambda s: 50 > s > 0)
 
 
+class GetHostStatusSchema(Schema):
+    """
+    validators for parameter of /manage/host/getstatus
+    """
+
+    host_list = fields.List(fields.Integer(), required=True)
+
+
 class AddHostGroupSchema(Schema):
     """
     validators for parameter of /manage/host/add_host_group

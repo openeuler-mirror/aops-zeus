@@ -42,6 +42,7 @@ ADD_HOST_BATCH = "/manage/host/add/batch"
 GET_HOST_TEMPLATE_FILE = "/manage/host/file/template"
 DELETE_HOST = "/manage/host/delete"
 QUERY_HOST = "/manage/host/get"
+GET_HOST_STATUS = "/manage/host/status/get"
 GET_HOST_COUNT = "/manage/host/count"
 AUTH_REDIRECT_URL = "/manage/account/authredirecturl"
 BIND_AUTH_ACCOUNT = "/manage/account/bindaccount"
@@ -116,3 +117,4 @@ class HostStatus:
     ONLINE = 0
     OFFLINE = 1
     UNESTABLISHED = 2
+    SCANNING = 3

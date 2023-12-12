@@ -268,7 +268,6 @@ class HostProxy(MysqlProxy):
                 "host_group_name": host.host_group_name,
                 "host_ip": host.host_ip,
                 "management": host.management,
-                "status": host.status,
                 "scene": host.scene,
                 "os_version": host.os_version,
                 "ssh_port": host.ssh_port,
@@ -338,6 +337,52 @@ class HostProxy(MysqlProxy):
         except sqlalchemy.exc.SQLAlchemyError as error:
             LOGGER.error(error)
             LOGGER.error("query host %s basic info fail", host_list)
+            return DATABASE_QUERY_ERROR, result
+
+    def get_host_ssh_info(self, data):
+        """
+        Get host ssh info according to host id from table
+
+        Args:
+            data(dict): parameter, e.g.
+                {
+                    "username": "admin"
+                    "host_list": ["id1", "id2"]
+                }
+
+        Returns:
+            int: status code
+            dict: query result
+        """
+        username = data.get('username')
+        host_list = data.get('host_list')
+        result = []
+        query_fields = [
+            Host.host_id,
+            Host.host_ip,
+            Host.ssh_port,
+            Host.pkey,
+            Host.ssh_user,
+        ]
+        filters = {Host.user == username}
+        if host_list:
+            filters.add(Host.host_id.in_(host_list))
+        try:
+            hosts = self.session.query(*query_fields).filter(*filters).all()
+            for host in hosts:
+                host_info = {
+                    "host_id": host.host_id,
+                    "host_ip": host.host_ip,
+                    "ssh_port": host.ssh_port,
+                    "pkey": host.pkey,
+                    "ssh_user": host.ssh_user,
+                }
+                result.append(host_info)
+            LOGGER.debug("query host %s ssh info succeed", host_list)
+            return SUCCEED, result
+        except sqlalchemy.exc.SQLAlchemyError as error:
+            LOGGER.error(error)
+            LOGGER.error("query host %s ssh info fail", host_list)
             return DATABASE_QUERY_ERROR, result
 
     def get_total_host_info_by_user(self, data):
@@ -769,6 +814,32 @@ class HostProxy(MysqlProxy):
         """
         try:
             self.session.query(Host).filter(Host.host_id == host_id).update(update_info)
+            self.session.commit()
+            return SUCCEED
+        except sqlalchemy.exc.SQLAlchemyError as error:
+            LOGGER.error(error)
+            self.session.rollback()
+            return DATABASE_UPDATE_ERROR
+
+
+    def update_host_status(self, host_info: list) -> str:
+        """
+        update host status to host table
+
+        Args:
+            host_info(list): e.g
+                {
+                    "host_id": host_id,
+                    "status": status
+                }
+
+        Returns:
+            str: SUCCEED or DATABASE_UPDATE_ERROR
+        """
+        try:
+            for host in host_info:
+                self.session.query(Host).filter(Host.host_id == host.get('host_id')).update(
+                    {"status": host.get('status')})
             self.session.commit()
             return SUCCEED
         except sqlalchemy.exc.SQLAlchemyError as error:
