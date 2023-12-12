@@ -352,7 +352,7 @@ class AddHost(BaseResponse):
                 group_id = group.host_group_id
 
         if group_id is None:
-            LOGGER.warning(f"host group doesn't exist " f"which named {host_info.get('host_group_name')} !")
+            LOGGER.warning(f"Host group doesn't exist " f"which named {host_info.get('host_group_name')} !")
             return state.PARAM_ERROR, Host()
 
         host = Host(
@@ -481,7 +481,7 @@ def save_ssh_public_key_to_client(ip: str, port: int, username: str, password: s
 
     if status != 0:
         LOGGER.error(stderr)
-        LOGGER.error(f"save public key on host failed, host ip is {ip}!")
+        LOGGER.error(f"Save public key on host failed, host ip is {ip}!")
         client.close()
         return state.EXECUTE_COMMAND_ERROR, ""
 
@@ -540,7 +540,7 @@ class AddHostBatch(BaseResponse):
         # Connect database
         proxy = HostProxy()
         if not proxy.connect():
-            LOGGER.error("connect to database error")
+            LOGGER.error("Connect to database error")
             self.update_add_result(
                 args["host_list"], {"result": self.add_failed, "reason": "connect to database error"}
             )
@@ -613,7 +613,7 @@ class AddHostBatch(BaseResponse):
 
         for host_info in data["host_list"]:
             if host_info.get("host_group_name") not in group_id_info:
-                LOGGER.warning(f"invalid host group when add host {host_info['host_name']}")
+                LOGGER.warning(f"Invalid host group when add host {host_info['host_name']}")
                 self.update_add_result([host_info], {"result": self.add_failed, "reason": "invalid host group name"})
                 continue
 
@@ -624,7 +624,7 @@ class AddHostBatch(BaseResponse):
             )
             host = Host(**host_info)
             if host in hosts:
-                LOGGER.warning(f"host name or host ip is existed when add host {host_info['host_name']}.")
+                LOGGER.warning(f"Host name or host ip is existed when add host {host_info['host_name']}.")
                 self.update_add_result(
                     [host_info], {"result": self.add_failed, "reason": "host name or host ip is existed!"}
                 )
@@ -927,7 +927,7 @@ class UpdateHost(BaseResponse):
                 )
 
         if params.get("ssh_port") and f"{self.host.host_ip}:{params.get('ssh_port')}" in self.host_ssh_address:
-            LOGGER.warning(f"there is a duplicate host address in database " f"when update host {self.host.host_id}!")
+            LOGGER.warning(f"There is a duplicate host address in database " f"when update host {self.host.host_id}!")
             return self.response(code=state.PARAM_ERROR, message="there is a duplicate host ssh address in database!")
 
         if params.get("password") or params.get("ssh_pkey"):
