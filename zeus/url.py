@@ -52,6 +52,7 @@ from zeus.conf.constant import (
     USER_LOGIN,
     SYNC_CONFIG,
     OBJECT_FILE_CONFIG,
+    GET_HOST_STATUS,
 )
 from zeus.config_manager import view as config_view
 from zeus.host_manager import view as host_view
@@ -77,6 +78,7 @@ SPECIFIC_URLS = {
         (host_view.DeleteHost, DELETE_HOST),
         (host_view.UpdateHost, UPDATE_HOST),
         (host_view.GetHost, QUERY_HOST),
+        (host_view.GetHostStatus, GET_HOST_STATUS),
         (host_view.GetHostInfo, QUERY_HOST_DETAIL),
         (host_view.GetHostCount, GET_HOST_COUNT),
         (host_view.GetHostTemplateFile, GET_HOST_TEMPLATE_FILE),

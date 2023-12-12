@@ -46,6 +46,7 @@ from zeus.function.verify.host import (
     GetHostGroupSchema,
     GetHostInfoSchema,
     GetHostSchema,
+    GetHostStatusSchema,
     UpdateHostSchema,
 )
 from zeus.host_manager.ssh import SSH, execute_command_and_parse_its_result, generate_key
@@ -116,6 +117,68 @@ class GetHostCount(BaseResponse):
         """
         status_code, result = callback.get_host_count(params)
         return self.response(code=status_code, data=result)
+
+
+class GetHostStatus(BaseResponse):
+    """
+    Interface for get host status.
+    Restful API: POST
+    """
+
+    @BaseResponse.handle(schema=GetHostStatusSchema, proxy=HostProxy)
+    def post(self, callback: HostProxy, **params):
+        """
+        get host status
+
+        Args:
+            host_list (list): host id list
+            username: "admin"
+
+        Returns:
+            list: response body
+        """
+        status_code, host_infos = callback.get_host_ssh_info(params)
+
+        multi_thread_handler = MultiThreadHandler(lambda p: self.get_host_status(p), host_infos, None)
+        multi_thread_handler.create_thread()
+        result_list = multi_thread_handler.get_result()
+
+        callback.update_host_status(result_list)
+
+        return self.response(code=status_code, data=result_list)
+
+    @staticmethod
+    def get_host_status(host: dict) -> dict:
+        """
+        Get host status
+
+        Args:
+            host (dict): e.g
+            {
+                "host_id":"host id",
+                "ssh_user":"root",
+                "pkey":"pkey",
+                "host_ip":"host_ip",
+                "ssh_port":"port"
+            }
+
+        Returns:
+        """
+        status = verify_ssh_login_info(
+            ClientConnectArgs(
+                host.get("host_ip"), host.get("ssh_port"), host.get("ssh_user"), host.get("pkey")
+            )
+        )
+        if status == state.SUCCEED:
+            if status != HostStatus.SCANNING:
+                host['status'] = HostStatus.ONLINE
+        elif status == state.SSH_AUTHENTICATION_ERROR:
+            host['status'] = HostStatus.UNESTABLISHED
+        else:
+            host['status'] = HostStatus.OFFLINE
+
+        result = {"host_id": host.get("host_id"), "status": host.get("status")}
+        return result
 
 
 class AddHostGroup(BaseResponse):
