@@ -19,7 +19,7 @@ import math
 from typing import Dict, List, Tuple
 
 import sqlalchemy
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.sql.expression import asc, desc
 from sqlalchemy.orm.collections import InstrumentedList
 
@@ -210,11 +210,19 @@ class HostProxy(MysqlProxy):
         username = data['username']
         host_group_list = data.get('host_group_list')
         management = data.get('management')
+        search_key = data.get('search_key')
         filters = {Host.user == username}
         if host_group_list:
             filters.add(Host.host_group_name.in_(host_group_list))
         if management is not None:
             filters.add(Host.management == management)
+        if search_key:
+            filters.add(
+                or_(
+                    Host.host_name.like("%" + search_key + "%"),
+                    Host.host_ip.like("%" + search_key + "%"),
+                )
+            )
         if data.get('status'):
             filters.add(Host.status.in_(data.get('status')))
 

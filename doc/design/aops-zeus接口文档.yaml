@@ -998,6 +998,10 @@ definitions:
           type: string
         description: 获取指定主机组里的主机信息，为空表示所有
         example: '[]'
+      search_key:
+        type: string
+        description: 输入主机名称或主机host_ip获取指定主机信息
+        example: search_key
       management:
         type: boolean
         description: 管理节点or监控节点，不传表示所有
