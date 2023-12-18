@@ -101,6 +101,7 @@ SPECIFIC_URLS = {
     ],
     'CVE_URLS': [
         (vulnerability_view.ExecuteRepoSetTask, EXECUTE_REPO_SET),
+        (vulnerability_view.ExecuteCveRollbackTask, EXECUTE_CVE_ROLLBACK),
         (vulnerability_view.ExecuteCveScanTask, EXECUTE_CVE_SCAN),
         (vulnerability_view.ExecuteCveFixTask, EXECUTE_CVE_FIX),
         (vulnerability_view.ExecuteHotpatchRemoveTask, EXECUTE_HOTPATCH_REMOVE),
