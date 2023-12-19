@@ -16,9 +16,7 @@ Author:
 Description: For host related interfaces
 """
 from vulcanus.restful.serialize.validate import ValidateRules
-from marshmallow import Schema
-from marshmallow import fields
-from marshmallow import validate
+from marshmallow import fields, Schema, validate, validates_schema, ValidationError
 
 
 class HostSchema(Schema):
@@ -111,7 +109,7 @@ class AddHostSchema(Schema):
     validators for parameter of /manage/host/add
     """
 
-    ssh_user = fields.String(required=True, validate=lambda s: len(s) > 0)
+    ssh_user = fields.String(required=True, validate=lambda s: 32 >= len(s) > 0)
     password = fields.String(required=True, allow_none=True, validate=lambda s: len(s) >= 0)
     host_name = fields.String(
         required=True, validate=[validate.Length(min=1, max=50), ValidateRules.space_character_check]
@@ -119,8 +117,13 @@ class AddHostSchema(Schema):
     host_ip = fields.IP(required=True)
     ssh_pkey = fields.String(required=True, allow_none=True, validate=lambda s: 4096 >= len(s) >= 0)
     ssh_port = fields.Integer(required=True, validate=lambda s: 65535 >= s > 0)
-    host_group_name = fields.String(required=True, validate=lambda s: len(s) > 0)
-    management = fields.Boolean(required=True)
+    host_group_name = fields.String(required=True, validate=lambda s: 20 >= len(s) > 0)
+    management = fields.Boolean(required=True, truthy={True}, falsy={False})
+
+    @validates_schema
+    def check_authentication_info(self, data, **kwargs):
+        if not data.get("ssh_pkey") and not data.get("password"):
+            raise ValidationError("At least one of the password and key needs to be provided")
 
 
 class AddHostBatchSchema(Schema):
@@ -137,10 +140,12 @@ class UpdateHostSchema(Schema):
     """
 
     host_id = fields.Integer(required=True, validate=lambda s: s > 0)
-    ssh_user = fields.String(required=False, validate=lambda s: len(s) > 0)
+    ssh_user = fields.String(required=False, validate=lambda s: 32 >= len(s) > 0)
     password = fields.String(required=False, validate=lambda s: len(s) > 0)
     ssh_port = fields.Integer(required=False, validate=lambda s: 65535 >= s > 0)
-    host_name = fields.String(required=False, validate=lambda s: len(s) > 0)
-    host_group_name = fields.String(required=False, validate=lambda s: len(s) > 0)
-    management = fields.Boolean(required=False)
+    host_name = fields.String(
+        required=True, validate=[validate.Length(min=1, max=50), ValidateRules.space_character_check]
+    )
+    host_group_name = fields.String(required=False, validate=lambda s: 20 >= len(s) > 0)
+    management = fields.Boolean(required=False, truthy={True}, falsy={False})
     ssh_pkey = fields.String(required=False, validate=lambda s: 4096 >= len(s) >= 0)
