@@ -372,7 +372,9 @@ class HostProxy(MysqlProxy):
             Host.pkey,
             Host.ssh_user,
         ]
-        filters = {Host.user == username}
+        filters = set()
+        if username:
+            filters = {Host.user == username}
         if host_list:
             filters.add(Host.host_id.in_(host_list))
         try:
