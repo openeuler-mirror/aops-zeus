@@ -114,7 +114,7 @@ class AddHostSchema(Schema):
     host_name = fields.String(
         required=True, validate=[validate.Length(min=1, max=50), ValidateRules.space_character_check]
     )
-    host_ip = fields.IP(required=True)
+    host_ip = fields.String(required=True, validate=ValidateRules.ipv4_address_check)
     ssh_pkey = fields.String(required=True, allow_none=True, validate=lambda s: 4096 >= len(s) >= 0)
     ssh_port = fields.Integer(required=True, validate=lambda s: 65535 >= s > 0)
     host_group_name = fields.String(required=True, validate=lambda s: 20 >= len(s) > 0)
@@ -144,7 +144,7 @@ class UpdateHostSchema(Schema):
     password = fields.String(required=False, validate=lambda s: len(s) > 0)
     ssh_port = fields.Integer(required=False, validate=lambda s: 65535 >= s > 0)
     host_name = fields.String(
-        required=True, validate=[validate.Length(min=1, max=50), ValidateRules.space_character_check]
+        required=False, validate=[validate.Length(min=1, max=50), ValidateRules.space_character_check]
     )
     host_group_name = fields.String(required=False, validate=lambda s: 20 >= len(s) > 0)
     management = fields.Boolean(required=False, truthy={True}, falsy={False})
