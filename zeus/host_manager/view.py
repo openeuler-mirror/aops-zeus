@@ -265,6 +265,15 @@ class GetHostInfo(BaseResponse):
         )
         if status == state.SUCCEED:
             res["host_info"] = json.loads(host_info)
+
+        # check host status
+        if status == state.SSH_AUTHENTICATION_ERROR:
+            res['status'] = HostStatus.UNESTABLISHED
+        elif status == state.SSH_CONNECTION_ERROR:
+            res['status'] = HostStatus.OFFLINE
+        elif host['status'] != HostStatus.SCANNING:
+            res['status'] = HostStatus.ONLINE
+
         return res
 
     @staticmethod
@@ -282,63 +291,12 @@ class GetHostInfo(BaseResponse):
                     {
                         "host_id": host_id,
                         "host_info":{}
+                        "status": null
                     }
                     ...
                 ]
         """
-        return [{"host_id": host_id, "host_info": {}} for host_id in host_list]
-
-    def analyse_query_result(self, all_host: List[str], multithreading_execute_result: List) -> List:
-        """
-        Analyze multi-threaded execution results,
-        find out the data which fails to execute,
-        and generate the final execution result.
-        Args:
-            all_host(list): e.g
-                [host_id1, host_id2... ]
-            multithreading_execute_result(list): e.g
-                [
-                    {
-                    "host_id":"success host id",
-                    "host_info": {
-                        "cpu": {...},
-                        "os":" {...},
-                        "memory": {...}.
-                        "disk": [{...}]
-                        },
-                    }
-                ]
-
-        Returns:
-            list: e.g
-                [
-                    {
-                    "host_id":"success host id",
-                    "host_info": {
-                        "cpu": {...},
-                        "os":" {...},
-                        "memory": {...}.
-                        "disk": [{...}]
-                        },
-                    }.
-                    {
-                    "host_id":"fail host id",
-                    "host_info": {}
-                    }.
-                ]
-
-
-        """
-        host_infos = []
-        success_host = set()
-        for result in multithreading_execute_result:
-            if result.get('host_info'):
-                host_infos.append(result)
-                success_host.add(result.get('host_id'))
-
-        fail_host = set(all_host) - success_host
-        host_infos.extend(self.generate_fail_data(fail_host))
-        return host_infos
+        return [{"host_id": host_id, "host_info": {}, "status": None} for host_id in host_list]
 
     @BaseResponse.handle(schema=GetHostInfoSchema, proxy=HostProxy)
     def post(self, callback: HostProxy, **params):
@@ -369,10 +327,9 @@ class GetHostInfo(BaseResponse):
         # execute multi threading
         multi_thread_handler = MultiThreadHandler(lambda p: self.get_host_info(*p), tasks, None)
         multi_thread_handler.create_thread()
-        result_list = multi_thread_handler.get_result()
+        host_infos = multi_thread_handler.get_result()
 
-        # analyse execute result and generate target data format
-        host_infos = self.analyse_query_result(params.get('host_list'), result_list)
+        callback.update_host_status(host_infos)
         return self.response(code=state.SUCCEED, data={"host_infos": host_infos})
 
 
