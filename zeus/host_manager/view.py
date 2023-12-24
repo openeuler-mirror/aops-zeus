@@ -139,6 +139,10 @@ class GetHostStatus(BaseResponse):
         """
         status_code, host_infos = callback.get_host_ssh_info(params)
 
+        result_list = []
+        if len(host_infos) == 0:
+            return self.response(code=status_code, data=result_list)
+
         multi_thread_handler = MultiThreadHandler(lambda p: self.get_host_status(p), host_infos, None)
         multi_thread_handler.create_thread()
         result_list = multi_thread_handler.get_result()
@@ -457,13 +461,16 @@ def verify_ssh_login_info(ssh_login_info: ClientConnectArgs) -> str:
         )
         client.close()
     except socket.error as error:
-        LOGGER.error(error)
+        LOGGER.info(f"Failed to connect to host %s: %s", ssh_login_info.host_ip, error)
         return state.SSH_CONNECTION_ERROR
     except SSHException as error:
-        LOGGER.error(error)
+        LOGGER.info(f"Failed to connect to host %s: %s", ssh_login_info.host_ip, error)
+        return state.SSH_AUTHENTICATION_ERROR
+    except IndexError:
+        LOGGER.error(f"Failed to connect to host %s because the pkey of the host are missing", ssh_login_info.host_ip)
         return state.SSH_AUTHENTICATION_ERROR
     except Exception as error:
-        LOGGER.error(error)
+        LOGGER.error(f"Failed to connect to host %s: %s", ssh_login_info.host_ip, error)
         return state.SSH_CONNECTION_ERROR
 
     return state.SUCCEED
