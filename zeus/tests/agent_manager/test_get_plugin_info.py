@@ -18,23 +18,18 @@ Description:
 import json
 from unittest import mock
 
-import sqlalchemy
 
-from vulcanus.conf.constant import AGENT_PLUGIN_INFO
+from vulcanus.exceptions import DatabaseConnectionFailed
 from vulcanus.restful.resp import state
 from vulcanus.restful.response import BaseResponse
+from zeus.conf.constant import AGENT_PLUGIN_INFO
 from zeus.database.proxy.host import HostProxy
 from zeus.tests import BaseTestCase
 
 
 class TestGetPluginInfo(BaseTestCase):
-    header = {
-        "Content-Type": "application/json; charset=UTF-8"
-    }
-    header_with_token = {
-        "Content-Type": "application/json; charset=UTF-8",
-        "access_token": "123456"
-    }
+    header = {"Content-Type": "application/json; charset=UTF-8"}
+    header_with_token = {"Content-Type": "application/json; charset=UTF-8", "access_token": "123456"}
     client = BaseTestCase.create_app()
 
     def setUp(self) -> None:
@@ -47,7 +42,7 @@ class TestGetPluginInfo(BaseTestCase):
             "host_name": "test1",
             "host_group_name": "group1",
             "management": True,
-            "username": "mock_user"
+            "username": "mock_user",
         }
 
     @mock.patch.object(HostProxy, "__exit__")
@@ -56,7 +51,8 @@ class TestGetPluginInfo(BaseTestCase):
     @mock.patch.object(HostProxy, "_create_session")
     @mock.patch.object(BaseResponse, "verify_request")
     def test_get_plugin_info_should_return_plugin_info_when_all_is_right(
-            self, mock_verify, mock_connect, mock_host_info, mock_execute, mock_close_db):
+        self, mock_verify, mock_connect, mock_host_info, mock_execute, mock_close_db
+    ):
         mock_verify.return_value = {"host_id": self.mock_host_id, "username": "mock_user"}, state.SUCCEED
         mock_connect.return_value = None
         mock_host_info.return_value = state.SUCCEED, [self.mock_host_info]
@@ -67,8 +63,9 @@ class TestGetPluginInfo(BaseTestCase):
                 "status": "active",
                 "resource": [
                     {"name": "cpu", "current_value": "0.2%", "limit_value": None},
-                    {"name": "memory", "current_value": "29344 kB", "limit_value": None}],
-                "is_installed": True
+                    {"name": "memory", "current_value": "29344 kB", "limit_value": None},
+                ],
+                "is_installed": True,
             }
         ]
         mock_execute.return_value = state.SUCCEED, json.dumps(mock_plugin_info)
@@ -77,8 +74,9 @@ class TestGetPluginInfo(BaseTestCase):
         self.assertEqual(state.SUCCEED, response.json.get("label"), response.json)
 
     @mock.patch.object(BaseResponse, "verify_token")
-    def test_get_plugin_info_should_return_token_error_when_request_with_invalid_token_or_with_no_token(self,
-                                                                                                        mock_token):
+    def test_get_plugin_info_should_return_token_error_when_request_with_invalid_token_or_with_no_token(
+        self, mock_token
+    ):
         mock_token.return_value = state.TOKEN_ERROR
         response = self.client.get(f"{AGENT_PLUGIN_INFO}?host_id={self.mock_host_id}", headers=self.header_with_token)
         self.assertEqual(state.TOKEN_ERROR, response.json.get("label"), response.json)
@@ -91,9 +89,7 @@ class TestGetPluginInfo(BaseTestCase):
 
     @mock.patch.object(BaseResponse, "verify_token")
     def test_get_plugin_info_should_return_param_error_when_request_invalid_args(self, mock_verify):
-        invalid_args = [
-            "a", "", "#", "1.1", " "
-        ]
+        invalid_args = ["a", "", "#", "1.1", " "]
         mock_verify.return_value = {}, state.PARAM_ERROR
         response = []
         for invalid_arg in invalid_args:
@@ -104,9 +100,10 @@ class TestGetPluginInfo(BaseTestCase):
     @mock.patch.object(HostProxy, "_create_session")
     @mock.patch.object(BaseResponse, "verify_request")
     def test_get_plugin_info_should_return_database_connect_error_when_cannot_connect_database(
-            self, mock_verify, mock_connect):
+        self, mock_verify, mock_connect
+    ):
         mock_verify.return_value = {}, state.SUCCEED
-        mock_connect.side_effect = sqlalchemy.exc.SQLAlchemyError("Connection error")
+        mock_connect.side_effect = DatabaseConnectionFailed("Connection error")
         response = self.client.get(AGENT_PLUGIN_INFO, headers=self.header_with_token)
         self.assertEqual(state.DATABASE_CONNECT_ERROR, response.json.get("label"), response.json)
 
@@ -115,7 +112,8 @@ class TestGetPluginInfo(BaseTestCase):
     @mock.patch.object(HostProxy, "_create_session")
     @mock.patch.object(BaseResponse, "verify_request")
     def test_get_plugin_info_should_return_no_data_when_input_host_id_is_not_in_database(
-            self, mock_verify, mock_connect, mock_host_info, mock_close_db):
+        self, mock_verify, mock_connect, mock_host_info, mock_close_db
+    ):
         mock_verify.return_value = {"host_id": self.mock_host_id, "username": "mock_user"}, state.SUCCEED
         mock_connect.return_value = None
         mock_host_info.return_value = state.SUCCEED, []
@@ -128,7 +126,8 @@ class TestGetPluginInfo(BaseTestCase):
     @mock.patch.object(HostProxy, "_create_session")
     @mock.patch.object(BaseResponse, "verify_request")
     def test_get_plugin_info_should_return_database_query_error_when_query_host_info_error(
-            self, mock_verify, mock_connect, mock_host_info, mock_close_db):
+        self, mock_verify, mock_connect, mock_host_info, mock_close_db
+    ):
         mock_verify.return_value = {"host_id": self.mock_host_id, "username": "mock_user"}, state.SUCCEED
         mock_connect.return_value = None
         mock_host_info.return_value = state.DATABASE_QUERY_ERROR, []
@@ -142,7 +141,8 @@ class TestGetPluginInfo(BaseTestCase):
     @mock.patch.object(HostProxy, "_create_session")
     @mock.patch.object(BaseResponse, "verify_request")
     def test_get_plugin_info_should_return_error_label_when_command_execute_failed(
-            self, mock_verify, mock_connect, mock_host_info, mock_execute, mock_close_db):
+        self, mock_verify, mock_connect, mock_host_info, mock_execute, mock_close_db
+    ):
         mock_verify.return_value = {"host_id": self.mock_host_id, "username": "mock_user"}, state.SUCCEED
         mock_connect.return_value = None
         mock_host_info.return_value = state.SUCCEED, [self.mock_host_info]
