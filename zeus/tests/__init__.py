@@ -14,10 +14,16 @@ from unittest import TestCase
 
 from flask import Flask
 
+from vulcanus.database.proxy import MysqlProxy
 import zeus
 
 
+
 class BaseTestCase(TestCase):
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        MysqlProxy.engine = "mock_engine"
     @staticmethod
     def create_app():
         app = Flask("test")

@@ -12,13 +12,13 @@
 # ******************************************************************************/
 import json
 import socket
-import unittest
 from io import BytesIO
 from unittest import mock
 
 import paramiko
 from paramiko import AuthenticationException
 from sqlalchemy.orm.collections import InstrumentedList
+
 
 from vulcanus.restful.response import BaseResponse
 from vulcanus.restful.resp.state import (
@@ -34,7 +34,6 @@ from vulcanus.restful.resp.state import (
 )
 from vulcanus.exceptions import DatabaseConnectionFailed
 from zeus.conf.constant import ADD_HOST
-from zeus.conf import configuration
 from zeus.database.proxy.host import HostProxy
 from zeus.database.table import Host, HostGroup
 from zeus.host_manager.ssh import SSH
@@ -46,7 +45,7 @@ header = {"Content-Type": "application/json; charset=UTF-8"}
 header_with_token = {"Content-Type": "application/json; charset=UTF-8", "access_token": "123456"}
 
 
-class TestAddHost(unittest.TestCase):
+class TestAddHost(BaseTestCase):
     @mock.patch.object(HostProxy, "__exit__")
     @mock.patch("zeus.host_manager.view.save_ssh_public_key_to_client")
     @mock.patch.object(BaseResponse, 'verify_token')
@@ -63,6 +62,7 @@ class TestAddHost(unittest.TestCase):
             "host_ip": "127.0.0.1",
             "host_group_name": "test_host_group",
             "ssh_port": 22,
+            "ssh_pkey": "",
             "management": False,
         }
         mock_connect.return_value = None
@@ -82,6 +82,7 @@ class TestAddHost(unittest.TestCase):
             "host_ip": "127.0.0.1",
             "host_group_name": "test_host_group",
             "ssh_port": 22,
+            "ssh_pkey": "",
             "management": False,
         }
         response = client.post(ADD_HOST, data=json.dumps(host_data), headers=header)
@@ -97,6 +98,7 @@ class TestAddHost(unittest.TestCase):
             "host_ip": "127.0.0.1",
             "host_group_name": "test_host_group",
             "ssh_port": 22,
+            "ssh_pkey": "",
             "management": False,
         }
         response = client.post(ADD_HOST, data=json.dumps(host_data), headers=header_with_token)
@@ -114,6 +116,7 @@ class TestAddHost(unittest.TestCase):
             "host_ip": "127.0.0.1",
             "host_group_name": "test_host_group",
             "ssh_port": 22,
+            "ssh_pkey": "",
             "management": False,
         }
         mock_token.return_value = SUCCEED
@@ -135,6 +138,7 @@ class TestAddHost(unittest.TestCase):
             "host_ip": "127.0.0.1",
             "host_group_name": "test_host_group",
             "ssh_port": 22,
+            "ssh_pkey": "",
             "management": False,
         }
         mock_token.return_value = SUCCEED
@@ -159,6 +163,7 @@ class TestAddHost(unittest.TestCase):
             "host_ip": "127.0.0.1",
             "host_group_name": "test_host_group",
             "ssh_port": 22,
+            "ssh_pkey": "",
             "management": False,
         }
         mock_token.return_value = SUCCEED
@@ -184,6 +189,7 @@ class TestAddHost(unittest.TestCase):
             "host_ip": "127.0.0.1",
             "host_group_name": "test_host_group",
             "ssh_port": 22,
+            "ssh_pkey": "",
             "management": False,
             "username": "admin",
         }
@@ -210,6 +216,7 @@ class TestAddHost(unittest.TestCase):
             "host_ip": "127.0.0.1",
             "host_group_name": "test_host_group_1",
             "ssh_port": 22,
+            "ssh_pkey": "",
             "management": False,
         }
         mock_token.return_value = SUCCEED
@@ -548,6 +555,7 @@ class TestAddHost(unittest.TestCase):
             "host_ip": "127.0.0.1",
             "host_group_name": "test_host_group",
             "ssh_port": 22,
+            "ssh_pkey": "",
             "management": False,
             "username": "admin",
         }

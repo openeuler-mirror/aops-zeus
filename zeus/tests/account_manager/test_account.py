@@ -27,13 +27,13 @@ from zeus.database.table import User, Base, create_utils_tables
 class TestAccountDatabase(unittest.TestCase):
     def setUp(self):
         # create engine to database
-        self.proxy = UserProxy()
         mysql_host = "127.0.0.1"
         mysql_port = 3306
         mysql_url_format = "mysql+pymysql://@%s:%s/%s"
         mysql_database_name = "aops_test"
         engine_url = mysql_url_format % (mysql_host, mysql_port, mysql_database_name)
         MysqlProxy.engine = create_database_engine(engine_url, 100, 7200)
+        self.proxy = UserProxy()
         self.proxy.connect()
         # create all tables
         create_utils_tables(Base, self.proxy.engine)

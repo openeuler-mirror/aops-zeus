@@ -29,13 +29,13 @@ from zeus.database.proxy.host import HostProxy
 class TestHostDatabase(unittest.TestCase):
     def setUp(self):
         # create engine to database
-        self.proxy = HostProxy()
         mysql_host = "127.0.0.1"
         mysql_port = 3306
         mysql_url_format = "mysql+pymysql://@%s:%s/%s"
         mysql_database_name = "aops_test"
         engine_url = mysql_url_format % (mysql_host, mysql_port, mysql_database_name)
         MysqlProxy.engine = create_database_engine(engine_url, 100, 7200)
+        self.proxy = HostProxy()
         self.proxy.connect()
         # create all tables
         create_utils_tables(Base, self.proxy.engine)
@@ -261,7 +261,6 @@ class TestHostDatabase(unittest.TestCase):
                 "host_group_name": "group2",
                 "host_ip": "127.0.0.5",
                 "management": False,
-                "status": 2,
                 "scene": None,
                 "os_version": "openEuler",
                 "ssh_port": 22,
@@ -272,7 +271,6 @@ class TestHostDatabase(unittest.TestCase):
                 "host_group_name": "group2",
                 "host_ip": "127.0.0.4",
                 "management": True,
-                "status": 2,
                 "scene": None,
                 "os_version": "openEuler2209",
                 "ssh_port": 22,
@@ -298,7 +296,6 @@ class TestHostDatabase(unittest.TestCase):
                 "host_group_name": "group2",
                 "host_ip": "127.0.0.3",
                 "management": False,
-                "status": 2,
                 "scene": None,
                 "os_version": "openEuler2203",
                 "ssh_port": 22,
@@ -309,7 +306,6 @@ class TestHostDatabase(unittest.TestCase):
                 "host_group_name": "group2",
                 "host_ip": "127.0.0.4",
                 "management": True,
-                "status": 2,
                 "scene": None,
                 "os_version": "openEuler2209",
                 "ssh_port": 22,
