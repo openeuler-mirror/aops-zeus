@@ -636,6 +636,29 @@ paths:
           description: ''
           schema:
             $ref: '#/definitions/GetHostTokenRsp'
+  /manage/host/status/get:
+    get:
+      tags:
+        - host_manage
+      description: 查询主机状态
+      operationId: QueryHostStatus
+      parameters:
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+        - name: host_list
+          in: body
+          required: true
+          description: 需查询主机列表
+          schema:
+            $ref: '#/definitions/QueryHostStatusReq'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/QueryHostStatusRsp'
   /manage/agent/plugin/install:
     post:
       tags:
@@ -792,6 +815,29 @@ paths:
           description: ''
           schema:
             $ref: '#/definitions/OperateSuccess'
+  /manage/vulnerability/cve/hotpatch-remove:
+    post:
+      tags:
+        - vulnerability_manager
+      operationId: execute_hotpatch_remove_task
+      description: 执行热补丁移除任务
+      produces:
+        - application/json
+      parameters:
+        - name: access_token
+          in: header
+          required: false
+          type: string
+        - name: task
+          in: body
+          required: false
+          schema:
+            $ref: '#/definitions/HotpatchRemoveTaskReq'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/OperateSuccess'            
   /manage/host/metric/data:
     post:
       tags:
@@ -1017,7 +1063,7 @@ definitions:
         example: host_name
       direction:
         type: string
-        description: 排序规则,asc 或 descge
+        description: 排序规则asc 或 desc
         example: asc(default)
       page:
         type: integer
@@ -1070,9 +1116,6 @@ definitions:
                     management:
                       type: string
                       description: 是否为管理节点
-                    status:
-                      type: string
-                      description: 主机在线状态
                     scene:
                       type: string
                       description: 主机场景
@@ -1082,7 +1125,6 @@ definitions:
                     - host_group_name
                     - host_ip
                     - management
-                    - status
                     - scene
                 description: 主机信息
   AddHostReq:
@@ -1706,9 +1748,6 @@ definitions:
       available_rpm:
         type: string
         example: zlib-1.2.11-22.oe2203.x86_64
-      fix_way:
-        type: string
-        example: hotpatch or coldpatch
       
   FixedTaskCveInfo:
     type: object
@@ -1717,18 +1756,10 @@ definitions:
       host_id: 
         type: integer
         example: 1
-      cves:
+      rpms:
         type: array
         items:
-          type: object
-          properties:
-            cve_id:
-              type: string
-              example: CVE-2022-37434
-            rpms:
-              type: array
-              items:
-                $ref: '#/definitions/CveFixRpmInfo'
+          $ref: '#/definitions/CveFixRpmInfo'
     
   CveFixReq:
     allOf:
@@ -1739,35 +1770,63 @@ definitions:
           type: array
           items:
            $ref: '#/definitions/FixedTaskCveInfo'
+        fix_type:
+          type: string
+          enum:
+            - "hotpatch"
+            - "coldpatch"
         accepted:
           type: boolean
           description: 是否将热补丁设置为accept状态
-        takeover:
-          type: boolean
-          description: 是否收编冷补丁
+          enum:
+            - true
+            - false
   RollBackTaskInfo:
     type: object
     properties:
       host_id: 
         type: integer
         example: 0
-      cves:
-        type: array
-        items:
-          type: object
-          properties:
-            cve_id:
-              type: string
-            hotpatch:
-              type: boolean
+      installed_rpm:
+        type: string
+      target_rpm:
+        type: string
+      dnf_event_start:
+        type: integer
+      dnf_event_end:
+        type: integer
   CveRollBackReq:
     allOf:
-    - $ref: '#/definitions/CveTaskBasicInfo'
-    - properties:
-        tasks:
-          type: array
-          items:
-           $ref: '#/definitions/RollBackTaskInfo'
+      - $ref: '#/definitions/CveCheckItems'
+      - properties:
+          task_id:
+            type: string
+            example: 2565b698731811ee86ea525400d24fe7
+          task_name:
+            type: string
+          task_type:
+            type: string
+            description: 任务类型repo set,cve scan, cve fix, cve rollback or hotpatch remove
+          callback:
+            type: string
+            example: /vulnerability/task/callback/cve/xxx
+          tasks:
+            type: array
+            items:
+             $ref: '#/definitions/RollBackTaskInfo'
+          fix_task_id:
+            type: string
+          rollback_type:
+            type: string
+            enum:
+              - "hotpatch"
+              - "coldpatch"
+        required:
+          - task_id
+          - task_name
+          - task_type
+          - total_hosts
+          - callback
   SetAgentServiceStatusRsp:
     type: object
     description: 设置agent服务状态返回结果
@@ -2013,3 +2072,46 @@ definitions:
             example:
               - 'metric2{label1="label1_value", label2="label2_value", ...., }'
               - 'metric2{label1="label1_value", label2="label2_value", ...., }'
+
+  HotpatchRemoveTaskReq:
+    allOf:
+      - $ref: '#/definitions/CveTaskBasicInfo'
+      - properties:
+          check_items:
+            type: array
+            items:
+              type: string
+          tasks:
+            type: array
+            items:
+              properties:
+                host_id:
+                  type: integer
+                cves:
+                  type: array
+                  items:
+                    type: string
+                  example:
+                    - "CVE-2022-XXXX"
+                    - "CVE-2023-XXXX"
+  QueryHostStatusReq:
+    properties:
+      host_list:
+        type: array
+        items:
+          type: integer
+  QueryHostStatusRsp:
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - properties:
+          data:
+            type: array
+            items:
+              properties:
+                host_id:
+                  type: integer
+                status:
+                  type: integer
+              
+      
+          
