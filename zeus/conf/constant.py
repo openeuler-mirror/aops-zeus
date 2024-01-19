@@ -34,7 +34,7 @@ CERES_CVE_SCAN = "aops-ceres apollo --scan '%s'"
 CERES_CVE_FIX = "aops-ceres apollo --fix '%s'"
 CERES_CVE_ROLLBACK = "aops-ceres apollo --rollback '%s'"
 CERES_HOTPATCH_REMOVE = "aops-ceres apollo --remove-hotpatch '%s'"
-CERES_SYNC_CONF = "aops-ceres sync --conf '%s'"
+CERES_SYNC_CONF = "aops-ceres ragdoll --sync '%s'"
 CERES_OBJECT_FILE_CONF = "aops-ceres ragdoll --list '%s'"
 
 # zeus route
