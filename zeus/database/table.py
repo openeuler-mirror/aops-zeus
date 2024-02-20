@@ -132,6 +132,19 @@ class Auth(Base, MyBase):
     username = Column(String(40), ForeignKey('user.username'))
 
 
+class HostSyncStatus(Base, MyBase):
+    """
+    HostSyncStatus table
+    """
+
+    __tablename__ = "host_conf_sync_status"
+
+    host_id = Column(Integer, primary_key=True)
+    host_ip = Column(String(16), nullable=False)
+    domain_name = Column(String(16), primary_key=True)
+    sync_status = Column(Integer, default=0)
+
+
 def create_utils_tables(base, engine):
     """
     Create basic database tables, e.g. user, host, hostgroup
@@ -142,6 +155,6 @@ def create_utils_tables(base, engine):
         engine (instance): _engine.Engine instance
     """
     # pay attention, the sequence of list is important. Base table need to be listed first.
-    tables = [User, HostGroup, Host, Auth]
+    tables = [User, HostGroup, Host, Auth, HostSyncStatus]
     tables_objects = [base.metadata.tables[table.__tablename__] for table in tables]
     create_tables(base, engine, tables=tables_objects)

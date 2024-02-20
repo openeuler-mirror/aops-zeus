@@ -11,30 +11,8 @@
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
 """
-Time:
-Author:
-Description: Manager that start aops-zeus
+@FileName: __init__.py.py
+@Time: 2024/1/19 11:10
+@Author: JiaoSiMao
+Description:
 """
-from zeus.scheduler_task.schedule_config import ScheduleConfig
-
-try:
-    from gevent import monkey
-
-    monkey.patch_all(ssl=False)
-except:
-    pass
-
-from vulcanus import init_application
-from zeus.conf import configuration
-from zeus.url import URLS
-from flask_apscheduler import APScheduler
-
-app = init_application(name="zeus", settings=configuration, register_urls=URLS)
-app.config.from_object(ScheduleConfig())
-scheduler = APScheduler()
-# 将调度器对象与Flask应用程序实例(app)相关联
-scheduler.init_app(app)
-scheduler.start()
-
-if __name__ == "__main__":
-    app.run(host=configuration.zeus.get('IP'), port=configuration.zeus.get('PORT'))

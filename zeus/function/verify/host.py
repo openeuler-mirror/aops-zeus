@@ -149,3 +149,30 @@ class UpdateHostSchema(Schema):
     host_group_name = fields.String(required=False, validate=lambda s: 20 >= len(s) > 0)
     management = fields.Boolean(required=False, truthy={True}, falsy={False})
     ssh_pkey = fields.String(required=False, validate=lambda s: 4096 >= len(s) >= 0)
+
+
+class AddHostSyncStatusSchema(Schema):
+    """
+    validators for parameter of /manage/host/sync/status/add
+    """
+
+    host_id = fields.Integer(required=True, validate=lambda s: s > 0)
+    host_ip = fields.IP(required=True)
+    domain_name = fields.String(required=True, validate=lambda s: len(s) > 0)
+    sync_status = fields.Integer(required=True, validate=lambda s: s >= 0)
+
+
+class DeleteHostSyncStatusSchema(Schema):
+    """
+    validators for parameter of /manage/host/sync/status/delete
+    """
+
+    host_id = fields.Integer(required=True, validate=lambda s: s > 0)
+    domain_name = fields.String(required=True, validate=lambda s: len(s) > 0)
+
+
+class GetHostSyncStatusSchema(Schema):
+    """
+    validators for parameter of /manage/host/sync/status/get
+    """
+    domain_name = fields.String(required=True)

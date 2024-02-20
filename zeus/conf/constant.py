@@ -57,9 +57,14 @@ ADD_GROUP = "/manage/host/group/add"
 DELETE_GROUP = "/manage/host/group/delete"
 GET_GROUP = "/manage/host/group/get"
 
+ADD_HOST_SYNC_STATUS = "/manage/host/sync/status/add"
+DELETE_HOST_SYNC_STATUS = "/manage/host/sync/status/delete"
+GET_HOST_SYNC_STATUS = "/manage/host/sync/status/get"
+
 COLLECT_CONFIG = '/manage/config/collect'
 SYNC_CONFIG = '/manage/config/sync'
 OBJECT_FILE_CONFIG = '/manage/config/objectfile'
+BATCH_SYNC_CONFIG = '/manage/config/batch/sync'
 
 USER_LOGIN = "/manage/account/login"
 LOGOUT = "/manage/account/logout"
@@ -106,6 +111,16 @@ HOST_TEMPLATE_FILE_CONTENT = """host_ip,ssh_port,ssh_user,password,ssh_pkey,host
 "4. 上传本文件前,请删除此部分提示内容",,,,,,,
 """
 
+# ansible sync config
+PARENT_DIRECTORY = "/opt/aops/ansible_task/"
+HOST_PATH_FILE = "/opt/aops/ansible_task/inventory/"
+SYNC_CONFIG_YML = "/opt/aops/ansible_task/playbook_entries/sync_config.yml"
+SYNC_LOG_PATH = "/var/log/aops/sync/"
+KEY_FILE_PREFIX = "/tmp/"
+KEY_FILE_SUFFIX = "_id_dsa"
+IP_START_PATTERN = r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}"
+
+DIRECTORY_FILE_PATH_LIST = ["/etc/pam.d"]
 
 # cve task status
 class CveTaskStatus:

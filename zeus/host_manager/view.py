@@ -35,7 +35,8 @@ from vulcanus.restful.response import BaseResponse
 from vulcanus.restful.serialize.validate import validate
 from zeus.conf.constant import CERES_HOST_INFO, HOST_TEMPLATE_FILE_CONTENT, HostStatus
 from zeus.database.proxy.host import HostProxy
-from zeus.database.table import Host
+from zeus.database.proxy.host_sync_status import HostSyncProxy
+from zeus.database.table import Host, HostSyncStatus
 from zeus.function.model import ClientConnectArgs
 from zeus.function.verify.host import (
     AddHostBatchSchema,
@@ -47,7 +48,7 @@ from zeus.function.verify.host import (
     GetHostInfoSchema,
     GetHostSchema,
     GetHostStatusSchema,
-    UpdateHostSchema,
+    UpdateHostSchema, AddHostSyncStatusSchema, DeleteHostSyncStatusSchema, GetHostSyncStatusSchema,
 )
 from zeus.host_manager.ssh import SSH, execute_command_and_parse_its_result, generate_key
 
@@ -965,3 +966,93 @@ class UpdateHost(BaseResponse):
             return self.response(code=state.PARAM_ERROR, message="please update password or authentication key.")
 
         return self.response(callback.update_host_info(params.pop("host_id"), params))
+
+
+class AddHostSyncStatus(BaseResponse):
+    """
+    Interface for add host sync status.
+    Restful API: POST
+    """
+
+    def validate_host_sync_info(self, host_sync_info: dict) -> Tuple[int, dict]:
+        """
+        query host sync status info, validate that the host sync status info is valid
+        return host object
+
+        Args:
+            host_sync_info (dict): e.g
+            {
+                "host_id": 1,
+                "host_ip":"192.168.1.1",
+                "domain_name": "aops",
+                "sync_status": 0
+            }
+
+        Returns:
+            tuple:
+                status code, host sync status object
+        """
+        status, host_sync_status = self.proxy.get_host_sync_status(host_sync_info)
+        if status != state.SUCCEED:
+            return status, HostSyncStatus()
+
+        if host_sync_status is not None:
+            return state.DATA_EXIST, host_sync_status
+        return state.SUCCEED, {}
+
+    @BaseResponse.handle(schema=AddHostSyncStatusSchema, proxy=HostSyncProxy, token=False)
+    def post(self, callback: HostSyncProxy, **params):
+        """
+        add host sync status
+
+        Args:
+            host_id (int): host id
+            host_ip (str): host ip
+            domain_name (str): domain name
+            sync_status (int): sync status
+
+        Returns:
+            dict: response body
+        """
+        self.proxy = callback
+
+        status, host_sync = self.validate_host_sync_info(params)
+        if status != state.SUCCEED:
+            return self.response(code=status)
+
+        status_code = self.proxy.add_host_sync_status(params)
+        return self.response(code=status_code)
+
+
+class DeleteHostSyncStatus(BaseResponse):
+    @BaseResponse.handle(schema=DeleteHostSyncStatusSchema, proxy=HostSyncProxy, token=False)
+    def post(self, callback: HostSyncProxy, **params):
+        """
+        Add host sync status
+
+        Args:
+            host_id (int): host id
+            domain_name (str): domain name
+
+        Returns:
+            dict: response body
+        """
+        self.proxy = callback
+        status_code = self.proxy.delete_host_sync_status(params)
+        return self.response(code=status_code)
+
+
+class GetHostSyncStatus(BaseResponse):
+    @BaseResponse.handle(schema=GetHostSyncStatusSchema, proxy=HostSyncProxy, token=False)
+    def post(self, callback: HostSyncProxy, **params):
+        """
+        get host sync status
+
+        Args:
+            domain_name (str): domain name
+        Returns:
+            dict: response body
+        """
+        domain_name = params.get("domain_name")
+        status_code, result = callback.get_domain_host_sync_status(domain_name)
+        return self.response(code=status_code, data=result)

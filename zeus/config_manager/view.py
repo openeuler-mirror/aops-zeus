@@ -17,15 +17,23 @@ Description: Restful APIs for host
 """
 import json
 import os
+import re
+import subprocess
+import time
+from configparser import RawConfigParser
 from typing import List, Dict
 
+import yaml
+from vulcanus import LOGGER
 from vulcanus.multi_thread_handler import MultiThreadHandler
 from vulcanus.restful.resp import state
 from vulcanus.restful.response import BaseResponse
-from zeus.conf.constant import CERES_COLLECT_FILE, CERES_SYNC_CONF, CERES_OBJECT_FILE_CONF
+from zeus.conf.constant import CERES_COLLECT_FILE, CERES_SYNC_CONF, CERES_OBJECT_FILE_CONF, SYNC_LOG_PATH, \
+    HOST_PATH_FILE, SYNC_CONFIG_YML, PARENT_DIRECTORY, IP_START_PATTERN, KEY_FILE_PREFIX, KEY_FILE_SUFFIX
 from zeus.database.proxy.host import HostProxy
 from zeus.function.model import ClientConnectArgs
-from zeus.function.verify.config import CollectConfigSchema, SyncConfigSchema, ObjectFileConfigSchema
+from zeus.function.verify.config import CollectConfigSchema, SyncConfigSchema, ObjectFileConfigSchema, \
+    BatchSyncConfigSchema
 from zeus.host_manager.ssh import execute_command_and_parse_its_result, execute_command_sftp_result
 
 
@@ -328,3 +336,157 @@ class ObjectFileConfig(BaseResponse):
                 object_file_result['object_file_paths'] = resp
             return self.response(code=state.SUCCEED, data={"resp": object_file_result})
         return self.response(code=state.UNKNOWN_ERROR, data={"resp": object_file_result})
+
+
+class BatchSyncConfig(BaseResponse):
+    @staticmethod
+    def ansible_sync_domain_config_content(host_list: list, file_path_infos: list):
+        # 初始化参数和响应
+        timestamp = str(time.time())
+        now_time = timestamp[:timestamp.find(".")]
+        host_ip_sync_result = {}
+        BatchSyncConfig.generate_config(host_list, host_ip_sync_result, now_time)
+
+        ansible_forks = len(host_list)
+        # 配置文件中读取并发数量
+        json_data = BatchSyncConfig.ini2json("/etc/aops/zeus.ini")
+        serial_count = int(json_data.get('serial').get('serial_count'))
+        # 换种方式
+        path_infos = {}
+        for file_info in file_path_infos:
+            file_path = file_info.get("file_path")
+            file_content = file_info.get("content")
+            # 写临时文件
+            src_file_path = "/tmp/" + os.path.basename(file_path)
+            with open(src_file_path, "w", encoding="UTF-8") as f:
+                f.write(file_content)
+            path_infos[src_file_path] = file_path
+
+        # 调用ansible
+        extra_vars = json.dumps({"serial_count": serial_count, "file_path_infos": path_infos})
+        try:
+            if not os.path.exists(SYNC_LOG_PATH):
+                os.makedirs(SYNC_LOG_PATH)
+
+            SYNC_LOG = SYNC_LOG_PATH + "sync_config_" + now_time + ".log"
+            HOST_FILE = HOST_PATH_FILE + "hosts_" + now_time + ".yml"
+            cmd = f"ansible-playbook -f {ansible_forks} -e '{extra_vars}' " \
+                  f"-i {HOST_FILE} {SYNC_CONFIG_YML} |tee {SYNC_LOG} "
+            result = subprocess.run(cmd, cwd=PARENT_DIRECTORY, shell=True, capture_output=True, text=True)
+        except Exception as ex:
+            LOGGER.error("ansible playbook execute error:", ex)
+            return host_ip_sync_result
+        processor_result = result.stdout.splitlines()
+        char_to_filter = 'item='
+        filtered_list = [item for item in processor_result if char_to_filter in item]
+        if not filtered_list:
+            return host_ip_sync_result
+        for line in filtered_list:
+            start_index = line.find("[") + 1
+            end_index = line.find("]", start_index)
+            ip = line[start_index:end_index]
+            sync_results = host_ip_sync_result.get(ip)
+
+            start_index1 = line.find("{")
+            end_index1 = line.find(")", start_index1)
+            path_str = line[start_index1:end_index1]
+            file_path = json.loads(path_str.replace("'", "\"")).get("value")
+            if line.startswith("ok:") or line.startswith("changed:"):
+                signal_file_sync = {
+                    "filePath": file_path,
+                    "result": "SUCCESS"
+                }
+            else:
+                signal_file_sync = {
+                    "filePath": file_path,
+                    "result": "FAIL"
+                }
+            sync_results.append(signal_file_sync)
+
+        return host_ip_sync_result
+
+    @staticmethod
+    def generate_config(host_list, host_ip_sync_result, now_time):
+        # 取出host_ip,并传入ansible的hosts中
+        hosts = {
+            "all": {
+                "children": {
+                    "sync": {
+                        "hosts": {
+
+                        }
+                    }
+                }
+            }
+        }
+
+        for host in host_list:
+            # 生成临时的密钥key文件用于ansible访问远端主机
+            key_file_path = KEY_FILE_PREFIX + host['host_ip'] + KEY_FILE_SUFFIX
+            with open(key_file_path, 'w', encoding="UTF-8") as keyfile:
+                os.chmod(key_file_path, 0o600)
+                keyfile.write(host['pkey'])
+            host_ip = host['host_ip']
+            host_vars = {
+                "ansible_ssh_user": "root",
+                "ansible_ssh_private_key_file": key_file_path,
+                "ansible_python_interpreter": "/usr/bin/python3",
+                "host_key_checking": False,
+                "interpreter_python": "auto_legacy_silent",
+                "become": True,
+                "become_method": "sudo",
+                "become_user": "root",
+                "become_ask_pass": False,
+                "ssh_args": "-C -o ControlMaster=auto -o ControlPersist=60s StrictHostKeyChecking=no"
+            }
+            hosts['all']['children']['sync']['hosts'][host_ip] = host_vars
+            # 初始化结果
+            host_ip_sync_result[host['host_ip']] = list()
+        HOST_FILE = HOST_PATH_FILE + "hosts_" + now_time + ".yml"
+        with open(HOST_FILE, 'w') as outfile:
+            yaml.dump(hosts, outfile, default_flow_style=False)
+
+    @staticmethod
+    def ini2json(ini_path):
+        json_data = {}
+        cfg = RawConfigParser()
+        cfg.read(ini_path)
+        for s in cfg.sections():
+            json_data[s] = dict(cfg.items(s))
+        return json_data
+
+    @BaseResponse.handle(schema=BatchSyncConfigSchema, token=False)
+    def put(self, **params):
+        # 初始化响应
+        file_path_infos = params.get('file_path_infos')
+        host_ids = params.get('host_ids')
+        sync_result = list()
+        # Query host address from database
+        proxy = HostProxy()
+        if not proxy.connect():
+            return self.response(code=state.DATABASE_CONNECT_ERROR, data={"resp": sync_result})
+
+        status, host_list = proxy.get_host_info(
+            {"username": "admin", "host_list": host_ids}, True)
+        if status != state.SUCCEED:
+            return self.response(code=status, data={"resp": sync_result})
+
+        # 将ip和id对应起来
+        host_id_ip_dict = dict()
+        if host_list:
+            for host in host_list:
+                host_id_ip_dict[host['host_ip']] = host['host_id']
+
+        host_ip_sync_result = self.ansible_sync_domain_config_content(host_list, file_path_infos)
+
+        if not host_ip_sync_result:
+            return self.response(code=state.EXECUTE_COMMAND_ERROR, data={"resp": sync_result})
+        # 处理成id对应结果
+        for key, value in host_ip_sync_result.items():
+            host_id = host_id_ip_dict.get(key)
+            single_result = {
+                "host_id": host_id,
+                "syncResult": value
+            }
+            sync_result.append(single_result)
+        return self.response(code=state.SUCCEED, data={"resp": sync_result})

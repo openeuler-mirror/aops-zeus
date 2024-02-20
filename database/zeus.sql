@@ -54,4 +54,13 @@ CREATE TABLE IF NOT EXISTS `host`  (
   CONSTRAINT `host_ibfk_2` FOREIGN KEY (`host_group_id`) REFERENCES `host_group` (`host_group_id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin ROW_FORMAT = Dynamic;
 
+CREATE TABLE IF NOT EXISTS `host_conf_sync_status`  (
+  `host_id` int(11) NOT NULL,
+  `host_ip` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `domain_name` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `sync_status` int(1) unsigned zerofill NULL DEFAULT NULL,
+  CONSTRAINT hd_host_sync PRIMARY KEY (host_id,domain_name),
+  INDEX `sync_status`(`sync_status`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+
 INSERT INTO `user` (`username`, `password`) VALUE('admin', 'pbkdf2:sha256:150000$h1oaTY7K$5b1ff300a896f6f373928294fd8bac8ed6d2a1d6a7c5ea2d2ccd2075e6177896') ON DUPLICATE KEY UPDATE username= 'admin',password='pbkdf2:sha256:150000$h1oaTY7K$5b1ff300a896f6f373928294fd8bac8ed6d2a1d6a7c5ea2d2ccd2075e6177896';

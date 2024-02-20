@@ -53,6 +53,10 @@ from zeus.conf.constant import (
     SYNC_CONFIG,
     OBJECT_FILE_CONFIG,
     GET_HOST_STATUS,
+    BATCH_SYNC_CONFIG,
+    ADD_HOST_SYNC_STATUS,
+    DELETE_HOST_SYNC_STATUS,
+    GET_HOST_SYNC_STATUS
 )
 from zeus.config_manager import view as config_view
 from zeus.host_manager import view as host_view
@@ -82,6 +86,9 @@ SPECIFIC_URLS = {
         (host_view.GetHostInfo, QUERY_HOST_DETAIL),
         (host_view.GetHostCount, GET_HOST_COUNT),
         (host_view.GetHostTemplateFile, GET_HOST_TEMPLATE_FILE),
+        (host_view.AddHostSyncStatus, ADD_HOST_SYNC_STATUS),
+        (host_view.DeleteHostSyncStatus, DELETE_HOST_SYNC_STATUS),
+        (host_view.GetHostSyncStatus, GET_HOST_SYNC_STATUS)
     ],
     "HOST_GROUP_URLS": [
         (host_view.AddHostGroup, ADD_GROUP),
@@ -92,6 +99,7 @@ SPECIFIC_URLS = {
         (config_view.CollectConfig, COLLECT_CONFIG),
         (config_view.SyncConfig, SYNC_CONFIG),
         (config_view.ObjectFileConfig, OBJECT_FILE_CONFIG),
+        (config_view.BatchSyncConfig, BATCH_SYNC_CONFIG)
     ],
     'AGENT_URLS': [
         (agent_view.AgentPluginInfo, AGENT_PLUGIN_INFO),
