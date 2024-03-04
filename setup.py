@@ -21,6 +21,7 @@ setup(
         "redis",
         'prometheus_api_client',
         'gevent',
+        "retrying"
     ],
     author='cmd-lsw-yyy-zyc',
     data_files=[

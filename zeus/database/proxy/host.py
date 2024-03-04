@@ -339,7 +339,6 @@ class HostProxy(MysqlProxy):
                     "ssh_user": host.ssh_user,
                 }
                 result.append(host_info)
-            self.session.commit()
             LOGGER.debug("query host %s basic info succeed", host_list)
             return SUCCEED, result
         except sqlalchemy.exc.SQLAlchemyError as error:
@@ -831,7 +830,6 @@ class HostProxy(MysqlProxy):
             self.session.rollback()
             return DATABASE_UPDATE_ERROR
 
-
     def update_host_status(self, host_info: list) -> str:
         """
         update host status to host table
@@ -849,7 +847,8 @@ class HostProxy(MysqlProxy):
         try:
             for host in host_info:
                 self.session.query(Host).filter(Host.host_id == host.get('host_id')).update(
-                    {"status": host.get('status')})
+                    {"status": host.get('status')}
+                )
             self.session.commit()
             return SUCCEED
         except sqlalchemy.exc.SQLAlchemyError as error:
