@@ -99,6 +99,11 @@ VUL_TASK_CVE_SCAN_NOTICE = "/vulnerability/task/callback/cve/scan/notice"
 CHECK_IDENTIFY_SCENE = "/check/scene/identify"
 CHECK_WORKFLOW_HOST_EXIST = '/check/workflow/host/exist'
 
+# ragdoll
+DOMAIN_LIST_API = "/domain/queryDomain"
+EXPECTED_CONFS_API = "/confs/queryExpectedConfs"
+DOMAIN_CONF_DIFF_API = "/confs/domain/diff"
+
 # host template file content
 HOST_TEMPLATE_FILE_CONTENT = """host_ip,ssh_port,ssh_user,password,ssh_pkey,host_name,host_group_name,management
 127.0.0.1,22,root,password,private key,test_host,test_host_group,FALSE
@@ -121,6 +126,8 @@ KEY_FILE_SUFFIX = "_id_dsa"
 IP_START_PATTERN = r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}"
 
 DIRECTORY_FILE_PATH_LIST = ["/etc/pam.d"]
+
+TIMED_TASK_CONFIG_PATH = "/etc/aops/zeus_crontab.yml"
 
 # cve task status
 class CveTaskStatus:

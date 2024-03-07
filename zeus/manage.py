@@ -15,7 +15,6 @@ Time:
 Author:
 Description: Manager that start aops-zeus
 """
-from zeus.scheduler_task.schedule_config import ScheduleConfig
 
 try:
     from gevent import monkey
@@ -24,17 +23,45 @@ try:
 except:
     pass
 
-from vulcanus import init_application
+from vulcanus import init_application, LOGGER
+from vulcanus.timed import TimedTaskManager
 from zeus.conf import configuration
 from zeus.url import URLS
-from flask_apscheduler import APScheduler
+from zeus.conf.constant import TIMED_TASK_CONFIG_PATH
+from zeus.cron import task_meta
 
-app = init_application(name="zeus", settings=configuration, register_urls=URLS)
-app.config.from_object(ScheduleConfig())
-scheduler = APScheduler()
-# 将调度器对象与Flask应用程序实例(app)相关联
-scheduler.init_app(app)
-scheduler.start()
+
+def _init_timed_task(application):
+    """
+    Initialize and create a scheduled task
+
+    Args:
+        application:flask.Application
+    """
+    timed_task = TimedTaskManager(app=application, config_path=TIMED_TASK_CONFIG_PATH)
+    if not timed_task.timed_config:
+        LOGGER.warning(
+            "If you want to start a scheduled task, please add a timed config."
+        )
+        return
+
+    for task_info in timed_task.timed_config.values():
+        task_type = task_info.get("type")
+        if task_type not in task_meta:
+            continue
+        meta_class = task_meta[task_type]
+        timed_task.add_job(meta_class(timed_config=task_info))
+
+    timed_task.start()
+
+
+def main():
+    _app = init_application(name="zeus", settings=configuration, register_urls=URLS)
+    _init_timed_task(application=_app)
+    return _app
+
+
+app = main()
 
 if __name__ == "__main__":
-    app.run(host=configuration.zeus.get('IP'), port=configuration.zeus.get('PORT'))
+    app.run(host=configuration.zeus.get("IP"), port=configuration.zeus.get("PORT"))

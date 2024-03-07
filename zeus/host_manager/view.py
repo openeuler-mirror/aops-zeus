@@ -1037,8 +1037,7 @@ class DeleteHostSyncStatus(BaseResponse):
         Returns:
             dict: response body
         """
-        self.proxy = callback
-        status_code = self.proxy.delete_host_sync_status(params)
+        status_code = callback.delete_host_sync_status(params)
         return self.response(code=status_code)
 
 

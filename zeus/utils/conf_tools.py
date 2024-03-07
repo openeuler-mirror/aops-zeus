@@ -21,6 +21,7 @@ import configparser
 import os
 
 from zeus.conf import MANAGER_CONFIG_PATH
+from zeus.conf.constant import DOMAIN_LIST_API, EXPECTED_CONFS_API, DOMAIN_CONF_DIFF_API
 
 
 class ConfTools(object):
@@ -39,17 +40,14 @@ class ConfTools(object):
             cf.read(conf_path, encoding="utf-8")
 
         update_sync_status_address = ast.literal_eval(cf.get("update_sync_status", "update_sync_status_address"))
-        domain_list_api = ast.literal_eval(cf.get("update_sync_status", "domain_list_api"))
-        expected_confs_api = ast.literal_eval(cf.get("update_sync_status", "expected_confs_api"))
-        domain_conf_diff_api = ast.literal_eval(cf.get("update_sync_status", "domain_conf_diff_api"))
 
         update_sync_status_port = str(cf.get("update_sync_status", "update_sync_status_port"))
-        domain_list_url = "{address}:{port}{api}".format(address=update_sync_status_address, api=domain_list_api,
+        domain_list_url = "{address}:{port}{api}".format(address=update_sync_status_address, api=DOMAIN_LIST_API,
                                                          port=update_sync_status_port)
-        expected_confs_url = "{address}:{port}{api}".format(address=update_sync_status_address, api=expected_confs_api,
+        expected_confs_url = "{address}:{port}{api}".format(address=update_sync_status_address, api=EXPECTED_CONFS_API,
                                                             port=update_sync_status_port)
         domain_conf_diff_url = "{address}:{port}{api}".format(address=update_sync_status_address,
-                                                              api=domain_conf_diff_api,
+                                                              api=DOMAIN_CONF_DIFF_API,
                                                               port=update_sync_status_port)
 
         url = {"domain_list_url": domain_list_url, "expected_confs_url": expected_confs_url,

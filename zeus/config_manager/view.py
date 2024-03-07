@@ -15,10 +15,12 @@ Time:
 Author:
 Description: Restful APIs for host
 """
+import glob
 import json
 import os
-import re
+import queue
 import subprocess
+import threading
 import time
 from configparser import RawConfigParser
 from typing import List, Dict
@@ -28,6 +30,8 @@ from vulcanus import LOGGER
 from vulcanus.multi_thread_handler import MultiThreadHandler
 from vulcanus.restful.resp import state
 from vulcanus.restful.response import BaseResponse
+
+from zeus.conf import configuration
 from zeus.conf.constant import CERES_COLLECT_FILE, CERES_SYNC_CONF, CERES_OBJECT_FILE_CONF, SYNC_LOG_PATH, \
     HOST_PATH_FILE, SYNC_CONFIG_YML, PARENT_DIRECTORY, IP_START_PATTERN, KEY_FILE_PREFIX, KEY_FILE_SUFFIX
 from zeus.database.proxy.host import HostProxy
@@ -155,7 +159,7 @@ class CollectConfig(BaseResponse):
 
         return file_content
 
-    @BaseResponse.handle(schema=CollectConfigSchema, token=False)
+    @BaseResponse.handle(schema=CollectConfigSchema, token=True)
     def post(self, **param):
         """
         Get config
@@ -209,16 +213,16 @@ class CollectConfig(BaseResponse):
             file_content = self.convert_host_id_to_failed_data_format(
                 list(host_id_with_config_file.keys()), host_id_with_config_file
             )
-            return self.response(code=state.DATABASE_CONNECT_ERROR, data={"resp": file_content})
+            return self.response(code=state.DATABASE_CONNECT_ERROR, data=file_content)
 
         status, host_list = proxy.get_host_info(
-            {"username": "admin", "host_list": list(host_id_with_config_file.keys())}, True
+            {"username": param.get("username"), "host_list": list(host_id_with_config_file.keys())}, True
         )
         if status != state.SUCCEED:
             file_content = self.convert_host_id_to_failed_data_format(
                 list(host_id_with_config_file.keys()), host_id_with_config_file
             )
-            return self.response(code=status, data={"resp": file_content})
+            return self.response(code=status, data=file_content)
         # Get file content
         tasks = [(host, host_id_with_config_file[host["host_id"]]) for host in host_list]
         multi_thread = MultiThreadHandler(lambda data: self.get_file_content(*data), tasks, None)
@@ -270,7 +274,7 @@ class SyncConfig(BaseResponse):
                                   host_info.get("ssh_user"), host_info.get("pkey")), command)
             return status
 
-    @BaseResponse.handle(schema=SyncConfigSchema, token=False)
+    @BaseResponse.handle(schema=SyncConfigSchema, token=True)
     def put(self, **params):
 
         sync_config_info = dict()
@@ -285,19 +289,19 @@ class SyncConfig(BaseResponse):
         # Query host address from database
         proxy = HostProxy()
         if not proxy.connect():
-            return self.response(code=state.DATABASE_CONNECT_ERROR, data={"resp": sync_result})
+            return self.response(code=state.DATABASE_CONNECT_ERROR, data=sync_result)
 
         status, host_list = proxy.get_host_info(
-            {"username": "admin", "host_list": [params.get('host_id')]}, True)
+            {"username": params.get("username"), "host_list": [params.get('host_id')]}, True)
         if status != state.SUCCEED:
-            return self.response(code=status, data={"resp": sync_result})
+            return self.response(code=status, data=sync_result)
 
         host_info = host_list[0]
         status = self.sync_config_content(host_info, sync_config_info)
         if status == state.SUCCEED:
             sync_result['sync_result'] = True
-            return self.response(code=state.SUCCEED, data={"resp": sync_result})
-        return self.response(code=state.UNKNOWN_ERROR, data={"resp": sync_result})
+            return self.response(code=state.SUCCEED, data=sync_result)
+        return self.response(code=state.UNKNOWN_ERROR, data=sync_result)
 
 
 class ObjectFileConfig(BaseResponse):
@@ -310,7 +314,7 @@ class ObjectFileConfig(BaseResponse):
                               host_info.get("ssh_user"), host_info.get("pkey")), command)
         return status, content
 
-    @BaseResponse.handle(schema=ObjectFileConfigSchema, token=False)
+    @BaseResponse.handle(schema=ObjectFileConfigSchema, token=True)
     def post(self, **params):
         object_file_result = {
             "object_file_paths": list(),
@@ -319,12 +323,12 @@ class ObjectFileConfig(BaseResponse):
         # Query host address from database
         proxy = HostProxy()
         if not proxy.connect():
-            return self.response(code=state.DATABASE_CONNECT_ERROR, data={"resp": object_file_result})
+            return self.response(code=state.DATABASE_CONNECT_ERROR, data=object_file_result)
 
         status, host_list = proxy.get_host_info(
-            {"username": "admin", "host_list": [params.get('host_id')]}, True)
+            {"username": params.get("username"), "host_list": [params.get('host_id')]}, True)
         if status != state.SUCCEED:
-            return self.response(code=status, data={"resp": object_file_result})
+            return self.response(code=status, data=object_file_result)
 
         host_info = host_list[0]
         status, content = self.object_file_config_content(host_info, params.get('file_directory'))
@@ -334,23 +338,55 @@ class ObjectFileConfig(BaseResponse):
             if content_res.get("resp"):
                 resp = content_res.get("resp")
                 object_file_result['object_file_paths'] = resp
-            return self.response(code=state.SUCCEED, data={"resp": object_file_result})
-        return self.response(code=state.UNKNOWN_ERROR, data={"resp": object_file_result})
+            return self.response(code=state.SUCCEED, data=object_file_result)
+        return self.response(code=state.UNKNOWN_ERROR, data=object_file_result)
 
 
 class BatchSyncConfig(BaseResponse):
     @staticmethod
+    def run_subprocess(cmd, result_queue):
+        try:
+            completed_process = subprocess.run(cmd, cwd=PARENT_DIRECTORY, shell=True, capture_output=True, text=True)
+            result_queue.put(completed_process)
+        except subprocess.CalledProcessError as ex:
+            result_queue.put(ex)
+
+    @staticmethod
+    def ansible_handler(now_time, ansible_forks, extra_vars, HOST_FILE):
+        if not os.path.exists(SYNC_LOG_PATH):
+            os.makedirs(SYNC_LOG_PATH)
+
+        SYNC_LOG = SYNC_LOG_PATH + "sync_config_" + now_time + ".log"
+        cmd = f"ansible-playbook -f {ansible_forks} -e '{extra_vars}' " \
+              f"-i {HOST_FILE} {SYNC_CONFIG_YML} |tee {SYNC_LOG} "
+        result_queue = queue.Queue()
+        thread = threading.Thread(target=BatchSyncConfig.run_subprocess, args=(cmd, result_queue))
+        thread.start()
+
+        thread.join()
+        try:
+            completed_process = result_queue.get(block=False)
+            if isinstance(completed_process, subprocess.CalledProcessError):
+                LOGGER.error("ansible subprocess error:", completed_process)
+            else:
+                if completed_process.returncode == 0:
+                    return completed_process.stdout
+                else:
+                    LOGGER.error("ansible subprocess error:", completed_process)
+        except queue.Empty:
+            LOGGER.error("ansible subprocess nothing result")
+
+    @staticmethod
     def ansible_sync_domain_config_content(host_list: list, file_path_infos: list):
         # 初始化参数和响应
-        timestamp = str(time.time())
-        now_time = timestamp[:timestamp.find(".")]
+        now_time = str(int(time.time()))
         host_ip_sync_result = {}
         BatchSyncConfig.generate_config(host_list, host_ip_sync_result, now_time)
 
         ansible_forks = len(host_list)
         # 配置文件中读取并发数量
-        json_data = BatchSyncConfig.ini2json("/etc/aops/zeus.ini")
-        serial_count = int(json_data.get('serial').get('serial_count'))
+        # 从内存中获取serial_count
+        serial_count = configuration.serial.get("SERIAL_COUNT")
         # 换种方式
         path_infos = {}
         for file_info in file_path_infos:
@@ -365,18 +401,13 @@ class BatchSyncConfig(BaseResponse):
         # 调用ansible
         extra_vars = json.dumps({"serial_count": serial_count, "file_path_infos": path_infos})
         try:
-            if not os.path.exists(SYNC_LOG_PATH):
-                os.makedirs(SYNC_LOG_PATH)
-
-            SYNC_LOG = SYNC_LOG_PATH + "sync_config_" + now_time + ".log"
             HOST_FILE = HOST_PATH_FILE + "hosts_" + now_time + ".yml"
-            cmd = f"ansible-playbook -f {ansible_forks} -e '{extra_vars}' " \
-                  f"-i {HOST_FILE} {SYNC_CONFIG_YML} |tee {SYNC_LOG} "
-            result = subprocess.run(cmd, cwd=PARENT_DIRECTORY, shell=True, capture_output=True, text=True)
+            result = BatchSyncConfig.ansible_handler(now_time, ansible_forks, extra_vars, HOST_FILE)
         except Exception as ex:
             LOGGER.error("ansible playbook execute error:", ex)
             return host_ip_sync_result
-        processor_result = result.stdout.splitlines()
+
+        processor_result = result.splitlines()
         char_to_filter = 'item='
         filtered_list = [item for item in processor_result if char_to_filter in item]
         if not filtered_list:
@@ -402,7 +433,22 @@ class BatchSyncConfig(BaseResponse):
                     "result": "FAIL"
                 }
             sync_results.append(signal_file_sync)
+        # 删除中间文件
+        try:
+            # 删除/tmp下面以id_dsa结尾的文件
+            file_pattern = "*id_dsa"
+            tmp_files_to_delete = glob.glob(os.path.join(KEY_FILE_PREFIX, file_pattern))
+            for tmp_file_path in tmp_files_to_delete:
+                os.remove(tmp_file_path)
 
+            # 删除/tmp下面临时写的path_infos的key值文件
+            for path in path_infos.keys():
+                os.remove(path)
+
+            # 删除临时的HOST_PATH_FILE的临时inventory文件
+            os.remove(HOST_FILE)
+        except OSError as ex:
+            LOGGER.error("remove file error: %s", ex)
         return host_ip_sync_result
 
     @staticmethod
@@ -430,6 +476,7 @@ class BatchSyncConfig(BaseResponse):
             host_vars = {
                 "ansible_ssh_user": "root",
                 "ansible_ssh_private_key_file": key_file_path,
+                "ansible_ssh_port": host['ssh_port'],
                 "ansible_python_interpreter": "/usr/bin/python3",
                 "host_key_checking": False,
                 "interpreter_python": "auto_legacy_silent",
@@ -455,21 +502,22 @@ class BatchSyncConfig(BaseResponse):
             json_data[s] = dict(cfg.items(s))
         return json_data
 
-    @BaseResponse.handle(schema=BatchSyncConfigSchema, token=False)
-    def put(self, **params):
+    @BaseResponse.handle(schema=BatchSyncConfigSchema, proxy=HostProxy, token=True)
+    def put(self, callback: HostProxy, **params):
         # 初始化响应
         file_path_infos = params.get('file_path_infos')
         host_ids = params.get('host_ids')
         sync_result = list()
         # Query host address from database
-        proxy = HostProxy()
-        if not proxy.connect():
-            return self.response(code=state.DATABASE_CONNECT_ERROR, data={"resp": sync_result})
+        if not callback.connect():
+            return self.response(code=state.DATABASE_CONNECT_ERROR, data=sync_result)
 
-        status, host_list = proxy.get_host_info(
-            {"username": "admin", "host_list": host_ids}, True)
+        # 校验token
+        status, host_list = callback.get_host_info(
+            # 校验token 拿到用户
+            {"username": params.get("username"), "host_list": host_ids}, True)
         if status != state.SUCCEED:
-            return self.response(code=status, data={"resp": sync_result})
+            return self.response(code=status, data=sync_result)
 
         # 将ip和id对应起来
         host_id_ip_dict = dict()
@@ -480,7 +528,7 @@ class BatchSyncConfig(BaseResponse):
         host_ip_sync_result = self.ansible_sync_domain_config_content(host_list, file_path_infos)
 
         if not host_ip_sync_result:
-            return self.response(code=state.EXECUTE_COMMAND_ERROR, data={"resp": sync_result})
+            return self.response(code=state.EXECUTE_COMMAND_ERROR, data=sync_result)
         # 处理成id对应结果
         for key, value in host_ip_sync_result.items():
             host_id = host_id_ip_dict.get(key)
@@ -489,4 +537,4 @@ class BatchSyncConfig(BaseResponse):
                 "syncResult": value
             }
             sync_result.append(single_result)
-        return self.response(code=state.SUCCEED, data={"resp": sync_result})
+        return self.response(code=state.SUCCEED, data=sync_result)
