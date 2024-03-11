@@ -415,8 +415,8 @@ class BatchSyncConfig(BaseResponse):
         for line in filtered_list:
             start_index = line.find("[") + 1
             end_index = line.find("]", start_index)
-            ip = line[start_index:end_index]
-            sync_results = host_ip_sync_result.get(ip)
+            ip_port = line[start_index:end_index]
+            sync_results = host_ip_sync_result.get(ip_port)
 
             start_index1 = line.find("{")
             end_index1 = line.find(")", start_index1)
@@ -474,6 +474,7 @@ class BatchSyncConfig(BaseResponse):
                 keyfile.write(host['pkey'])
             host_ip = host['host_ip']
             host_vars = {
+                "ansible_host": host_ip,
                 "ansible_ssh_user": "root",
                 "ansible_ssh_private_key_file": key_file_path,
                 "ansible_ssh_port": host['ssh_port'],
@@ -486,9 +487,10 @@ class BatchSyncConfig(BaseResponse):
                 "become_ask_pass": False,
                 "ssh_args": "-C -o ControlMaster=auto -o ControlPersist=60s StrictHostKeyChecking=no"
             }
-            hosts['all']['children']['sync']['hosts'][host_ip] = host_vars
+
+            hosts['all']['children']['sync']['hosts'][host_ip + "_" + str(host['ssh_port'])] = host_vars
             # 初始化结果
-            host_ip_sync_result[host['host_ip']] = list()
+            host_ip_sync_result[host['host_ip'] + "_" + str(host['ssh_port'])] = list()
         HOST_FILE = HOST_PATH_FILE + "hosts_" + now_time + ".yml"
         with open(HOST_FILE, 'w') as outfile:
             yaml.dump(hosts, outfile, default_flow_style=False)
@@ -523,7 +525,8 @@ class BatchSyncConfig(BaseResponse):
         host_id_ip_dict = dict()
         if host_list:
             for host in host_list:
-                host_id_ip_dict[host['host_ip']] = host['host_id']
+                key = host['host_ip'] + str(host['ssh_port'])
+                host_id_ip_dict[key] = host['host_id']
 
         host_ip_sync_result = self.ansible_sync_domain_config_content(host_list, file_path_infos)
 
