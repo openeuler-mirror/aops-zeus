@@ -22,8 +22,8 @@ from vulcanus.conf.constant import BASE_CONFIG_PATH
 MANAGER_CONFIG_PATH = os.path.join(BASE_CONFIG_PATH, 'zeus.ini')
 
 # ceres
-CERES_PLUGIN_START = "aops-ceres plugin --start %s"
-CERES_PLUGIN_STOP = "aops-ceres plugin --stop %s"
+CERES_PLUGIN_START = "aops-ceres plugin --start '%s'"
+CERES_PLUGIN_STOP = "aops-ceres plugin --stop '%s'"
 CERES_COLLECT_ITEMS_CHANGE = "aops-ceres plugin --change-collect-items '%s'"
 CERES_PLUGIN_INFO = "aops-ceres plugin --info"
 CERES_APPLICATION_INFO = "aops-ceres collect --application"
