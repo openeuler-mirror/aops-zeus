@@ -121,14 +121,22 @@
    port=6379
    ```
 
-5. 将项目目录添加至环境变量，以/work/aops-zeus、/work/aops-vulcanus为例
+5. 进入aops-vulcanus目录，复制配置文件到/etc/aops下，以/work/aops-vulcanus为例。
+
+   ```shell
+   cd /work/aops-vulcanus/ 
+   cp conf/.aops-private-config.ini /etc/aops/
+   cp conf/system.ini /etc/aops/
+   ```
+
+6. 将项目目录添加至环境变量，以/work/aops-zeus、/work/aops-vulcanus为例
 
    ```
    export PYTHONPATH=$PYTHONPATH:/work/aops-zeus
    export PYTHONPATH=$PYTHONPATH:/work/aops-vulcanus
    ```
 
-6. 启动开发服务器
+7. 启动开发服务器
 
    ```
    python3 manage.py

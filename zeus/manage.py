@@ -29,6 +29,7 @@ from zeus.conf import configuration
 from zeus.url import URLS
 from zeus.conf.constant import TIMED_TASK_CONFIG_PATH
 from zeus.cron import task_meta
+from zeus.host_manager.terminal import socketio
 
 
 def _init_timed_task(application):
@@ -57,11 +58,16 @@ def _init_timed_task(application):
 
 def main():
     _app = init_application(name="zeus", settings=configuration, register_urls=URLS)
+    socketio.init_app(app=_app)
     _init_timed_task(application=_app)
     return _app
-
 
 app = main()
 
 if __name__ == "__main__":
     app.run(host=configuration.zeus.get("IP"), port=configuration.zeus.get("PORT"))
+    socketio.run(
+        app,
+        host=configuration.zeus.get("IP"),
+        port=configuration.zeus.get("PORT"),
+    )
