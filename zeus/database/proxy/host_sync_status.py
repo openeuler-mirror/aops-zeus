@@ -50,7 +50,7 @@ class HostSyncProxy(MysqlProxy):
             int: SUCCEED or DATABASE_INSERT_ERROR
         """
         host_id = data.get('host_id')
-        host_ip = data.get('host_ip')
+        host_ip = str(data.get('host_ip'))
         domain_name = data.get('domain_name')
         sync_status = data.get('sync_status')
         host_sync_status = HostSyncStatus(host_id=host_id, host_ip=host_ip, domain_name=domain_name,
