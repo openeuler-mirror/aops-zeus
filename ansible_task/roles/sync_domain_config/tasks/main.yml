@@ -2,12 +2,12 @@
 - name: Check if software is installed
   command: rpm -qi python3-libselinux
   register: result
-  changed_when: false
+  ignore_errors: yes
 - name: install dependency
   dnf:
     name: python3-libselinux
     state: present
-  when: "'not installed' in result.stdout"
+  when: result.rc != 1
 - name: sync config to host
   copy:
     src: "{{ item.key }}"
