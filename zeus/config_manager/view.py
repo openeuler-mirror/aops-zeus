@@ -525,7 +525,7 @@ class BatchSyncConfig(BaseResponse):
         host_id_ip_dict = dict()
         if host_list:
             for host in host_list:
-                key = host['host_ip'] + str(host['ssh_port'])
+                key = host['host_ip'] + "_" + str(host['ssh_port'])
                 host_id_ip_dict[key] = host['host_id']
 
         host_ip_sync_result = self.ansible_sync_domain_config_content(host_list, file_path_infos)
