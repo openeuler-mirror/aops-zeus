@@ -31,7 +31,6 @@ from zeus.conf.constant import DIRECTORY_FILE_PATH_LIST
 from zeus.config_manager.view import ObjectFileConfig, CollectConfig
 from zeus.database.proxy.host import HostProxy
 from zeus.database.proxy.host_sync_status import HostSyncProxy
-from zeus.scheduler_task.view import SyncStatus
 from zeus.utils.conf_tools import ConfTools
 
 
@@ -235,7 +234,7 @@ class UpdateConfigSyncStatusTask(TimedTask):
         # 方式一 根据domain获取所有的id，从host_conf_sync_status表中读取
         host_sync_proxy = HostSyncProxy()
         host_sync_proxy.connect()
-        domain_host_id_dict = SyncStatus.get_domain_host_ids(
+        domain_host_id_dict = self.get_domain_host_ids(
             domain_list_resp, host_sync_proxy
         )
         if not domain_host_id_dict:
