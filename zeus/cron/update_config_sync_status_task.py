@@ -169,8 +169,8 @@ class UpdateConfigSyncStatusTask(TimedTask):
                 domain_conf_diff_url, data=json.dumps(request_data), headers=headers
             )
             domain_diff_resp = json.loads(domain_diff_response.text)
-            if domain_diff_resp:
-                return domain_diff_resp
+            if domain_diff_resp.get("data"):
+                return domain_diff_resp.get("data")
             return []
         except requests.exceptions.RequestException as connect_ex:
             LOGGER.error(f"Failed to get domain list, an error occurred: {connect_ex}")
@@ -198,13 +198,13 @@ class UpdateConfigSyncStatusTask(TimedTask):
         # 获取所有的domain
         domain_list_url = ConfTools.load_url_by_conf().get("domain_list_url")
         try:
-            domain_list_response = requests.post(domain_list_url, headers=headers)
+            domain_list_response = requests.post(domain_list_url, data=json.dumps({}), headers=headers)
             domain_list_resp = json.loads(domain_list_response.text)
         except requests.exceptions.RequestException as connect_ex:
             LOGGER.error(f"Failed to get domain list, an error occurred: {connect_ex}")
             return
         # 处理响应
-        if not domain_list_resp:
+        if not domain_list_resp.get("data"):
             LOGGER.error(
                 "Failed to get all domain, please check interface /domain/queryDomain"
             )
@@ -212,7 +212,7 @@ class UpdateConfigSyncStatusTask(TimedTask):
 
         # 调用ragdoll query_excepted_confs接口获取所有业务域的基线配置内容
         domain_list_url = ConfTools.load_url_by_conf().get("expected_confs_url")
-        domain_names = {"domainNames": domain_list_resp}
+        domain_names = {"domainNames": domain_list_resp.get("data")}
         try:
             expected_confs_response = requests.post(
                 domain_list_url, data=json.dumps(domain_names), headers=headers
@@ -223,7 +223,7 @@ class UpdateConfigSyncStatusTask(TimedTask):
                 f"Failed to get all domain expected conf list, an error occurred: {connect_ex}"
             )
             return
-        if not expected_confs_resp:
+        if not expected_confs_resp.get("data"):
             LOGGER.error(
                 "Failed to get all domain confs, please check interface /confs/queryExpectedConfs"
             )
@@ -235,7 +235,7 @@ class UpdateConfigSyncStatusTask(TimedTask):
         host_sync_proxy = HostSyncProxy()
         host_sync_proxy.connect()
         domain_host_id_dict = self.get_domain_host_ids(
-            domain_list_resp, host_sync_proxy
+            domain_list_resp.get("data"), host_sync_proxy
         )
         if not domain_host_id_dict:
             LOGGER.info("no host sync status data need to update")
@@ -248,7 +248,7 @@ class UpdateConfigSyncStatusTask(TimedTask):
 
         # 方式一 组装参数并调用CollectConfig接口get_file_content获取文件真实内容
         domain_paths = {}
-        self.get_domain_files(domain_paths, expected_confs_resp)
+        self.get_domain_files(domain_paths, expected_confs_resp.get("data"))
 
         domain_result = {}
         for domain_name, host_id_list in domain_host_id_dict.items():
@@ -262,6 +262,6 @@ class UpdateConfigSyncStatusTask(TimedTask):
                 result = self.collect_file_infos(data, host_infos_result)
                 domain_result[domain_name] = result
         # 调用ragdoll接口进行对比
-        domain_diff_resp = self.compare_conf(expected_confs_resp, domain_result)
+        domain_diff_resp = self.compare_conf(expected_confs_resp.get("data"), domain_result)
         # 根据结果更新数据库
         self.update_sync_status_for_db(domain_diff_resp, host_sync_proxy)
