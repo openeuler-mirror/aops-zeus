@@ -5,34 +5,32 @@
 # You can use this software according to the terms and conditions of the Mulan PSL v2.
 # You may obtain a copy of Mulan PSL v2 at:
 #     http://license.coscl.org.cn/MulanPSL2
-# THIS SOFTWARE IS PROVIDED ON AN 'AS IS' BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR
+# THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR
 # PURPOSE.
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
-"""
-Time:
-Author:
-Description: default config of manager
-"""
-zeus = {"IP": "127.0.0.1", "PORT": 11111}
-
-mysql = {
-    "IP": "127.0.0.1",
-    "PORT": 3306,
-    "DATABASE_NAME": "aops",
-    "ENGINE_FORMAT": "mysql+pymysql://@%s:%s/%s",
-    "POOL_SIZE": 100,
-    "POOL_RECYCLE": 7200,
-}
-
-diana = {"IP": "127.0.0.1", "PORT": 11112}
-
-apollo = {"IP": "127.0.0.1", "PORT": 11116}
-
-redis = {"IP": "127.0.0.1", "PORT": 6379}
+import sys
+from zeus.cli.base import CiGroup
+from zeus.cli.service import service
+from zeus.cli.database import database
+from zeus.cli.config import config
+from zeus.cli.deploy import deploy
 
 
-prometheus = {"IP": "127.0.0.1", "PORT": 9090, "QUERY_RANGE_STEP": "15s"}
+aops_cli = CiGroup(help="""Aops command tool line""")
+aops_cli.add_command(service)
+aops_cli.add_command(database)
+aops_cli.add_command(config)
+aops_cli.add_command(deploy)
 
-agent = {"DEFAULT_INSTANCE_PORT": 8888}
+
+def main():
+    """
+    The starting method of a terminal command
+    """
+
+    aops_cli.main(args=sys.argv[1:])
+
+
+__all__ = "main"

@@ -5,13 +5,23 @@
 # You can use this software according to the terms and conditions of the Mulan PSL v2.
 # You may obtain a copy of Mulan PSL v2 at:
 #     http://license.coscl.org.cn/MulanPSL2
-# THIS SOFTWARE IS PROVIDED ON AN 'AS IS' BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR
+# THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR
 # PURPOSE.
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
-"""
-Time: 2021-12-29 14:16:26
-Author: peixiaochao
-Description: 
-"""
+import sys
+import click
+from zeus.cli import main
+
+
+def run():
+    try:
+        main()
+    except RuntimeError as error:
+        click.echo(click.style(error, fg="red"))
+        sys.exit(0)
+
+
+if __name__ == "__main__":
+    run()
