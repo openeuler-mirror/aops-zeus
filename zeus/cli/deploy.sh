@@ -136,5 +136,5 @@ function start_service(){
 
 function init_service_database() {
     echo "[INFO] Start to init database $@"
-    aops-cli database -init $@
+    aops-cli database --init $@
 }

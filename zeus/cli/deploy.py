@@ -10,16 +10,18 @@
 # PURPOSE.
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
-import sys
 import os
 import random
-from dataclasses import dataclass
-import click
 import subprocess
-import yaml
+import sys
+from dataclasses import dataclass
+
+import click
 import pymysql
+import yaml
 from pymysql.constants import CLIENT
-from zeus.cli.settings import ConfigHandle, MICROSERVICE_CONFIG_DIR, AOPS_GOLBAL_CONFIG
+
+from zeus.cli.settings import AOPS_GOLBAL_CONFIG, MICROSERVICE_CONFIG_DIR, ConfigHandle
 
 
 @dataclass
@@ -65,7 +67,7 @@ MYSQL_CONFIG_CONTENT = """
 [mysqld]
 log-bin=mysql-bin
 server-id={server_id}
-bind-address={ip}
+bind-address=0.0.0.0
 default-storage-engine=INNODB
 character-set-server=utf8mb4
 collation-server=utf8mb4_unicode_ci
@@ -108,7 +110,7 @@ class SetConfig:
         click.echo("[INFO] Start doing to set mysql config")
         try:
             with open(MYSQL_CONFIG, "w") as file:
-                config = MYSQL_CONFIG_CONTENT.format(server_id=random.randint(1, 10000), ip=self.ip)
+                config = MYSQL_CONFIG_CONTENT.format(server_id=random.randint(1, 10000))
                 file.write(config)
             click.echo("[INFO] The mysql config is set successful")
         except IOError:
@@ -305,7 +307,7 @@ def set_database():
 
     database = None
     try:
-        connection_options = dict(host=config.mysql.host, port=config.mysql.port)
+        connection_options = dict(host="127.0.0.1", port=config.mysql.port)
         if config.mysql.username and config.mysql.password:
             connection_options.update(user=config.mysql.username, password=config.mysql.password)
         database = pymysql.connect(
@@ -313,6 +315,7 @@ def set_database():
         )
         cursor = database.cursor()
         cursor.execute("update user set host = '%' where user='root';")
+        cursor.execute("flush privileges;")
         cursor.execute("grant system_user on *.*  to 'root';")
         cursor.execute("flush privileges;")
         cursor.execute("DELETE FROM mysql.user WHERE user='canal';")
@@ -322,7 +325,7 @@ def set_database():
         cursor.execute("GRANT ALL PRIVILEGES ON *.* TO 'canal'@'%';")
         cursor.execute("flush privileges;")
         click.echo("[INFO] Mysql database root permissions and canal user generation were successful")
-    except (IOError, pymysql.err.OperationalError):
+    except (IOError, pymysql.err.OperationalError, pymysql.err.InternalError):
         click.echo("[ERROR] Failed to root mysql database and generate canal user")
         sys.exit(0)
     finally:
@@ -331,11 +334,11 @@ def set_database():
 
 
 @click.command("deploy", help="deploy microservices in one click")
-@click.option("-ip", help="service ip")
-@click.option('-env', multiple=True, type=str, help='env rpms', default=ENV_RPMS)
-@click.option('-exclude-env', multiple=True, type=str, help="It doesn't need to be installed env rpms")
-@click.option('-service', multiple=True, type=str, help='installed microservices', default=MICROSERVICES_RPMS)
-@click.option('-exclude-service', multiple=True, type=str, help="It doesn't need to be installed microservices")
+@click.option("--ip", help="service ip")
+@click.option('--env', multiple=True, type=str, help='env rpms', default=ENV_RPMS)
+@click.option('--exclude-env', multiple=True, type=str, help="It doesn't need to be installed env rpms")
+@click.option('--service', multiple=True, type=str, help='installed microservices', default=MICROSERVICES_RPMS)
+@click.option('--exclude-service', multiple=True, type=str, help="It doesn't need to be installed microservices")
 @click.option("-a", "--all-install", help="Install full service", default=False, is_flag=True, flag_value=True)
 def deploy(ip, env, exclude_env, service, exclude_service, all_install):
     """

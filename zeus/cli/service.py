@@ -11,11 +11,12 @@
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
 import os
-import time
 import sys
-import click
-from zeus.cli.settings import ConfigHandle
+import time
 
+import click
+
+from zeus.cli.settings import ConfigHandle
 
 WSGI_FOLDER = "/opt/aops/uwsgi"
 MODULES = {
@@ -56,7 +57,6 @@ def start_service(service_name):
 
 
 def create_uwsgi_config(service_name: str, config):
-
     if not os.path.exists(WSGI_FOLDER):
         os.makedirs(WSGI_FOLDER)
     if service_name in MODULES:
@@ -85,7 +85,6 @@ module={module}
 pidfile={pidfile}
 callable=app
 http-timeout={config.http_timeout}
-harakiri={config.harakiri}
 processes={config.processes}
 daemonize={config.daemonize}
 """
@@ -103,9 +102,9 @@ threads={config.threads}
     click.echo(f"[INFO] Create {service_name} uwsgi file ok,path is {os.path.join(WSGI_FOLDER, service_name + '.ini')}")
 
 
-@click.command("service", help="")
-@click.option("-name", help="service name", required=True)
-@click.option("-stop", help="stop service", default=False, is_flag=True, flag_value=True)
+@click.command("service", help="starting or stopping a microservice")
+@click.option("--name", help="service name", required=True)
+@click.option("--stop", help="stop service", default=False, is_flag=True, flag_value=True)
 def service(name, stop):
     """
     service start or stop
