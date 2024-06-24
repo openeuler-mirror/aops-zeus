@@ -1,0 +1,9 @@
+- name: sync config to host
+  hosts: all
+  remote_user: root
+  gather_facts: no
+  max_fail_percentage: 30
+  serial: "{{ serial_count }}"
+  strategy: free
+  roles:
+    - ../roles/sync_domain_config

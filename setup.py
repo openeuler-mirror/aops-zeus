@@ -26,6 +26,7 @@ setup(
     author='cmd-lsw-yyy-zyc',
     data_files=[
         ('/etc/aops', ['conf/zeus.ini']),
+        ('/etc/aops', ['conf/zeus_crontab.yml']),
         ('/usr/lib/systemd/system', ['aops-zeus.service']),
         ("/opt/aops/database", ["database/zeus.sql"]),
     ],

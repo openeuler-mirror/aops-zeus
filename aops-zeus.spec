@@ -37,6 +37,7 @@ cp -r database %{buildroot}/opt/aops/
 %files
 %doc README.*
 %attr(0644,root,root) %{_sysconfdir}/aops/zeus.ini
+%attr(0644,root,root) %{_sysconfdir}/aops/zeus_crontab.yml
 %attr(0755,root,root) %{_bindir}/aops-zeus
 %attr(0755,root,root) %{_unitdir}/aops-zeus.service
 %{python3_sitelib}/aops_zeus*.egg-info

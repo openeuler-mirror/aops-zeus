@@ -57,9 +57,14 @@ ADD_GROUP = "/manage/host/group/add"
 DELETE_GROUP = "/manage/host/group/delete"
 GET_GROUP = "/manage/host/group/get"
 
+ADD_HOST_SYNC_STATUS = "/manage/host/sync/status/add"
+DELETE_HOST_SYNC_STATUS = "/manage/host/sync/status/delete"
+GET_HOST_SYNC_STATUS = "/manage/host/sync/status/get"
+
 COLLECT_CONFIG = '/manage/config/collect'
 SYNC_CONFIG = '/manage/config/sync'
 OBJECT_FILE_CONFIG = '/manage/config/objectfile'
+BATCH_SYNC_CONFIG = '/manage/config/batch/sync'
 
 USER_LOGIN = "/manage/account/login"
 LOGOUT = "/manage/account/logout"
@@ -94,6 +99,11 @@ VUL_TASK_CVE_SCAN_NOTICE = "/vulnerability/task/callback/cve/scan/notice"
 CHECK_IDENTIFY_SCENE = "/check/scene/identify"
 CHECK_WORKFLOW_HOST_EXIST = '/check/workflow/host/exist'
 
+# ragdoll
+DOMAIN_LIST_API = "/domain/queryDomain"
+EXPECTED_CONFS_API = "/confs/queryExpectedConfs"
+DOMAIN_CONF_DIFF_API = "/confs/domain/diff"
+
 # host template file content
 HOST_TEMPLATE_FILE_CONTENT = """host_ip,ssh_port,ssh_user,password,ssh_pkey,host_name,host_group_name,management
 127.0.0.1,22,root,password,private key,test_host,test_host_group,FALSE
@@ -106,6 +116,18 @@ HOST_TEMPLATE_FILE_CONTENT = """host_ip,ssh_port,ssh_user,password,ssh_pkey,host
 "4. 上传本文件前,请删除此部分提示内容",,,,,,,
 """
 
+# ansible sync config
+PARENT_DIRECTORY = "/opt/aops/ansible_task/"
+HOST_PATH_FILE = "/opt/aops/ansible_task/inventory/"
+SYNC_CONFIG_YML = "/opt/aops/ansible_task/playbook_entries/sync_config.yml"
+SYNC_LOG_PATH = "/var/log/aops/sync/"
+KEY_FILE_PREFIX = "/tmp/"
+KEY_FILE_SUFFIX = "_id_dsa"
+IP_START_PATTERN = r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}"
+
+DIRECTORY_FILE_PATH_LIST = ["/etc/pam.d"]
+
+TIMED_TASK_CONFIG_PATH = "/etc/aops/zeus_crontab.yml"
 
 # cve task status
 class CveTaskStatus:

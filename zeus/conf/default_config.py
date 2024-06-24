@@ -32,7 +32,10 @@ apollo = {"IP": "127.0.0.1", "PORT": 11116}
 
 redis = {"IP": "127.0.0.1", "PORT": 6379}
 
-
 prometheus = {"IP": "127.0.0.1", "PORT": 9090, "QUERY_RANGE_STEP": "15s"}
 
 agent = {"DEFAULT_INSTANCE_PORT": 8888}
+
+serial = {"SERIAL_COUNT": 10}
+
+update_sync_status = {"UPDATE_SYNC_STATUS_ADDRESS": "http://127.0.0.1", "UPDATE_SYNC_STATUS_PORT": 11114}

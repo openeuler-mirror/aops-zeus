@@ -53,3 +53,18 @@ class ObjectFileConfigSchema(Schema):
     """
     host_id = fields.Integer(required=True, validate=lambda s: s > 0)
     file_directory = fields.String(required=True, validate=lambda s: len(s) > 0)
+
+
+class SingleSyncConfig(Schema):
+    file_path = fields.String(required=True, validate=lambda s: len(s) > 0)
+    content = fields.String(required=True, validate=lambda s: len(s) > 0)
+
+
+class BatchSyncConfigSchema(Schema):
+    """
+        validators for SyncConfigSchema
+    """
+    host_ids = fields.List(fields.Integer(required=True, validate=lambda s: s > 0), required=True,
+                           validate=lambda s: len(s) > 0)
+    file_path_infos = fields.List(fields.Nested(SingleSyncConfig(), required=True), required=True,
+                                  validate=lambda s: len(s) > 0)
