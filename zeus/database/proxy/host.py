@@ -278,6 +278,7 @@ class HostProxy(MysqlProxy):
                 "management": host.management,
                 "scene": host.scene,
                 "os_version": host.os_version,
+                "status": host.status,
                 "ssh_port": host.ssh_port,
             }
             result['host_infos'].append(host_info)
@@ -320,6 +321,64 @@ class HostProxy(MysqlProxy):
             Host.ssh_user,
         ]
         filters = {Host.user == username} if not is_collect_file else set()
+        if host_list:
+            filters.add(Host.host_id.in_(host_list))
+        try:
+            hosts = self.session.query(*query_fields).filter(*filters).all()
+            for host in hosts:
+                host_info = {
+                    "host_id": host.host_id,
+                    "host_group_name": host.host_group_name,
+                    "host_name": host.host_name,
+                    "host_ip": host.host_ip,
+                    "management": host.management,
+                    "status": host.status,
+                    "scene": host.scene,
+                    "os_version": host.os_version,
+                    "ssh_port": host.ssh_port,
+                    "pkey": host.pkey,
+                    "ssh_user": host.ssh_user,
+                }
+                result.append(host_info)
+            LOGGER.debug("query host %s basic info succeed", host_list)
+            return SUCCEED, result
+        except sqlalchemy.exc.SQLAlchemyError as error:
+            LOGGER.error(error)
+            LOGGER.error("query host %s basic info fail", host_list)
+            return DATABASE_QUERY_ERROR, result
+
+    def get_host_info_by_host_id(self, data):
+        """
+        Get host basic info according to host id from table
+
+        Args:
+            data(dict): parameter, e.g.
+                {
+                    "username": "admin"
+                    "host_list": ["id1", "id2"]
+                }
+            is_collect_file (bool)
+
+        Returns:
+            int: status code
+            dict: query result
+        """
+        host_list = data.get('host_list')
+        result = []
+        query_fields = [
+            Host.host_id,
+            Host.host_name,
+            Host.host_ip,
+            Host.os_version,
+            Host.ssh_port,
+            Host.host_group_name,
+            Host.management,
+            Host.status,
+            Host.scene,
+            Host.pkey,
+            Host.ssh_user
+        ]
+        filters = set()
         if host_list:
             filters.add(Host.host_id.in_(host_list))
         try:

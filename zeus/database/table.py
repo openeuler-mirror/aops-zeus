@@ -15,7 +15,9 @@ Time:
 Author:
 Description: mysql tables
 """
-from sqlalchemy import Column, ForeignKey
+import datetime
+
+from sqlalchemy import Column, ForeignKey, DateTime, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.sqltypes import Boolean, Integer, String
@@ -145,6 +147,20 @@ class HostSyncStatus(Base, MyBase):
     sync_status = Column(Integer, default=0)
 
 
+class ConfTraceInfo(Base, MyBase):
+    """
+    ConfTraceInfo table
+    """
+    __tablename__ = "conf_trace_info"
+
+    UUID = Column(String(36), primary_key=True)
+    domain_name = Column(String(16))
+    host_id = Column(Integer)
+    conf_name = Column(String(100))
+    info = Column(Text)
+    create_time = Column(DateTime, default=datetime.datetime)
+
+
 def create_utils_tables(base, engine):
     """
     Create basic database tables, e.g. user, host, hostgroup
@@ -155,6 +171,6 @@ def create_utils_tables(base, engine):
         engine (instance): _engine.Engine instance
     """
     # pay attention, the sequence of list is important. Base table need to be listed first.
-    tables = [User, HostGroup, Host, Auth, HostSyncStatus]
+    tables = [User, HostGroup, Host, Auth, HostSyncStatus, ConfTraceInfo]
     tables_objects = [base.metadata.tables[table.__tablename__] for table in tables]
     create_tables(base, engine, tables=tables_objects)

@@ -120,6 +120,43 @@ class HostSyncProxy(MysqlProxy):
             self.session.rollback()
             return DATABASE_DELETE_ERROR
 
+    def delete_all_host_sync_status(self, data):
+        """
+        Delete host from table
+
+        Args:
+            data(dict): parameter, e.g.
+                {
+                    "host_ids": [1],
+                    "domain_name": "aops",
+                }
+
+        Returns:
+            int
+        """
+        host_ids = data['host_ids']
+        domain_name = data['domain_name']
+        try:
+            # query matched host sync status
+            if host_ids:
+                host_conf_sync_filters = {HostSyncStatus.host_id.in_(host_ids),
+                                          HostSyncStatus.domain_name == domain_name}
+            else:
+                host_conf_sync_filters = {HostSyncStatus.domain_name == domain_name}
+            hostSyncStatus = self.session.query(HostSyncStatus). \
+                filter(*host_conf_sync_filters). \
+                all()
+            for host_sync in hostSyncStatus:
+                self.session.delete(host_sync)
+            self.session.commit()
+            LOGGER.info(f"delete {domain_name} {host_ids} host sync status succeed")
+            return SUCCEED
+        except sqlalchemy.exc.SQLAlchemyError as error:
+            LOGGER.error(error)
+            LOGGER.error("delete host sync status fail")
+            self.session.rollback()
+            return DATABASE_DELETE_ERROR
+
     def get_host_sync_status(self, data) -> Tuple[int, dict]:
         host_id = data['host_id']
         domain_name = data['domain_name']
