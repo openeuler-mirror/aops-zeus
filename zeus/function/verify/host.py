@@ -171,6 +171,15 @@ class DeleteHostSyncStatusSchema(Schema):
     domain_name = fields.String(required=True, validate=lambda s: len(s) > 0)
 
 
+class DeleteAllHostSyncStatusSchema(Schema):
+    """
+    validators for parameter of /manage/host/sync/status/delete
+    """
+
+    host_ids = fields.List(fields.Integer(), required=False)
+    domain_name = fields.String(required=True, validate=lambda s: len(s) > 0)
+
+
 class GetHostSyncStatusSchema(Schema):
     """
     validators for parameter of /manage/host/sync/status/get
