@@ -15,7 +15,6 @@ Time:
 Author:
 Description:
 """
-from flask import g
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.scoping import scoped_session
 from vulcanus.database.helper import make_mysql_engine_url
