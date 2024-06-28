@@ -56,12 +56,18 @@ from zeus.conf.constant import (
     BATCH_SYNC_CONFIG,
     ADD_HOST_SYNC_STATUS,
     DELETE_HOST_SYNC_STATUS,
-    GET_HOST_SYNC_STATUS
+    GET_HOST_SYNC_STATUS,
+    CONF_TRACE_MGMT,
+    CONF_TRACE_DATA,
+    CONF_TRACE_QUERY,
+    CONF_TRACE_DELETE,
+    DELETE_ALL_HOST_SYNC_STATUS
 )
 from zeus.config_manager import view as config_view
 from zeus.host_manager import view as host_view
 from zeus.metric_manager import view as metric_view
 from zeus.vulnerability_manage import view as vulnerability_view
+from zeus.conftrace_manage import view as conf_trace_view
 
 URLS = []
 
@@ -88,6 +94,7 @@ SPECIFIC_URLS = {
         (host_view.GetHostTemplateFile, GET_HOST_TEMPLATE_FILE),
         (host_view.AddHostSyncStatus, ADD_HOST_SYNC_STATUS),
         (host_view.DeleteHostSyncStatus, DELETE_HOST_SYNC_STATUS),
+        (host_view.DeleteAllHostSyncStatus, DELETE_ALL_HOST_SYNC_STATUS),
         (host_view.GetHostSyncStatus, GET_HOST_SYNC_STATUS)
     ],
     "HOST_GROUP_URLS": [
@@ -119,6 +126,12 @@ SPECIFIC_URLS = {
         (metric_view.QueryHostMetricData, QUERY_METRIC_DATA),
         (metric_view.QueryHostMetricList, QUERY_METRIC_LIST),
     ],
+    'CONF_TRACE_URLS': [
+        (conf_trace_view.ConfTraceMgmt, CONF_TRACE_MGMT),
+        (conf_trace_view.ConfTraceData, CONF_TRACE_DATA),
+        (conf_trace_view.ConfTraceQuery, CONF_TRACE_QUERY),
+        (conf_trace_view.ConfTraceDataDelete, CONF_TRACE_DELETE),
+    ]
 }
 
 for _, value in SPECIFIC_URLS.items():

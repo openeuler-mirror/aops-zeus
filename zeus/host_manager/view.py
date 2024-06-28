@@ -49,6 +49,7 @@ from zeus.function.verify.host import (
     GetHostSchema,
     GetHostStatusSchema,
     UpdateHostSchema, AddHostSyncStatusSchema, DeleteHostSyncStatusSchema, GetHostSyncStatusSchema,
+    DeleteAllHostSyncStatusSchema
 )
 from zeus.host_manager.ssh import SSH, execute_command_and_parse_its_result, generate_key
 
@@ -1038,6 +1039,23 @@ class DeleteHostSyncStatus(BaseResponse):
             dict: response body
         """
         status_code = callback.delete_host_sync_status(params)
+        return self.response(code=status_code)
+
+
+class DeleteAllHostSyncStatus(BaseResponse):
+    @BaseResponse.handle(schema=DeleteAllHostSyncStatusSchema, proxy=HostSyncProxy, token=False)
+    def post(self, callback: HostSyncProxy, **params):
+        """
+        Add host sync status
+
+        Args:
+            host_id (int): host id
+            domain_name (str): domain name
+
+        Returns:
+            dict: response body
+        """
+        status_code = callback.delete_all_host_sync_status(params)
         return self.response(code=status_code)
 
 

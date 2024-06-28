@@ -59,6 +59,7 @@ GET_GROUP = "/manage/host/group/get"
 
 ADD_HOST_SYNC_STATUS = "/manage/host/sync/status/add"
 DELETE_HOST_SYNC_STATUS = "/manage/host/sync/status/delete"
+DELETE_ALL_HOST_SYNC_STATUS = "/manage/all/host/sync/status/delete"
 GET_HOST_SYNC_STATUS = "/manage/host/sync/status/get"
 
 COLLECT_CONFIG = '/manage/config/collect'
@@ -104,6 +105,12 @@ DOMAIN_LIST_API = "/domain/queryDomain"
 EXPECTED_CONFS_API = "/confs/queryExpectedConfs"
 DOMAIN_CONF_DIFF_API = "/confs/domain/diff"
 
+# conf trace
+CONF_TRACE_MGMT = "/conftrace/mgmt"
+CONF_TRACE_QUERY = "/conftrace/query"
+CONF_TRACE_DATA = "/conftrace/data"
+CONF_TRACE_DELETE = "/conftrace/delete"
+
 # host template file content
 HOST_TEMPLATE_FILE_CONTENT = """host_ip,ssh_port,ssh_user,password,ssh_pkey,host_name,host_group_name,management
 127.0.0.1,22,root,password,private key,test_host,test_host_group,FALSE
@@ -120,7 +127,9 @@ HOST_TEMPLATE_FILE_CONTENT = """host_ip,ssh_port,ssh_user,password,ssh_pkey,host
 PARENT_DIRECTORY = "/opt/aops/ansible_task/"
 HOST_PATH_FILE = "/opt/aops/ansible_task/inventory/"
 SYNC_CONFIG_YML = "/opt/aops/ansible_task/playbook_entries/sync_config.yml"
+CONF_TRACE_YML = "/opt/aops/ansible_task/playbook_entries/conf_trace.yml"
 SYNC_LOG_PATH = "/var/log/aops/sync/"
+CONF_TRACE_LOG_PATH = "/var/log/aops/conftrace/"
 KEY_FILE_PREFIX = "/tmp/"
 KEY_FILE_SUFFIX = "_id_dsa"
 IP_START_PATTERN = r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}"
