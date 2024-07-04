@@ -336,7 +336,7 @@ class PermissionProxy(MysqlProxy):
                 "host_group": permission["host_group"],
                 "public_key": get_public_key_pem_str(cluster_permissions[permission["cluster_id"]][-1]),
             }
-        cluster_users = None
+        cluster_users = dict()
         # Permissions for binding subsets
         if distribute_body:
             response = BaseResponse.get_response(
@@ -354,6 +354,9 @@ class PermissionProxy(MysqlProxy):
                 for cluster_id, bind_users in response_data.items()
                 if bind_users["label"] == SUCCEED
             }
+        for cluster_id in list(host_groups.keys()):
+            if cluster_id != cache.location_cluster["cluster_id"] and cluster_id not in cluster_users:
+                del host_groups[cluster_id]
         self._location_cluster_permissions(username, host_groups, cluster_users)
         return SUCCEED
 
@@ -482,8 +485,9 @@ class PermissionProxy(MysqlProxy):
 
     def _delete_user_cache(self, username):
         RedisProxy.redis_connect.delete(username + "_clusters")
-        RedisProxy.redis_connect.delete(username + "_host_groups")
+        RedisProxy.redis_connect.delete(username + "_group_hosts")
         RedisProxy.redis_connect.delete(username + "_role")
+        RedisProxy.redis_connect.delete(username + "_rsa_key")
 
     def delete_permissions(self, username, cluster_id):
         """
@@ -522,7 +526,9 @@ class PermissionProxy(MysqlProxy):
         )
         if not user_role_association:
             return SUCCEED
-        user_role_association.delete(synchronize_session=False)
+        self.session.query(UserRoleAssociation).filter(UserRoleAssociation.username == cluster_user).delete(
+            synchronize_session=False
+        )
         self.session.query(Role).filter(Role.role_id == user_role_association.role_id).delete(synchronize_session=False)
         role_permission_ids = (
             self.session.query(RolePermissionAssociation.permission_id)
