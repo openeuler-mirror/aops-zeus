@@ -10,11 +10,11 @@
 # PURPOSE.
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
-import os
 import inspect
 import logging
-import yaml
+import os
 
+import yaml
 
 MICROSERVICE_CONFIG_DIR = os.path.join("/etc/aops/", "conf.d")
 AOPS_GOLBAL_CONFIG = os.path.join("/etc/aops/", 'aops-config.yml')

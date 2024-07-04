@@ -43,13 +43,13 @@ def database_cursor(config, database="mysql"):
 def init_database(sql_file, config):
     database = database_cursor(config=config)
     if not database:
-        sys.exit(0)
+        sys.exit(-1)
     try:
         with open(sql_file, 'r', encoding='utf-8') as file:
             sql = file.read()
         if not sql:
             click.echo(f"[ERROR] Sql file is empty: {sql_file}")
-            sys.exit(0)
+            sys.exit(-1)
         cursor = database.cursor()
         cursor.execute(sql)
         click.echo(f"[INFO] Sql {sql_file} initialization was successful")
@@ -77,7 +77,7 @@ def generate_rsa_key():
 def fix_cluster_data(cluster_ip, config):
     database = database_cursor(config=config, database=config.database)
     if not database:
-        sys.exit(0)
+        sys.exit(-1)
     try:
         private_key, public_key = generate_rsa_key()
         cluster_id = str(uuid.uuid4())
@@ -108,7 +108,7 @@ def fix_cluster_data(cluster_ip, config):
 def fix_user_cluster_association_data(config):
     database = database_cursor(config=config, database=config.database)
     if not database:
-        sys.exit(0)
+        sys.exit(-1)
     try:
         cursor = database.cursor()
         cluster_id = str(uuid.uuid4())
@@ -144,12 +144,12 @@ def database(init, sql):
         sql = os.path.join("/opt/aops/database", init + ".sql")
     if not os.path.exists(sql):
         click.echo(f"[ERROR] Sql file does not exist, please check: {sql}")
-        sys.exit(0)
+        sys.exit(-1)
     try:
         config = ConfigHandle(init).parser
     except RuntimeError as error:
         click.echo(error, err=True)
-        sys.exit(0)
+        sys.exit(-1)
 
     init_database(sql_file=sql, config=config.mysql)
     if init == "zeus-host-information":
