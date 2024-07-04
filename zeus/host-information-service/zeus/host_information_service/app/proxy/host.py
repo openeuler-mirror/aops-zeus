@@ -10,12 +10,14 @@
 # PURPOSE.
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
+import json
 import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
 import sqlalchemy
 from sqlalchemy import or_
 from vulcanus.cache import RedisCacheManage
+from vulcanus.conf.constant import HOST_DELETE_TASK
 from vulcanus.database.helper import sort_and_page
 from vulcanus.database.proxy import MysqlProxy, RedisProxy
 from vulcanus.log.log import LOGGER
@@ -227,29 +229,40 @@ class HostProxy(MysqlProxy):
                 "management": False,
             }]
         """
+        cluster_id = cache.location_cluster["cluster_id"]
         right_hosts = []
         error_hosts = []
         host_ips = [host["host_ip"] for host in hosts]
-        groups = self.session.query(HostGroup.host_group_name, HostGroup.host_group_id, HostGroup.cluster_id).all()
+        groups = (
+            self.session.query(HostGroup.host_group_name, HostGroup.host_group_id, HostGroup.cluster_id)
+            .filter(HostGroup.cluster_id == cluster_id)
+            .all()
+        )
         groups_dict = {group.host_group_name: group for group in groups}
         exists_hosts = self.session.query(Host.host_ip, Host.ssh_port).filter(Host.host_ip.in_(host_ips)).all()
         host_sets = {host.host_ip + ":" + str(host.ssh_port) for host in exists_hosts}
+        repeat_check = set()
         for host in hosts:
             validate_message = ""
-            if host["host_ip"] + ":" + str(host["ssh_port"]) in host_sets:
-                validate_message = "host exists"
+            host_port = host["host_ip"] + ":" + str(host["ssh_port"])
+            if host_port in host_sets:
+                validate_message = "host exists "
 
             if host["host_group_name"] not in groups_dict:
-                validate_message += " host group not exists"
+                validate_message += "host group not exists "
+            if host_port in repeat_check:
+                validate_message = f"host port repeat: {host_port}"
 
             if validate_message:
                 host["reason"] = validate_message
                 host["result"] = "failed"
                 error_hosts.append(host)
                 continue
+
             host["host_group_id"] = groups_dict[host["host_group_name"]].host_group_id
             host["cluster_id"] = groups_dict[host["host_group_name"]].cluster_id
             right_hosts.append(host)
+            repeat_check.add(host_port)
         if error_hosts:
             return PARAM_ERROR, error_hosts
 
@@ -296,6 +309,7 @@ class HostProxy(MysqlProxy):
             self.session.commit()
             RedisProxy.redis_connect.delete(RedisCacheManage.GROUPS_HOSTS)
             RedisProxy.redis_connect.delete(*RedisProxy.redis_connect.keys("*_group_hosts"))
+            RedisProxy.redis_connect.publish(HOST_DELETE_TASK, json.dumps(host_ids))
             return SUCCEED
         except sqlalchemy.exc.SQLAlchemyError as error:
             LOGGER.error(error)

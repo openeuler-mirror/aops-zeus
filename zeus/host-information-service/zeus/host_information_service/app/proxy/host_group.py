@@ -123,7 +123,13 @@ class HostGroupProxy(MysqlProxy):
         try:
             if not self.session.query(Cluster.cluster_id).filter(Cluster.cluster_id == data['cluster_id']).first():
                 return PARAM_ERROR
-            if self.session.query(HostGroup).filter(HostGroup.host_group_name == data['host_group_name']).first():
+            if (
+                self.session.query(HostGroup)
+                .filter(
+                    HostGroup.host_group_name == data['host_group_name'], HostGroup.cluster_id == data['cluster_id']
+                )
+                .first()
+            ):
                 return DATA_EXIST
             self.session.add(HostGroup(**data, host_group_id=str(uuid.uuid4())))
             self.session.commit()

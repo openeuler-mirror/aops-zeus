@@ -10,6 +10,7 @@
 # PURPOSE.
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
+
 from sqlalchemy import Column
 from sqlalchemy.sql.sqltypes import Boolean, Integer, String
 from vulcanus.database import Base
