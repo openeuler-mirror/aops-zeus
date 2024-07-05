@@ -11,12 +11,12 @@
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
 import sys
-from zeus.cli.base import CiGroup
-from zeus.cli.service import service
-from zeus.cli.database import database
-from zeus.cli.config import config
-from zeus.cli.deploy import deploy
 
+from zeus.cli.base import CiGroup
+from zeus.cli.config import config
+from zeus.cli.database import database
+from zeus.cli.deploy import deploy
+from zeus.cli.service import service
 
 aops_cli = CiGroup(help="""Aops command tool line""")
 aops_cli.add_command(service)

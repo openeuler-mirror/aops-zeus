@@ -29,7 +29,7 @@ http {
     include /etc/nginx/conf.d/*.conf;
 
   upstream host {
-    server @host;
+    server @hosts;
   }
 
   upstream accounts {
@@ -43,6 +43,7 @@ http {
   upstream apollo {
     server @apollo;
   }
+
 
   underscores_in_headers on;
   server {
@@ -61,6 +62,12 @@ http {
     location ~ .*\.(js|css|ico|png|jpg|eot|svg|ttf|woff|html|txt|pdf|) {
         root /opt/aops/web/dist;
         expires 30d;
+    }
+    location / {
+      try_files $uri $uri/ /index.html;
+      if (!-e $request_filename){
+          rewrite ^(.*)$ /index.html last;
+      }
     }
     location /hosts {
       proxy_pass http://host;
@@ -83,7 +90,7 @@ http {
       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
       proxy_set_header Request-Header $http_request_header;
     }
-    location /vulnerability {
+    location /vulnerabilities {
       proxy_pass http://apollo;
       proxy_set_header X-Real-URL $request_uri;
       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

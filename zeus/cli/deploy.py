@@ -84,7 +84,7 @@ class SetConfig:
     def elasticsearch(self):
         if not os.path.exists(ELASTICSEARCH_CONFIG):
             click.echo(f"{ELASTICSEARCH_CONFIG} not exists")
-            sys.exit(0)
+            sys.exit(-1)
 
         click.echo("[INFO] Start doing to set elasticsearch config")
         try:
@@ -101,12 +101,12 @@ class SetConfig:
             click.echo("[INFO] The elasticsearch config is set successful")
         except (IOError, yaml.YAMLError):
             click.echo("[ERROR] The elasticsearch config is set failed")
-            sys.exit(0)
+            sys.exit(-1)
 
     def mysql(self):
         if not os.path.exists(MYSQL_CONFIG):
             click.echo(f"{MYSQL_CONFIG} not exists")
-            sys.exit(0)
+            sys.exit(-1)
         click.echo("[INFO] Start doing to set mysql config")
         try:
             with open(MYSQL_CONFIG, "w") as file:
@@ -115,12 +115,12 @@ class SetConfig:
             click.echo("[INFO] The mysql config is set successful")
         except IOError:
             click.echo("[ERROR] The mysql config is set failed")
-            sys.exit(0)
+            sys.exit(-1)
 
     def redis(self):
         if not os.path.exists(REDIS_CONFIG):
             click.echo(f"{REDIS_CONFIG} not exists")
-            sys.exit(0)
+            sys.exit(-1)
         click.echo("[INFO] Start doing to set redis config")
         try:
             with open(REDIS_CONFIG, "r") as file:
@@ -133,7 +133,7 @@ class SetConfig:
             click.echo("[INFO] The redis config is set successful")
         except IOError:
             click.echo("[ERROR] The redis config is set failed")
-            sys.exit(0)
+            sys.exit(-1)
 
     def zookeeper(self):
         pass
@@ -174,7 +174,7 @@ class SetConfig:
 
         except (IOError, RuntimeError):
             click.echo("[ERROR] The nginx config is set failed")
-            sys.exit(0)
+            sys.exit(-1)
 
 
 def call_shell_scripts(func, param=None, shell=None):
@@ -213,11 +213,11 @@ def install(env, service):
         if rpm in env:
             if not call_shell_scripts(func=func):
                 click.echo(f"[ERROR] Failed to install {rpm}")
-                sys.exit(0)
+                sys.exit(-1)
         if rpm == "service":
             if not call_shell_scripts(func=func, param=" ".join(service)):
                 click.echo(f"[ERROR] Failed to install {' '.join(service)}")
-                sys.exit(0)
+                sys.exit(-1)
 
 
 def set_config(env, service, ip):
@@ -243,7 +243,7 @@ def set_config(env, service, ip):
     # Set up the microservice configuration
     if not os.path.exists(AOPS_GOLBAL_CONFIG):
         click.echo(f"[ERROR] {AOPS_GOLBAL_CONFIG} does not exist")
-        sys.exit(0)
+        sys.exit(-1)
 
     click.echo("[INFO] Start doing to set aops global config")
     try:
@@ -263,7 +263,7 @@ def set_config(env, service, ip):
         click.echo("[INFO] The aops global config is set successful")
     except (IOError, yaml.YAMLError):
         click.echo("[ERROR] The aops global config is set failed")
-        sys.exit(0)
+        sys.exit(-1)
 
 
 def init_serivce_database(services):
@@ -303,7 +303,7 @@ def set_database():
         config = ConfigHandle().parser
     except RuntimeError as error:
         click.echo(error, err=True)
-        sys.exit(0)
+        sys.exit(-1)
 
     database = None
     try:
@@ -327,7 +327,7 @@ def set_database():
         click.echo("[INFO] Mysql database root permissions and canal user generation were successful")
     except (IOError, pymysql.err.OperationalError, pymysql.err.InternalError):
         click.echo("[ERROR] Failed to root mysql database and generate canal user")
-        sys.exit(0)
+        sys.exit(-1)
     finally:
         if database:
             database.close()

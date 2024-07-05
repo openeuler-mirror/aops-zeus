@@ -30,7 +30,7 @@ def stop_service(service_name):
     pidfile = os.path.join(WSGI_FOLDER, service_name + ".pid")
     if not os.path.exists(pidfile):
         click.echo(f"[ERROR] {service_name} service is not running")
-        sys.exit(0)
+        sys.exit(-1)
 
     os.system(f"uwsgi --stop {pidfile}")
     os.remove(pidfile)
@@ -45,13 +45,13 @@ def start_service(service_name):
     ini = os.path.join(WSGI_FOLDER, service_name + ".ini")
     if not os.path.exists(ini):
         click.echo(f"[ERROR] {service_name} service config file does not exists")
-        sys.exit(0)
+        sys.exit(-1)
 
     os.system(f"uwsgi --ini {ini} --enable-threads")
     time.sleep(3)
     if not os.path.exists(pid):
         click.echo(f"[ERROR] {service_name} service start failed")
-        sys.exit(0)
+        sys.exit(-1)
 
     click.echo(f"[INFO] Start {service_name} service is successful")
 
@@ -87,6 +87,8 @@ callable=app
 http-timeout={config.http_timeout}
 processes={config.processes}
 daemonize={config.daemonize}
+vacuum=true
+need-app=true
 """
         if config.gevent:
             uwsgi_file += f"""
@@ -102,7 +104,7 @@ threads={config.threads}
     click.echo(f"[INFO] Create {service_name} uwsgi file ok,path is {os.path.join(WSGI_FOLDER, service_name + '.ini')}")
 
 
-@click.command("service", help="starting or stopping a microservice")
+@click.command("service", help="")
 @click.option("--name", help="service name", required=True)
 @click.option("--stop", help="stop service", default=False, is_flag=True, flag_value=True)
 def service(name, stop):
@@ -117,7 +119,7 @@ def service(name, stop):
 
     except RuntimeError as error:
         click.echo(error, err=True)
-        sys.exit(0)
+        sys.exit(-1)
 
     if stop:
         stop_service(name)
