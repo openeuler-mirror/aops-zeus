@@ -30,7 +30,6 @@ class UpstreamService:
     apollo: str = "@apollo"
     accounts: str = "@accounts"
     distribute: str = "@distribute"
-    ragdoll: str = "@ragdoll"
 
 
 MYSQL = "mysql-server"
@@ -60,7 +59,6 @@ NGINX_UPSTREAM_SERVICE = {
     "aops-apollo": UpstreamService.apollo,
     "zeus-user-access": UpstreamService.accounts,
     "zeus-distribute": UpstreamService.distribute,
-    "ragdoll": UpstreamService.ragdoll,
 }
 
 ELASTICSEARCH_CONFIG = "/etc/elasticsearch/elasticsearch.yml"
@@ -276,7 +274,7 @@ def init_serivce_database(services):
         services: microservice package
     """
     for service in services:
-        if service not in ("zeus-host-information", "aops-apollo", "zeus-user-access", "gala-ragdoll"):
+        if service not in ("zeus-host-information", "aops-apollo", "zeus-user-access"):
             continue
         call_shell_scripts(func="init_service_database", param=service)
 
