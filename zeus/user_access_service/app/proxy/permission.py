@@ -17,26 +17,22 @@ import uuid
 import sqlalchemy
 from flask import g
 from sqlalchemy import func
-from vulcanus.conf.constant import ADMIN_USER, DISTRIBUTE, PERMISSION_BIND, PERMISSIONS, UserRoleType
+from vulcanus.conf.constant import (ADMIN_USER, DISTRIBUTE, PERMISSION_BIND, PERMISSIONS,
+                                    UserRoleType)
 from vulcanus.database.helper import sort_and_page
 from vulcanus.database.proxy import MysqlProxy, RedisProxy
 from vulcanus.log.log import LOGGER
-from vulcanus.restful.resp.state import DATABASE_DELETE_ERROR, DATABASE_INSERT_ERROR, DATABASE_QUERY_ERROR, SUCCEED
+from vulcanus.restful.resp.state import (DATABASE_DELETE_ERROR, DATABASE_INSERT_ERROR,
+                                         DATABASE_QUERY_ERROR, SUCCEED)
 from vulcanus.restful.response import BaseResponse
 from vulcanus.rsa import generate_rsa_key_pair, get_private_key_pem_str, get_public_key_pem_str
 
 from zeus.user_access_service.app import cache
 from zeus.user_access_service.app.serialize.permission import GetAccountPage_ResponseSchema
 from zeus.user_access_service.app.settings import configuration
-from zeus.user_access_service.database.table import (
-    Permission,
-    Role,
-    RolePermissionAssociation,
-    User,
-    UserClusterAssociation,
-    UserMap,
-    UserRoleAssociation,
-)
+from zeus.user_access_service.database.table import (Permission, Role, RolePermissionAssociation,
+                                                     User, UserClusterAssociation, UserMap,
+                                                     UserRoleAssociation)
 
 
 class PermissionProxy(MysqlProxy):
@@ -240,9 +236,9 @@ class PermissionProxy(MysqlProxy):
             else []
         )
         # delete permissions
-        self.session.query(UserClusterAssociation).filter(
-            UserClusterAssociation.username == username, UserClusterAssociation.cluster_username != None
-        ).delete(synchronize_session=False)
+        self.session.query(UserClusterAssociation).filter(UserClusterAssociation.username == username).delete(
+            synchronize_session=False
+        )
         if cluster_users:
             for cluster_id, user_cluster in cluster_users.items():
                 user_cluster_associations.append(
