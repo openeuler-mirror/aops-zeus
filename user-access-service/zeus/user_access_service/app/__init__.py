@@ -10,11 +10,14 @@
 # PURPOSE.
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
+from celery import Celery
 from vulcanus.cache import RedisCacheManage
 from vulcanus.database.proxy import RedisProxy
+from zeus.user_access_service.app.constant import BACKEND, BROKER
 from zeus.user_access_service.app.settings import configuration
 
 if RedisProxy.redis_connect is None:
     RedisProxy()
 
 cache = RedisCacheManage(domain=configuration.domain, redis_client=RedisProxy.redis_connect)
+celery_client = Celery('tasks', broker=BROKER, backend=BACKEND)
