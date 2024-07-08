@@ -1,0 +1,6 @@
+uwsgi:
+  port: 11113
+  daemonize: /var/log/aops/uwsgi/distribute.log
+  http_timeout: 180
+  processes: 1
+  gevent: 100
