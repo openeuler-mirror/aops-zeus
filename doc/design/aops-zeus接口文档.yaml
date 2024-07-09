@@ -8,7 +8,7 @@ schemes:
 host: localhost.com
 basePath: /
 tags:
-  - name: account
+  - name: accounts
     description: |
       token认证
   - name: host_manage
@@ -19,10 +19,10 @@ tags:
   - name: vulnerability_manager
   - name: metric
 paths:
-  /manage/account/user/add:
+  /accounts/register:
     post:
       tags:
-        - account
+        - accounts
       description: 添加用户
       operationId: AddUser
       consumes:
@@ -49,10 +49,10 @@ paths:
           schema:
             $ref: '#/definitions/OperateSuccess'
       x-apidesigner: 0
-  /manage/account/login:
+  /accounts/login:
     post:
       tags:
-        - account
+        - accounts
       description: 用户登录
       operationId: login
       consumes:
@@ -74,10 +74,10 @@ paths:
           schema:
             $ref: '#/definitions/UserLoginRsp'
       x-apidesigner: 1
-  /manage/account/change:
-    post:
+  /accounts/password:
+    put:
       tags:
-        - account
+        - accounts
       description: 修改密码
       operationId: ChangePassword
       parameters:
@@ -97,10 +97,417 @@ paths:
           schema:
             $ref: '#/definitions/OperateSuccess'
       x-apidesigner: 2
-  /manage/account/authredirecturl:
+    post:
+      tags:
+        - accounts
+      description: 重置密码
+      operationId: ResetPassword
+      parameters:
+        - name: username
+          in: formData
+          required: true
+          description: 用户名
+          type: string
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+      responses:
+        '200':
+          description: 重置密码响应
+          schema:
+            $ref: '#/definitions/OperateSuccess'
+      x-apidesigner: 2
+  /accounts/cluster/register:
+    post:
+      tags:
+        - accounts
+      description: 纳管集群
+      operationId: ClusterRegister
+      consumes:
+        - application/x-www-form-urlencoded
+      parameters:
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+        - name: cluster_name
+          in: formData
+          required: true
+          description: 集群名
+          type: string
+        - name: description
+          in: formData
+          required: true
+          description: 集群描述
+          type: string
+        - name: cluster_ip
+          in: formData
+          required: true
+          description: 集群ip
+          type: string
+        - name: cluster_username
+          in: formData
+          required: true
+          description: 集群用户名
+          type: string
+        - name: cluster_password
+          in: formData
+          required: true
+          description: 集群密码
+          type: string
+      responses:
+        '200':
+          description: 纳管集群响应
+          schema:
+            $ref: '#/definitions/OperateSuccess'
+      x-apidesigner: 3
+  /accounts/cluster/bind: 
+    post:
+      tags:
+        - accounts
+      description: 子集群绑定总控
+      operationId: ClusterBind
+      consumes:
+        - application/x-www-form-urlencoded
+      parameters:
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+        - name: username
+          in: formData
+          required: true
+          description: 集群用户名
+          type: string
+        - name: password
+          in: formData
+          required: true
+          description: 集群用户密码
+          type: string
+        - name: manager_username
+          in: formData
+          required: true
+          description: 总控管理员用户名
+          type: string
+        - name: manager_cluster_id
+          in: formData
+          required: true
+          description: 总控集群id
+          type: string
+        - name: public_key
+          in: formData
+          required: true
+          description: 公钥
+          type: string
+      responses:
+        '200':
+          description: 子集群绑定总控响应
+          schema:
+            $ref: '#/definitions/ClusterBindRsp'
+      x-apidesigner: 4
+  /accounts/cluster:
+    delete:
+      tags:
+        - accounts
+      description: 取消纳管集群
+      operationId: DeleteCluster
+      consumes:
+        - application/x-www-form-urlencoded
+      parameters:
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+        - name: cluster_id
+          in: formData
+          required: true
+          description: 集群id
+          type: string
+      responses:
+        '200':
+          description: 取消纳管集群
+          schema:
+            $ref: '#/definitions/OperateSuccess'
+      x-apidesigner: 5
     get:
       tags:
-        - account
+        - accounts
+      description: 用户管理集群信息查看
+      operationId: ClusterInfoQuery
+      consumes:
+        - application/x-www-form-urlencoded
+      parameters:
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+      responses:
+        '200':
+          description: 用户管理集群信息查看
+          schema:
+            $ref: '#/definitions/ClusterInfoRsp'
+      x-apidesigner: 8
+  /accounts/cluster/cancle: 
+    delete:
+      tags:
+        - accounts
+      description: 子集群取消与总控绑定
+      operationId: ClusterCancle
+      consumes:
+        - application/x-www-form-urlencoded
+      parameters:
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+        - name: cluster_id
+          in: formData
+          required: true
+          description: 集群id
+          type: string
+        - name: cluster_username
+          in: formData
+          required: true
+          description: 集群用户名
+          type: string
+        - name: signature
+          in: formData
+          required: true
+          description: 签名
+          type: string
+      responses:
+        '200':
+          description: 子集群取消与总控绑定
+          schema:
+            $ref: '#/definitions/OperateSuccess'
+      x-apidesigner: 6
+  /accounts/cluster/key:
+    get:
+      tags:
+        - accounts
+      description: 用户公私钥查看
+      operationId: KeyInfoQuery
+      consumes:
+        - application/x-www-form-urlencoded
+      parameters:
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+        - name: cluster_id
+          in: formData
+          required: true
+          description: 集群id
+          type: array
+      responses:
+        '200':
+          description: 用户公私钥查看
+          schema:
+            $ref: '#/definitions/ClusterKeyRsp'
+      x-apidesigner: 7
+  /accounts/permission/cache:
+    get:
+      tags:
+        - accounts
+      description: 缓存用户权限
+      operationId: CacheUserPermission
+      consumes:
+        - application/x-www-form-urlencoded
+      parameters:
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+      responses:
+        '200':
+          description: 缓存用户权限
+          schema:
+            $ref: '#/definitions/OperateSuccess'
+      x-apidesigner: 8
+  /accounts/all: 
+    get:
+      tags:
+        - accounts
+      description: 所有用户账户查看
+      operationId: AllAccountsQuery
+      consumes:
+        - application/x-www-form-urlencoded
+      parameters:
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+      responses:
+        '200':
+          description: 所有用户账户查看
+          schema:
+            $ref: '#/definitions/AccountsAllRsp'
+      x-apidesigner: 8
+  /accounts: 
+    get:
+      tags:
+        - accounts
+      description: 分页查看用户列表
+      operationId: AccountsPageQuery
+      consumes:
+        - application/x-www-form-urlencoded
+      parameters:
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+        - name: username
+          in: formData
+          required: false
+          description: 用户名
+          type: string
+        - name: page
+          in: formData
+          required: true
+          description: 当前页
+          type: integer
+        - name: per_page
+          in: formData
+          required: true
+          description: 每页多少数据
+          type: integer
+      responses:
+        '200':
+          description: 分页查看用户列表
+          schema:
+            $ref: '#/definitions/AccountsPageInfoRsp'
+      x-apidesigner: 9
+  /accounts/permission: 
+    get:
+      tags:
+        - accounts
+      description: 查看用户权限
+      operationId: AccountsPermissionQuery
+      consumes:
+        - application/x-www-form-urlencoded
+      parameters:
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+        - name: username
+          in: formData
+          required: true
+          description: 用户名
+          type: string
+        - name: cluster_id
+          in: formData
+          required: false
+          description: 集群id
+          type: string
+      responses:
+        '200':
+          description: 查看用户权限
+          schema:
+            $ref: '#/definitions/GetAccountPermissionRsp'
+    post:
+      tags:
+        - accounts
+      description: 添加用户权限
+      operationId: AddAccountPermission
+      consumes:
+        - application/x-www-form-urlencoded
+      parameters:
+        - name: access_token
+          in: header
+          required: true
+          description: 授权码
+          type: string
+        - name: username
+          in: formData
+          required: true
+          description: 用户名
+          type: string
+        - name: permission
+          in: formData
+          required: true
+          description: 用户权限
+          type: array
+      responses:
+        '200':
+          description: 添加用户权限
+          schema:
+            $ref: '#/definitions/OperateSuccess'
+    delete:
+      tags:
+        - accounts
+      description: 删除用户权限
+      operationId: DeleteAccountPermission
+      consumes:
+        - application/x-www-form-urlencoded
+      parameters:
+        - name: manager_username
+          in: formData
+          required: true
+          description: 总控用户名
+          type: string
+        - name: cluster_id
+          in: formData
+          required: true
+          description: 集群id
+          type: string
+      responses:
+        '200':
+          description: 删除用户权限
+          schema:
+            $ref: '#/definitions/OperateSuccess'
+      x-apidesigner: 10
+  /accounts/permission/bind: 
+    post:
+      tags:
+        - accounts
+      description: 子集群绑定权限
+      operationId: PermissionBind
+      consumes:
+        - application/x-www-form-urlencoded
+      parameters:
+        - name: cluster_id
+          in: formData
+          required: true
+          description: 总控集群id
+          type: string
+        - name: manager_username
+          in: formData
+          required: true
+          description: 总控用户名
+          type: string
+        - name: host_group
+          in: formData
+          required: true
+          description: 集群新用户权限
+          type: array
+        - name: public_key
+          in: formData
+          required: true
+          description: 总控生成的公钥
+          type: string
+      responses:
+        '200':
+          description: 子集群绑定权限
+          schema:
+            $ref: '#/definitions/PermissionBindRsp'
+      x-apidesigner: 11
+  /accounts/auth/redirecturl:
+    get:
+      tags:
+        - accounts
       description: gitee授权登录跳转
       operationId: Authredirecturl
       responses:
@@ -108,11 +515,11 @@ paths:
           description: gitee授权登录跳转的响应
           schema:
             $ref: '#/definitions/AuthRedirectSuccess'
-      x-apidesigner: 2
-  /manage/account/gitee/login:
+      x-apidesigner: 12
+  /accounts/gitee/login: 
     post:
       tags:
-        - account
+        - accounts
       description: gitee授权登录
       operationId: GiteeLogin
       parameters:
@@ -125,12 +532,12 @@ paths:
         '200':
           description: gitee登录响应
           schema:
-            $ref: '#/definitions/UserLoginRsp'
-      x-apidesigner: 2
-  /manage/account/bindaccount:
+            $ref: '#/definitions/GiteeLoginRsp'
+      x-apidesigner: 13
+  /accounts/auth/bind: 
     post:
       tags:
-        - account
+        - accounts
       description: 本地用户和鉴权用户绑定
       operationId: BindAccount
       parameters:
@@ -153,8 +560,10 @@ paths:
         '200':
           description: 用户绑定响应
           schema:
-            $ref: '#/definitions/UserLoginRsp'
-      x-apidesigner: 2
+            $ref: '#/definitions/GiteeBindRsp'
+      x-apidesigner: 14
+
+
   /manage/host/add:
     post:
       tags:
@@ -1394,9 +1803,240 @@ definitions:
               refresh_token:
                 type: string
                 description: 获取新token的刷新token，相比token有效期更长
+              type:
+                type: string
+                description: 用户类型
+              username:
+                type: string
+                description: 用户名
             required:
               - token
               - refresh_token
+              - type
+              - username
+  ClusterBindRsp:
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - type: object
+        properties:
+          data:
+            type: object
+            properties:
+              cluster_id:
+                type: string
+                description: 集群id
+              user_name:
+                type: string
+                description: 用户名
+            required:
+              - cluster_id
+              - user_name
+  ClusterKeyRsp:
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - type: object
+        properties:
+          data:
+            type: array
+            items:
+              properties:
+                cluster_id:
+                  type: string
+                  description: 集群id
+                cluster_username:
+                  type: string
+                  description: 集群用户名
+                private_key:
+                  type: string
+                  description: 私钥
+                public_key:
+                  type: string
+                  description: 公钥
+              required:
+                - cluster_id
+                - cluster_username
+                - private_key
+                - public_key
+  ClusterInfoRsp:
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - type: object
+        properties:
+          data:
+            type: array
+            items:
+              properties: 
+                cluster_id:
+                  type: string
+                  description: 集群id
+                cluster_ip:
+                  type: string
+                  description: 集群ip
+                cluster_name:
+                  type: string
+                  description: 集群用户名
+                description:
+                  type: string
+                  description: 描述
+                subcluster:
+                  type: boolean
+                  description: 是否为子集群
+                synchronous_state:
+                  type: string
+                  description: 同步状态
+              required:
+                - cluster_id
+                - cluster_ip
+                - cluster_name
+                - description
+                - subcluster
+                - synchronous_state
+  AccountsAllRsp:
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - type: object
+        properties:
+          data:
+            type: array
+            items:  
+              properties:
+                email:
+                  type: string
+                  description: 邮箱
+                username:
+                  type: string
+                  description: 用户名
+              required:
+                - email
+                - username
+  PermissionBindRsp:
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - type: object
+        properties:
+          data:
+            type: object
+            properties:
+              username:
+                type: string
+                description: 用户名
+            required:
+              - username
+  GetAccountPermissionRsp:
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - type: object
+        properties:
+          data:
+            type: array
+            items:
+              type: object
+              properties:
+                cluster_id:
+                  type: string
+                  description: 集群id
+                host_groups:
+                  type: array
+                  items:
+                    properties: 
+                      host_group_id:
+                        type: string
+                        description: 主机组id
+                      host_group_name: 
+                        type: string
+                        description: 主机组名
+                    required:
+                      - host_group_id
+                      - host_group_name
+                cluster_name:
+                  type: string
+                  description: 集群名
+              required:
+                - cluster_id
+                - host_groups
+                - cluster_name
+  AccountsPageInfoRsp:
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - type: object
+        properties:
+          data:
+            type: object
+            properties:
+              result:
+                type: array
+                items: 
+                  properties: 
+                    user_name:
+                      type: string
+                      description: 用户名
+                    email: 
+                      type: string
+                      description: 邮箱
+                    role_type: 
+                      type: string
+                      description: 用户类型
+                    clusters_num: 
+                      type: integer
+                      description: 集群数量
+                  required:
+                    - user_name
+                    - email
+                    - role_type
+                    - clusters_num
+              total_count:
+                type: integer
+                description: 总条数
+              total_page:
+                type: integer
+                description: 总页数
+            required:
+              - result
+              - total_count
+              - total_page
+
+  GiteeLoginRsp:
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - type: object
+        properties:
+          data:
+            type: object
+            properties:
+              token:
+                type: string
+                description: 有效身份验证的token
+              refresh_token:
+                type: string
+                description: 获取新token的刷新token，相比token有效期更长
+              type:
+                type: string
+                description: 用户类型
+            required:
+              - token
+              - refresh_token
+              - type
+  GiteeBindRsp:
+    allOf:
+      - $ref: '#/definitions/OperateSuccess'
+      - type: object
+        properties:
+          data:
+            type: object
+            properties:
+              token:
+                type: string
+                description: 有效身份验证的token
+              refresh_token:
+                type: string
+                description: 获取新token的刷新token，相比token有效期更长
+              type:
+                type: string
+                description: 用户类型
+            required:
+              - token
+              - refresh_token
+              - type          
   GetHostBasicInfoRsp:
     description: 查询主机基本信息响应
     allOf:
