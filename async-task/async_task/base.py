@@ -15,13 +15,13 @@ from typing import Tuple
 
 import celery
 import paramiko
-from retrying import retry
-from paramiko.ssh_exception import SSHException
-from redis.exceptions import RedisError
-from vulcanus.database.proxy import RedisProxy
-from vulcanus.log.log import LOGGER
 from async_task.settings import configuration
 from async_task.ssh import SSHClient, SSHClientConfig
+from paramiko.ssh_exception import SSHException
+from redis.exceptions import RedisError
+from retrying import retry
+from vulcanus.database.proxy import RedisProxy
+from vulcanus.log.log import LOGGER
 
 
 class CeleryConfig:
