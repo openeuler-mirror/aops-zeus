@@ -1,6 +1,6 @@
 uwsgi:
   port: 11119
   daemonize: /var/log/aops/uwsgi/user-access.log
-  http-timeout: 60
+  http_timeout: 60
   processes: 1
   threads: 2
