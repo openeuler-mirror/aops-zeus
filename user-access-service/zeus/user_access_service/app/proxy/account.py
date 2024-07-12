@@ -57,6 +57,59 @@ class UserProxy(MysqlProxy):
     User related table operation
     """
 
+    def register_user(self, data) -> str:
+        """Register user.
+
+        Args:
+            data (dict):
+            {
+                username (str)
+                password (str)
+                email (str)
+            }
+
+        Returns:
+            str: status_code
+        """
+        local_cluster_id = cache.location_cluster["cluster_id"]
+        return self._register_user(local_cluster_id, data)
+
+    def _register_user(self, local_cluster_id, data) -> str:
+        """Register user, bind the local cluster, and default is normal user.
+
+        Args:
+            local_cluster_id (str): local cluster id
+            data (dict):
+            {
+                username (str)
+                password (str)
+                email (str)
+            }
+
+        Returns:
+            str : status_code
+        """
+        username = data.get('username')
+        password = data.get('password')
+        email = data.get("email")
+        try:
+            if not self._check_user_not_exist(username):
+                LOGGER.error(f"add user failed, username exists: {username}")
+                return DATA_EXIST
+            self._add_user(username, password, email)
+            # bind current cluster for the user
+            self._associate_cluster_with_user(username, local_cluster_id, username, "")
+            # grant normal role for the user
+            self._grant_user_role(username=username, role_type=constant.UserRoleType.NORMAL)
+            self.session.commit()
+            LOGGER.debug("add user succeed.")
+        except sqlalchemy.exc.SQLAlchemyError as error:
+            LOGGER.error(error)
+            LOGGER.error("add user failed.")
+            self.session.rollback()
+            return DATABASE_INSERT_ERROR
+        return SUCCEED
+
     def _check_user_not_exist(self, username: str):
         query_res = self.session.query(User).filter_by(username=username).count()
         if query_res != 0:
@@ -557,7 +610,7 @@ class UserProxy(MysqlProxy):
                 LOGGER.error(f"cannot manage cluster that has managed other clusters.")
                 return TARGET_CLUSTER_MANAGE_ERROR, {}
 
-            query_res = self.session.query(UserMap.manager_cluster_id).all()
+            query_res = [user_map.manager_cluster_id for user_map in self.session.query(UserMap.manager_cluster_id).all()]
             if not query_res:
                 cluster_username = self._bind_local_cluster_with_manager(local_cluster_id, **data)
             elif set(query_res) - {manager_cluster_id}:
