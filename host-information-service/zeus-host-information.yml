@@ -1,0 +1,6 @@
+uwsgi:
+  port: 11115
+  daemonize: /var/log/aops/uwsgi/host-information.log
+  http_timeout: 60
+  processes: 1
+  gevent: 100
