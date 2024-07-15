@@ -30,11 +30,11 @@ class JsonObject:
         """
         for key, value in data.items():
             if isinstance(value, dict):
-                setattr(self, key, JsonObject(value))
+                setattr(self, key.replace('-', '_'), JsonObject(value))
             elif isinstance(value, list):
-                setattr(self, key, [JsonObject(v) if isinstance(v, dict) else v for v in value])
+                setattr(self, key.replace('-', '_'), [JsonObject(v) if isinstance(v, dict) else v for v in value])
             else:
-                setattr(self, key, value)
+                setattr(self, key.replace('-', '_'), value)
 
     def __getattr__(self, attr):
         return self.__dict__.get(attr)
