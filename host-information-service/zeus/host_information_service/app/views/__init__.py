@@ -10,3 +10,28 @@
 # PURPOSE.
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
+
+from zeus.host_information_service.app.views.host import (
+    BatchAddHostAPI,
+    HostCountAPI,
+    HostFilterAPI,
+    HostInfoManageAPI,
+    HostManageAPI,
+    HostStatusAPI,
+    HostTemplateAPI,
+    SingleHostStatusAPI,
+)
+from zeus.host_information_service.app.views.host_group import HostGroupInfoManageAPI, HostGroupManageAPI
+
+__all__ = (
+    "BatchAddHostAPI",
+    "HostManageAPI",
+    "HostInfoManageAPI",
+    "HostTemplateAPI",
+    "HostCountAPI",
+    "SingleHostStatusAPI",
+    "HostFilterAPI",
+    "HostStatusAPI",
+    "HostGroupManageAPI",
+    "HostGroupInfoManageAPI",
+)

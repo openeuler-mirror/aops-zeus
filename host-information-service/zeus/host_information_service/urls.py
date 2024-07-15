@@ -10,3 +10,42 @@
 # PURPOSE.
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
+from vulcanus.conf import constant
+
+from zeus.host_information_service.app.views.cluster import (
+    ClusterGroupInfoCacheAPI,
+    ClusterManageAPI,
+    LocalClusterIdAPI,
+)
+from zeus.host_information_service.app.views.host import (
+    BatchAddHostAPI,
+    HostCountAPI,
+    HostFilterAPI,
+    HostInfoManageAPI,
+    HostManageAPI,
+    HostStatusAPI,
+    HostTemplateAPI,
+    SingleHostStatusAPI,
+)
+from zeus.host_information_service.app.views.host_group import (
+    AllHostGroupMapAPI,
+    HostGroupInfoManageAPI,
+    HostGroupManageAPI,
+)
+
+URLS = [
+    (HostManageAPI, constant.HOSTS),
+    (HostInfoManageAPI, constant.HOSTS + "/<string:host_id>"),
+    (HostFilterAPI, constant.HOSTS_FILTER),
+    (BatchAddHostAPI, constant.BATCH_ADD_HOSTS),
+    (HostStatusAPI, constant.HOSTS_STATUS),
+    (SingleHostStatusAPI, constant.HOSTS_STATUS + "/<string:host_id>"),
+    (HostCountAPI, constant.HOSTS_COUNT),
+    (HostTemplateAPI, constant.HOSTS_TEMPLATE),
+    (HostGroupManageAPI, constant.HOSTS_GROUP),
+    (ClusterManageAPI, constant.CLUSTER_MANAGE),
+    (LocalClusterIdAPI, constant.LOCAL_CLUSTER_INFO),
+    (HostGroupInfoManageAPI, constant.HOSTS_GROUP + "/<string:group_id>"),
+    (ClusterGroupInfoCacheAPI, constant.CLUSTER_GROUP_CACHE),
+    (AllHostGroupMapAPI, constant.ALL_HOST_GROUP_MAP),
+]
