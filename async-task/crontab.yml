@@ -23,7 +23,6 @@
 - task: upstream
   enable: true
   timed:
-    day_of_week: 0-6
     minutes: 1
     trigger: interval
 - task: download-sa
