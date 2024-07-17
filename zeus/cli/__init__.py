@@ -10,3 +10,27 @@
 # PURPOSE.
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
+import sys
+
+from zeus.cli.base import CiGroup
+from zeus.cli.config import config
+from zeus.cli.database import database
+from zeus.cli.deploy import deploy
+from zeus.cli.service import service
+
+aops_cli = CiGroup(help="""Aops command tool line""")
+aops_cli.add_command(service)
+aops_cli.add_command(database)
+aops_cli.add_command(config)
+aops_cli.add_command(deploy)
+
+
+def main():
+    """
+    The starting method of a terminal command
+    """
+
+    aops_cli.main(args=sys.argv[1:])
+
+
+__all__ = "main"

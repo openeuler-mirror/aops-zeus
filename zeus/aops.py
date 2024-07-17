@@ -10,3 +10,20 @@
 # PURPOSE.
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
+import sys
+
+import click
+
+from zeus.cli import main
+
+
+def run():
+    try:
+        main()
+    except RuntimeError as error:
+        click.echo(click.style(error, fg="red"))
+        sys.exit(-1)
+
+
+if __name__ == "__main__":
+    run()

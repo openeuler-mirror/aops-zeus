@@ -5,8 +5,18 @@
 # You can use this software according to the terms and conditions of the Mulan PSL v2.
 # You may obtain a copy of Mulan PSL v2 at:
 #     http://license.coscl.org.cn/MulanPSL2
-# THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR
+# THIS SOFTWARE IS PROVIDED ON AN 'AS IS' BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR
 # PURPOSE.
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
+from async_task.base import AsyncTask
+from async_task.tasks import Task, async_task
+
+__all__ = ["Task", "async_task", "AsyncTask"]
+
+__version__ = "1.0.0"
+
+__author__ = "gongzt"
+
+__email__ = "gong_zhengtang@163.com"

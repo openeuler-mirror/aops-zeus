@@ -1,35 +1,35 @@
 #!/usr/bin/python3
-"""
-Description: setup up the A-ops manager service.
-"""
+# ******************************************************************************
+# Copyright (c) Huawei Technologies Co., Ltd. 2021-2021. All rights reserved.
+# licensed under the Mulan PSL v2.
+# You can use this software according to the terms and conditions of the Mulan PSL v2.
+# You may obtain a copy of Mulan PSL v2 at:
+#     http://license.coscl.org.cn/MulanPSL2
+# THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR
+# PURPOSE.
+# See the Mulan PSL v2 for more details.
+# ******************************************************************************/
 
+import os
 from setuptools import setup, find_packages
+from distutils.sysconfig import get_python_lib
 
+
+CLI_DIR = os.path.join(get_python_lib(), "zeus", "cli")
 
 setup(
     name='aops-zeus',
-    version='1.3.1',
+    version='2.0.0',
     packages=find_packages(),
-    install_requires=[
-        'marshmallow>=3.13.0',
-        'Flask',
-        'Flask-RESTful',
-        'requests',
-        'SQLAlchemy',
-        'Werkzeug',
-        'paramiko>=2.11.0',
-        "redis",
-        'prometheus_api_client',
-        'gevent',
-        "retrying"
-    ],
-    author='cmd-lsw-yyy-zyc',
+    install_requires=["click", "PyYAML", "pymysql", "kazoo"],
     data_files=[
-        ('/etc/aops', ['conf/zeus.ini']),
-        ('/etc/aops', ['conf/zeus_crontab.yml']),
-        ('/usr/lib/systemd/system', ['aops-zeus.service']),
-        ("/opt/aops/database", ["database/zeus.sql"]),
+        (CLI_DIR, ["zeus/cli/deploy.sh", "zeus/cli/nginx.conf.template"]),
     ],
-    scripts=['aops-zeus'],
+    entry_points={
+        'console_scripts': [
+            'aops-cli=zeus.aops:run',
+        ],
+    },
     zip_safe=False,
 )
