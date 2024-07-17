@@ -1,0 +1,53 @@
+# Timed task configuration file specification (YAML):
+
+# Name of a scheduled task, name should be unique, only 'upstream', 'download-sa' and 'cve-scan' and 'correct-data' e.g
+#   task: upstream
+
+
+# Whether scheduled tasks are allowed to run
+#   enable: true
+
+# meta info for the task, it's customised for user
+#   meta:
+#     cvrf_url: https://repo.openeuler.org/security/data/cvrf
+
+# Timed config, set the scheduled time and polling policy
+#   timed:
+# value between 0-6, for example, 0 means Monday, 0-6 means everyday
+#     day_of_week: 0-6
+# value between 0-23, for example, 2 means 2:00 in a day
+#     hour: 3
+# Polling strategy, The value can only be 'cron' 'date' 'interval', default value is 'cron'
+#     trigger: cron
+
+- task: upstream
+  enable: true
+  timed:
+    minutes: 1
+    trigger: interval
+- task: download-sa
+  enable: true
+  meta:
+    cvrf_url: https://repo.openeuler.org/security/data/cvrf
+  timed:
+    day_of_week: 0-6
+    hour: 3
+    trigger: cron
+- task: cve-scan
+  enable: true
+  timed:
+    day_of_week: 0-6
+    hour: 3
+    trigger: cron
+- task: correct-data
+  enable: true
+  timed:
+    minutes: 20
+    trigger: interval
+
+- task: send-notification
+  enable: true
+  timed:
+    day_of_week: 0-6
+    hour: 4
+    trigger: cron

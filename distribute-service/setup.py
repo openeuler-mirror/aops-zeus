@@ -10,3 +10,22 @@
 # PURPOSE.
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
+from setuptools import find_packages, setup
+
+setup(
+    name='zeus-distribute',
+    version='1.0.0',
+    packages=find_packages(),
+    install_requires=[
+        'Flask',
+        'Flask-RESTful',
+        'requests',
+        'gevent',
+        "retrying",
+    ],
+    data_files=[
+        ('/etc/aops/conf.d', ['zeus-distribute.yml']),
+        ('/usr/lib/systemd/system', ["zeus-distribute.service"]),
+    ],
+    zip_safe=False,
+)

@@ -1,0 +1,15 @@
+dataSourceKey: defaultDS
+destination: example
+groupId: g1
+outerAdapterKey: mysql1
+concurrent: true
+dbMapping:
+  database: aops
+  table: domain_conf_info
+  targetTable: domain_conf_info
+  targetPk:
+    domain_id: domain_id
+    conf_path: conf_path
+  mapAll: true
+  etlCondition: "where c_time>={}"
+  commitBatch: 3000 # 批量提交的大小
