@@ -34,7 +34,7 @@ A user manager service which is the foundation of aops.
 
 %package -n async-task
 Summary: A async task of aops.
-Requires:   aops-vulcanus >= v2.0.0 python3-celery
+Requires:   aops-vulcanus >= v2.0.0 python3-celery python3-paramiko
 
 
 %description -n async-task
