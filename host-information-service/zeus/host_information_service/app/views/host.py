@@ -28,7 +28,7 @@ from vulcanus.restful.response import BaseResponse
 from vulcanus.restful.serialize.validate import validate
 
 from zeus.host_information_service.app import cache
-from zeus.host_information_service.app.constant import HOST_TEMPLATE_FILE_CONTENT, HostStatus
+from zeus.host_information_service.app.constant import HostTemplate, HostStatus
 from zeus.host_information_service.app.core.ssh import SSH, generate_key
 from zeus.host_information_service.app.proxy.host import HostProxy
 from zeus.host_information_service.app.serialize.host import (
@@ -39,6 +39,7 @@ from zeus.host_information_service.app.serialize.host import (
     HostFilterSchema,
     HostInfoSchema,
     HostsInfo_ResponseSchema,
+    TemplateLangSchema,
     UpdateHostSchema,
     UpdateHostStatusSchema,
 )
@@ -481,16 +482,22 @@ class HostTemplateAPI(BaseResponse):
     Restful API: Get
     """
 
-    @BaseResponse.handle()
-    def get(self):
+    @BaseResponse.handle(schema=TemplateLangSchema)
+    def get(self, **params):
         """
         Download host template file
+
+        Args:
+            lang (str): The language code for the desired template file content.
+                If not provided or if the specified language is not supported, defaults to English ("en").
 
         Returns:
             BytesIO
         """
+        file_content = HostTemplate.get_file_content(params.get("lang"))
+
         file = BytesIO()
-        file.write(HOST_TEMPLATE_FILE_CONTENT.encode('utf-8'))
+        file.write(file_content.encode('utf-8'))
         file.seek(0)
         response = send_file(file, mimetype="application/octet-stream")
         response.headers['Content-Disposition'] = 'attachment; filename=template.csv'
