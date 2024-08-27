@@ -26,8 +26,17 @@ class AddScriptSchema(Schema):
     os_name = fields.String(required=False, validate=lambda s: 0 < len(s) <= 128)
     
     operate_id = fields.String(validate=lambda s: 0 < len(s) <= 36)
+    files = fields.Raw(required=False)
 
-ModifyScriptSchema = AddScriptSchema
+class ModifyScriptSchema(Schema):
+    script_name = fields.String(required=True, validate=lambda s: 0 < len(s) <= 128)
+    command = fields.String(required=True)
+    timeout = fields.Integer(required=False)
+    execution_user = fields.String(required=False, validate=lambda s: 0 < len(s) <= 128)
+    arch = fields.String(required=False, validate=lambda s: 0 < len(s) <= 128)
+    os_name = fields.String(required=False, validate=lambda s: 0 < len(s) <= 128)
+    
+    operate_id = fields.String(validate=lambda s: 0 < len(s) <= 36)
 
 class ScriptSchema(Schema):
     script_id = fields.String(required=True, validate=lambda s: 0 < len(s) <= 36)

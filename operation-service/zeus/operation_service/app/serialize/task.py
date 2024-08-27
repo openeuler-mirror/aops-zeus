@@ -22,6 +22,10 @@ class AddTaskSchema(Schema):
     scheduler_info = fields.Dict()
     only_push = fields.Bool(required=False)
 
+class ModifyTaskSchedulerSchema(Schema):
+    task_id = fields.String(required=True, validate=lambda s: len(s) <= 255)
+    scheduler_info = fields.Dict()
+
 class TaskSchema(Schema):
 
     task_id = fields.String(required=True, validate=lambda s: 0 < len(s) <= 36)

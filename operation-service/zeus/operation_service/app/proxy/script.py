@@ -21,7 +21,7 @@ from vulcanus.restful.resp.state import (
     SUCCEED,
 )
 from zeus.operation_service.app.serialize.script import GetScriptPage_ResponseSchema
-from zeus.operation_service.database import Script, OperateScript
+from zeus.operation_service.database import Script, OperateScript, Operate
 from zeus.operation_service.app.constant import SCRIPTS_DIR
 from zeus.operation_service.app.settings import configuration
 from zeus.operation_service.app.core.file_util import U_RW
@@ -176,7 +176,12 @@ class ScriptProxy(MysqlProxy):
             scripts_query, sort_column, page_filter["direction"], page_filter["per_page"], page_filter["page"]
         )
         result['total_page'] = total_page
-        result['script_infos'] = GetScriptPage_ResponseSchema(many=True).dump(processed_query.all())
+        script_infos = GetScriptPage_ResponseSchema(many=True).dump(processed_query.all())
+        for script in script_infos:
+            operate_script = self.session.query(OperateScript).filter_by(script_id=script['script_id']).first()
+            script['operate_id'] = operate_script.operate_id
+            script['operate_name'] = self.session.query(Operate).filter_by(operate_id=script['operate_id']).first().operate_name
+        result['script_infos'] = script_infos
         return result
 
 

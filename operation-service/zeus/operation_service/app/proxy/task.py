@@ -105,7 +105,7 @@ class TaskProxy(MysqlProxy):
         }
         return trigger_map[trigger_type](**trigger_params)
 
-    # 执行add_task时根据参数表设置定时任务
+    # 根据参数设置定时任务
     def add_task_sheduler(self, scheduler_info: dict, task_id: str):
         trigger_type = scheduler_info.get("type")
         trigger_params = scheduler_info.get("params")
@@ -118,7 +118,7 @@ class TaskProxy(MysqlProxy):
             )
             LOGGER.info("add scheduler job for task [%s] successfully", task_id)
 
-    # 执行batch_delete_task时将对应task_id的定时任务一并清除
+    # 将对应task_id的定时任务一并清除
     def del_task_sheduler(self, task_id):
         job = self.scheduler.get_job(f"scheduler_{task_id}")
         if job:
@@ -136,14 +136,12 @@ class TaskProxy(MysqlProxy):
                 self.session.add(TaskHost(task_id=task_id, host_id=host_id))
             
             task_detail, task_total = TaskDetailContext(data).get_task_detail()
-            if data.get("only_push"):
-                only_push = data.pop('only_push')
             data.pop('host_ids')
             data.pop('action_ids')
             scheduler_info = None
             if data.get("scheduler_info"):
                 scheduler_info = data.pop("scheduler_info")
-            self.session.add(Task(**data, task_id=task_id, task_detail=task_detail, task_total=task_total, only_push=only_push))
+            self.session.add(Task(**data, task_id=task_id, task_detail=task_detail, task_total=task_total))
             if scheduler_info:
                 self.add_task_sheduler(scheduler_info, task_id)
             self.session.commit()
@@ -154,6 +152,25 @@ class TaskProxy(MysqlProxy):
             self.session.rollback()
             LOGGER.error("add task [%s] fail", data['task_name'])
             return DATABASE_INSERT_ERROR
+
+    def modify_task_scheduler(self, data):
+        task_id = data.get("task_id", None)
+        if not task_id:
+            LOGGER.error("Not give param[task_id]")
+            return PARAM_ERROR
+        try:
+            _ = self.session.query(Task).filter(Task.task_id == task_id).first()
+        except sqlalchemy.exc.SQLAlchemyError as error:
+            LOGGER.error(error)
+            LOGGER.error(f"Not find task[{task_id}].")
+            return NO_DATA
+        scheduler_info = data.get("scheduler_info", None)
+        if not scheduler_info:
+            LOGGER.error("Not give param[scheduler_info]")
+            return PARAM_ERROR
+        self.del_task_sheduler(task_id)
+        self.add_task_sheduler(scheduler_info, task_id)
+        return SUCCEED
     
     def batch_delete_task(self, task_ids):
         delete_success_task_ids = list()

@@ -4,7 +4,7 @@ from vulcanus.restful.response import BaseResponse
 from vulcanus.conf.constant import HOSTS_FILTER
 
 from zeus.operation_service.app.settings import configuration
-from zeus.operation_service.app.serialize.task import GetTaskSchema, AddTaskSchema, TaskSchema
+from zeus.operation_service.app.serialize.task import GetTaskSchema, AddTaskSchema, TaskSchema, ModifyTaskSchedulerSchema
 from zeus.operation_service.app.proxy.task import TaskProxy
 from zeus.operation_service.app.core.task_manager import TaskManager
 from zeus.operation_service.app.core.framework.task.task_result.task_result_context import TaskResultContext
@@ -31,6 +31,11 @@ class TaskManageAPI(BaseResponse):
     @BaseResponse.handle(schema=AddTaskSchema, proxy=TaskProxy)
     def post(self, callback: TaskProxy, **params):
         status_code = callback.add_task(params)
+        return self.response(code=status_code)
+
+    @BaseResponse.handle(schema=ModifyTaskSchedulerSchema, proxy=TaskProxy)
+    def patch(self, callback: TaskProxy, **params):
+        status_code = callback.modify_task_scheduler(params)
         return self.response(code=status_code)
 
     
