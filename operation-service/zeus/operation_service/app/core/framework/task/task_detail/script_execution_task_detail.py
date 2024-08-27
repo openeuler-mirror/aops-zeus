@@ -1,3 +1,4 @@
+import json
 from zeus.operation_service.app.proxy.operate import OperateProxy
 from zeus.operation_service.app.proxy.script import ScriptProxy
 from zeus.operation_service.app.proxy.host import HostProxy
@@ -87,7 +88,8 @@ class BatchScriptExecutionDetail(TaskDetail):
             #     host['host_groups'].append(HostGroupProxy().get_host_group_by_id(host_group_id).get("cluster_name"))
             host['host'] = db_host.get("host_name")
             host['ip'] = db_host.get("host_ip")
-            host['arch'] = db_host.get('arch')
-            host['os_name'] = db_host.get('os_name')
+            ext_props = json.loads(db_host.get('ext_props'))
+            host['arch'] = ext_props.get('os', "").get('os_arch', "")
+            host['os_name'] = ext_props.get('os', "").get('os_name', "")
             node_list.append(host)
         return node_list

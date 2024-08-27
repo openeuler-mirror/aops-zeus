@@ -21,6 +21,7 @@ class AddTaskSchema(Schema):
     action_ids = fields.List(fields.String(required=True, validate=lambda s: 0 < len(s) <= 36))
     scheduler_info = fields.Dict()
     only_push = fields.Bool(required=False)
+    remote_path = fields.String(required=False)
 
 class ModifyTaskSchedulerSchema(Schema):
     task_id = fields.String(required=True, validate=lambda s: len(s) <= 255)

@@ -10,7 +10,7 @@ from vulcanus.database.proxy import MysqlProxy
 from vulcanus.database.helper import sort_and_page
 from vulcanus.log.log import LOGGER
 from vulcanus.restful.resp.state import (
-    DATA_DEPENDENCY_ERROR,
+    DATA_EXIST,
     OPERATION_WRONG_SUPPORT_CONFIG,
     DATABASE_UPDATE_ERROR,
     DATABASE_DELETE_ERROR,
@@ -65,7 +65,14 @@ class ScriptProxy(MysqlProxy):
             # 如果选择的操作名，则设置相关关联
             if "operate_id" in data.keys():
                 operate_id = data.pop("operate_id")
-                # TODO: 如果该操作名下已有对应arch，os_name脚本，失败
+                # 如果该操作名下已有对应arch，os_name脚本，失败
+                operate_scripte_associations = self.session.query(OperateScript).filter(OperateScript.operate_id == operate_id).all()
+                for osa in operate_scripte_associations:
+                    script_nums = self.session.query(Script).filter(Script.script_id==osa.script_id,
+                                                               Script.arch==data['arch'],
+                                                               Script.os_name==data['os_name']).count()
+                    if script_nums>0:
+                        return DATA_EXIST, operate_id
                 self.session.add(OperateScript(operate_id=operate_id, script_id=script_id))
             self.session.add(Script(**data, script_id=script_id, create_time=datetime.now()))
             self.session.commit()
