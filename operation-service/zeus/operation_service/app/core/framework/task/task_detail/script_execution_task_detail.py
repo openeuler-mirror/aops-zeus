@@ -1,5 +1,4 @@
 import json
-from zeus.operation_service.app.proxy.operate import OperateProxy
 from zeus.operation_service.app.proxy.script import ScriptProxy
 from zeus.operation_service.app.proxy.host import HostProxy
 from zeus.operation_service.app.core.framework.task.task_detail.task_detail import TaskDetail
@@ -30,13 +29,6 @@ class BatchScriptExecutionDetail(TaskDetail):
                     single_script_info['command'] = script.command
                     single_script_info['host_type'] = f"{script.os_name}_{script.arch}"
                     single_script_info['script_id'] = script.script_id
-                    # _, operate = OperateProxy().get_operate_info(operate_id=operate_id)
-                    # single_operate_info['name'] = operate.operate_name
-                    # single_operate_info['id'] = operate_id
-                    
-                    # single_operate_info['command'] = operate['command']
-                    #TODO: path需要适配
-                    # single_operate_info['path'] = operate.path
                     script_brief_info.append(single_script_info)
         script_info["scripts"] = script_brief_info
         case_list.append(script_info)

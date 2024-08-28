@@ -19,9 +19,10 @@ from vulcanus.restful.resp.state import (
     NO_DATA,
     PARAM_ERROR,
     SUCCEED,
+    Task_Dependency_Error
 )
 from zeus.operation_service.app.serialize.script import GetScriptPage_ResponseSchema
-from zeus.operation_service.database import Script, OperateScript, Operate
+from zeus.operation_service.database import Script, TaskOperate, OperateScript, Operate
 from zeus.operation_service.app.constant import SCRIPTS_DIR
 from zeus.operation_service.app.settings import configuration
 from zeus.operation_service.app.core.file_util import U_RW
@@ -90,6 +91,12 @@ class ScriptProxy(MysqlProxy):
             return PARAM_ERROR
         return self._save_file(script_id)
         
+    def _check_script_task_dependency(self, script_id):
+        operate_script_association = self.session.query(OperateScript).filter(OperateScript.script_id == script_id).first()
+        task_operate_nums = self.session.query(TaskOperate).filter(TaskOperate.operate_id == operate_script_association.operate_id).count()
+        if task_operate_nums>0:
+            return True
+        return False
 
     def batch_delete_script(self, script_ids):
         delete_success_script_ids = list()
@@ -100,10 +107,14 @@ class ScriptProxy(MysqlProxy):
                 if not script:
                     delete_success_script_ids.append(script_id)
                     continue
-                self.session.delete(script)
+                
+                if self._check_script_task_dependency(script_id):
+                    delete_failed_script_ids.append(script_id)
+                    continue
                 operate_script_associations = self.session.query(OperateScript).filter(OperateScript.script_id == script_id).all()
                 for osa in operate_script_associations:
                     self.session.delete(osa)
+                self.session.delete(script)
                 self.session.commit()
 
                 save_file_dir = os.path.join(SCRIPTS_DIR, script_id)
@@ -136,6 +147,8 @@ class ScriptProxy(MysqlProxy):
 
     def modify_script_info(self, script_id, data):
         try:
+            if self._check_script_task_dependency(script_id):
+                return Task_Dependency_Error, None
             if "operate_id" in data.keys():
                 operate_id = data.pop("operate_id")
                 self.session.query(OperateScript).filter_by(script_id = script_id).update({"operate_id": operate_id})
@@ -186,8 +199,12 @@ class ScriptProxy(MysqlProxy):
         script_infos = GetScriptPage_ResponseSchema(many=True).dump(processed_query.all())
         for script in script_infos:
             operate_script = self.session.query(OperateScript).filter_by(script_id=script['script_id']).first()
-            script['operate_id'] = operate_script.operate_id
-            script['operate_name'] = self.session.query(Operate).filter_by(operate_id=script['operate_id']).first().operate_name
+            if operate_script:
+                script['operate_id'] = operate_script.operate_id
+                script['operate_name'] = self.session.query(Operate).filter_by(operate_id=script['operate_id']).first().operate_name
+            else:
+                script['operate_id'] = ""
+                script['operate_name'] = ""
         result['script_infos'] = script_infos
         return result
 

@@ -15,7 +15,9 @@ from zeus.operation_service.app.constant import TaskOperationResultCode, WORK_DI
 from vulcanus.restful.resp.state import (
     SUCCEED,
     NO_DATA,
-    TASK_START_FAILED
+    TASK_START_FAILED,
+    TASK_RETRY_RUNNING_TASK_ERROR,
+    TASK_CANCEL_NOT_RUNNING_TASK_ERROR
 )
 
 
@@ -27,7 +29,8 @@ class TaskManager():
     def do_action(self, task_id, action):
         action_map = {
             "start": self.start_task,
-            "retry": self.retry_task
+            "retry": self.retry_task,
+            "cancel": self.cancel_task
         }
         return action_map[action](task_id, {})
 
@@ -44,15 +47,6 @@ class TaskManager():
 
         if not task:
             return NO_DATA, None
-
-        task_detail = task.task_detail
-        # task_detail_parser = TaskDetailParser(task_detail)
-
-        # 检查数据库中hosts与assets是否存在
-        # task_hosts_id = task_detail_parser.get_task_hosts_id()
-        # if Host.objects.filter(pk__in=task_hosts_id).count() < len(task_hosts_id):
-        #     LOG.error("Start task failed: host not exist")
-        #     raise TaskException(TaskOperationResultCode.ERR_HOST_NOT_EXIST)
 
         params['task_pool_timeout'] = 300
         params['max_running_task'] = 5
@@ -75,7 +69,7 @@ class TaskManager():
             LOGGER.error(traceback.print_exc())
             FileUtil.dir_remove(task_upload_path)
             FileUtil.dir_remove(work_path)
-            return SUCCEED, None
+            return TASK_START_FAILED, task.task_name
         if reset_task_status:
             task_proxy.reset_task_status(task_id)
         task_proxy.set_wait_status(task_id)
@@ -88,7 +82,7 @@ class TaskManager():
     def retry_task(self, task_id, params: dict):
         task = TaskProxy().get_task_by_id(task_id)
         if task.status == TaskResultCode.RUNNING.code or task.status == TaskResultCode.WAITING.code:
-            raise TaskException(TaskOperationResultCode.ERR_RETRY_RUNNING_TASK)
+            return TASK_RETRY_RUNNING_TASK_ERROR, task.task_name
         if task.task_type == TaskType.COMMAND_EXECUTION:
             FileUtil.dir_remove(os.path.join(RESULTS_DIR, task.task_type, task.task_id))
         return self.start_task(task, params)
@@ -99,10 +93,10 @@ class TaskManager():
         if task.status == TaskResultCode.RUNNING.code:
             TaskProxy().cancel_task(task_id)
             LOGGER.info(f"{params.get('user')} cancel task")
-            return TaskOperationResultCode.SUCCESS_CANCEL_TASK, task
+            return SUCCEED, None
         else:
             LOGGER.error(f"{task.task_name} status:{task.status} is not running,cannot be cancelled")
-            raise TaskException(TaskOperationResultCode.ERR_CANCEL_NOT_RUNNING_TASK)
+            return TASK_CANCEL_NOT_RUNNING_TASK_ERROR,task.task_name
 
 
     def recover_task(self, task_id, params: dict):

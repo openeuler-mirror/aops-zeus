@@ -92,7 +92,7 @@ class BaseTask:
         def generate_workflow_yaml(self):
             ctx = self.init_context_params()
             workflow_yaml = render_template(self.workflow_template, **ctx)
-            LOGGER.info(f"{self.local_path} workflow yaml: {workflow_yaml}")
+            # LOGGER.info(f"{self.local_path} workflow yaml: {workflow_yaml}")
             workflow_fd = os.open(os.path.join(self.local_path, "workflow.yaml"), os.O_WRONLY | os.O_CREAT,
                                   U_RW | G_READ | O_READ)
             with os.fdopen(workflow_fd, "w", encoding="utf-8") as f:
