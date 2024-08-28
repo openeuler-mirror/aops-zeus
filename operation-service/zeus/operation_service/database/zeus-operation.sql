@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS `operation_task`  (
   `task_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
   `task_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL,
   `task_total` int NULL DEFAULT NULL,
+  `only_push` tinyint(1) NULL DEFAULT NULL,
   PRIMARY KEY (`task_id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin ROW_FORMAT = Dynamic;
 
