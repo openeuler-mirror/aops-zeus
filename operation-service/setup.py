@@ -23,7 +23,7 @@ setup(
     data_files=[
         ('/etc/aops/conf.d', ['zeus-operation.yml']),
         ('/usr/lib/systemd/system', ["zeus-operation.service"]),
-        ("/opt/aops/database", ["zeus/host_information_service/database/zeus-operation.sql"]),
+        ("/opt/aops/database", ["zeus/operation_service/database/zeus-operation.sql"]),
     ],
     zip_safe=False,
 )
