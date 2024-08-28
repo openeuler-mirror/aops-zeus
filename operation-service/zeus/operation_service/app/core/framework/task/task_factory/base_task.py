@@ -85,7 +85,9 @@ class BaseTask:
             self.task_id = task_params.get('task_id')
             self.local_path = task_params.get('local_path')
             task_detail_parser = TaskDetailParser(self.task.task_detail)
-            self.remote_path = task_detail_parser.get_task_ext_props().get('remote_path', os.path.join("/opt/.agent", self.task_id))
+            self.remote_path = task_detail_parser.get_task_ext_props().get('remote_path')
+            if not self.remote_path:
+                self.remote_path = os.path.join("/opt/.agent", self.task_id)
             self.workflow_template = "workflow_template.yml"
             self.task_type = str()
 

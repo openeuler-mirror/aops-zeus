@@ -29,7 +29,7 @@ class TaskParser:
         if self._task_json is None:
             LOGGER.error(f"No content in {self._task_json}!")
             return False
-        LOGGER.info(f"TaskParser--parse: {self._task_json}")
+        # LOGGER.info(f"TaskParser--parse: {self._task_json}")
         self._jobs_json = self._task_json.get("jobs")
         self._task_name = self._task_json.get("name")
         self._params = self._task_json.get("params")

@@ -18,7 +18,7 @@ except Exception:
     pass
 # import _thread
 # import socket
-
+import os
 from vulcanus import init_application
 # from vulcanus.database.proxy import RedisProxy
 # from vulcanus.log.log import LOGGER
@@ -30,7 +30,8 @@ from vulcanus import init_application
 from zeus.operation_service.app.settings import configuration
 from zeus.operation_service.urls import URLS
 
-app = init_application(name="zeus.operation_service", settings=configuration, register_urls=URLS)
+app = init_application(name="zeus.operation_service", settings=configuration, register_urls=URLS, 
+                       template=os.path.join(os.path.dirname(__file__), "templates"))
 
 
 # def register_service():
