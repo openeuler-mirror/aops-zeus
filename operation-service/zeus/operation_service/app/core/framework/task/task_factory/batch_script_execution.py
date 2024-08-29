@@ -92,7 +92,7 @@ class BatchScriptExecutionTask(BaseTask):
                 job_info = dict()
                 job_info['name'] = case['name']
                 host_idxs = case_node['case_indexes'][str(case_idx)]
-                job_info['hosts'] = "[" + ",".join([node_list[idx]['host'] for idx in host_idxs]) + "]"
+                job_info['hosts'] = "[" + ",".join([node_list[idx]['host_name'] for idx in host_idxs]) + "]"
                 job_info['steps'] = self.generate_step_list(case_idx)
                 context_jobs.append(job_info)
             return context_jobs

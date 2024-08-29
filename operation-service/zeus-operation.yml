@@ -17,6 +17,6 @@ support:
   os_name: 
     - CentOS
     - openEuler
-  arch:
+  os_arch:
     - aarch64
     - x86_64

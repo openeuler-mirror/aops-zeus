@@ -78,7 +78,7 @@ class BatchScriptExecutionDetail(TaskDetail):
             host['host_id'] = host_id
             # for host_group_id in host_groups:
             #     host['host_groups'].append(HostGroupProxy().get_host_group_by_id(host_group_id).get("cluster_name"))
-            host['host'] = db_host.get("host_name")
+            host['host_name'] = db_host.get("host_name")
             host['ip'] = db_host.get("host_ip")
             ext_props = json.loads(db_host.get('ext_props'))
             host['arch'] = ext_props.get('os', "").get('os_arch', "")
