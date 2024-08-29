@@ -14,6 +14,7 @@ from zeus.operation_service.app.proxy.task import TaskProxy
 from zeus.operation_service.app.core.framework.workflow.workflow import WorkFlow
 from zeus.operation_service.app.core.framework.task.task_detail.task_detail_parser import TaskDetailParser
 
+
 class BaseTask:
 
     def __init__(self, task_param: dict):
@@ -93,7 +94,9 @@ class BaseTask:
 
         def generate_workflow_yaml(self):
             ctx = self.init_context_params()
-            workflow_yaml = render_template(self.workflow_template, **ctx)
+            from zeus.operation_service.manage import app
+            with app.app_context():
+                workflow_yaml = render_template(self.workflow_template, **ctx)
             # LOGGER.info(f"{self.local_path} workflow yaml: {workflow_yaml}")
             workflow_fd = os.open(os.path.join(self.local_path, "workflow.yaml"), os.O_WRONLY | os.O_CREAT,
                                   U_RW | G_READ | O_READ)

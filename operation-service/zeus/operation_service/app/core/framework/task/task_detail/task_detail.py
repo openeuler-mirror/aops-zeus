@@ -18,6 +18,7 @@ class TaskDetail:
         self.ext_props = dict()
         self.ext_props['only_push'] = validated_data.get('only_push', False)
         self.ext_props['remote_path'] = validated_data.get('remote_path', None)
+        self.ext_props['scheduler_info'] = validated_data.get('scheduler_info', None)
 
     def get_task_detail(self):
         LOGGER.warning(f"start build task detail, [task_name]: {self.task_name}")

@@ -12,11 +12,12 @@
 # ******************************************************************************/
 from vulcanus.restful.resp import state
 from vulcanus.restful.response import BaseResponse
-from vulcanus.conf.constant import HOSTS, HOSTS_FILTER
+from vulcanus.rsa import load_private_key, sign_data
+from vulcanus.conf.constant import HOSTS, HOSTS_FILTER, ADMIN_USER
 from zeus.operation_service.app.settings import configuration
 from flask import g
 from urllib.parse import urlencode
-
+from zeus.operation_service.app import cache
 
 class HostProxy:
     """
@@ -24,8 +25,12 @@ class HostProxy:
     """
 
     def get_host_by_id(self, host_id) -> dict:
+
+        signature = sign_data({}, load_private_key(cache.location_cluster.get("private_key")))
+        headers = {"X-Permission": "RSA", "X-Signature": signature, "X-Cluster-Username": ADMIN_USER}
+
         url = f"http://{configuration.domain}{HOSTS}/{host_id}"
-        response = BaseResponse.get_response(method="GET", url=url, header=g.headers)
+        response = BaseResponse.get_response(method="GET", url=url, header=headers)
         if response.get("label") != state.SUCCEED:
             return {}
 
@@ -37,8 +42,11 @@ class HostProxy:
             "host_ids": [host_id]
             }
 
+        signature = sign_data(params, load_private_key(cache.location_cluster.get("private_key")))
+        headers = {"X-Permission": "RSA", "X-Signature": signature, "X-Cluster-Username": ADMIN_USER}
+
         url = f"http://{configuration.domain}{HOSTS_FILTER}?{urlencode(params)}"
-        response = BaseResponse.get_response(method="GET", url=url, header=g.headers)
+        response = BaseResponse.get_response(method="GET", url=url, header=headers)
         hosts = response.get("data")
         if response.get("label") != state.SUCCEED or not hosts:
             return ""

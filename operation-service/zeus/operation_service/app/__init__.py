@@ -10,12 +10,17 @@
 # PURPOSE.
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
-# from vulcanus.cache import RedisCacheManage
-# from vulcanus.database.proxy import RedisProxy
+from vulcanus.cache import RedisCacheManage
+from vulcanus.database.proxy import RedisProxy
 
-# from zeus.host_information_service.app.settings import configuration
+from zeus.operation_service.app.settings import configuration
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 
-# if RedisProxy.redis_connect is None:
-#     RedisProxy()
+def get_redis_cache():
+    if RedisProxy.redis_connect is None:
+        RedisProxy()
 
-# cache = RedisCacheManage(domain=configuration.domain, redis_client=RedisProxy.redis_connect)
+    return RedisCacheManage(domain=configuration.domain, redis_client=RedisProxy.redis_connect)
+
+cache = get_redis_cache()

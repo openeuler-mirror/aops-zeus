@@ -13,6 +13,8 @@
 
 
 from enum import Enum
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 
 BASE_DIR = '/opt/aops/task'
 # 存储脚本，目录为SCRIPTS_DIR/<script_id>
@@ -22,6 +24,31 @@ WORK_DIR = '/opt/aops/task/work_dir'
 # 存储任务执行结果信息，目录为RESULTS_DIR/<task_id>
 RESULTS_DIR = '/opt/aops/task/results'
 
+
+class SingletonMeta(type):
+
+    def __init__(cls, *args, **kwargs):
+        cls.__instance = None
+        super().__init__(*args, **kwargs)
+    
+    def __call__(cls, *args, **kwargs):
+        if cls.__instance is None:
+            cls.__instance = super().__call__(*args, **kwargs)
+        return cls.__instance
+
+
+class Shcheduler(metaclass=SingletonMeta):
+    
+    def __init__(self, engine) -> None:
+        self.scheduler = BackgroundScheduler(
+            jobstores = {
+                'default': SQLAlchemyJobStore(engine=engine),
+            },
+            job_defaults={
+                'max_instances': 1,
+                'coalesce': False
+            }
+        )
 
 class ResultCodeEnum(Enum):
     @property

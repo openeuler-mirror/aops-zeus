@@ -1,12 +1,11 @@
 from datetime import datetime
-from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.date import DateTrigger
-from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from requests import session
 import sqlalchemy
 import uuid
+import json
 from vulcanus.database.proxy import MysqlProxy
 from vulcanus.database.helper import sort_and_page
 from vulcanus.log.log import LOGGER
@@ -24,6 +23,7 @@ from vulcanus.restful.resp.state import (
 from zeus.operation_service.app.serialize.task import GetTaskPage_ResponseSchema
 from zeus.operation_service.database import Task, TaskOperate, TaskHost, TaskCommand
 from zeus.operation_service.app.core.framework.common.constant import TaskType
+from zeus.operation_service.app.constant import Shcheduler
 
 from zeus.operation_service.app.core.framework.common.result_code import TaskResultCode
 from zeus.operation_service.app.core.framework.task.task_detail.task_detail_context import TaskDetailContext
@@ -40,11 +40,7 @@ class TaskProxy(MysqlProxy):
         super().__init__()
         if not self.session:
             self.connect()
-        self.scheduler = BackgroundScheduler(
-            jobstores = {
-                'default': SQLAlchemyJobStore(engine=self.engine)
-            }
-        )
+        self.scheduler = Shcheduler(self.engine).scheduler
         if not self.scheduler.running:
             self.scheduler.start()
 
@@ -167,11 +163,18 @@ class TaskProxy(MysqlProxy):
             LOGGER.error(f"Not find task[{task_id}].")
             return NO_DATA
         scheduler_info = data.get("scheduler_info", None)
-        if not scheduler_info:
-            LOGGER.error("Not give param[scheduler_info]")
-            return PARAM_ERROR
+
+        task_detail_str = self.get_task_by_id(task_id=task_id).task_detail
+        task_detail = json.loads(task_detail_str)
+        task_detail['ext_props']['scheduler_info'] = scheduler_info
+        self.update_task(task_id, task_detail=json.dumps(task_detail))
         self.del_task_sheduler(task_id)
+
+        if not scheduler_info:
+            LOGGER.error("cancel scheduler_info")
+            return SUCCEED
         self.add_task_sheduler(scheduler_info, task_id)
+
         return SUCCEED
     
     def batch_delete_task(self, task_ids):
