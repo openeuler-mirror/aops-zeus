@@ -85,11 +85,12 @@ class TaskManager():
             return TASK_RETRY_RUNNING_TASK_ERROR, task.task_name
         if task.task_type == TaskType.COMMAND_EXECUTION:
             FileUtil.dir_remove(os.path.join(RESULTS_DIR, task.task_type, task.task_id))
-        return self.start_task(task, params)
+        return self.start_task(task_id, params)
 
 
-    def cancel_task(task_id, params: dict):
+    def cancel_task(self, task_id, params: dict):
         task = TaskProxy().get_task_by_id(task_id)
+        LOGGER.info(f"task.status:{task.status}")
         if task.status == TaskResultCode.RUNNING.code:
             TaskProxy().cancel_task(task_id)
             LOGGER.info(f"{params.get('user')} cancel task")

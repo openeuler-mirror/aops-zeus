@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS `operate_script_association`  (
 -- ----------------------------
 CREATE TABLE IF NOT EXISTS `operation_task`  (
   `task_id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
-  `status` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL,
+  `status` int NULL DEFAULT NULL,
   `progress` float NOT NULL,
   `start_time` datetime NULL DEFAULT NULL,
   `end_time` datetime NULL DEFAULT NULL,

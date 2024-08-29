@@ -62,7 +62,7 @@ class Task(Base):
 
     __tablename__ = "operation_task"
     task_id = Column(String(36), primary_key=True)
-    status = Column(String(64))
+    status = Column(Integer)
     progress = Column(Float, nullable=True, default=0.0)
     start_time = Column(DateTime, nullable=True)
     end_time = Column(DateTime, nullable=True)

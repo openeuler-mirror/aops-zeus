@@ -14,12 +14,15 @@ from zeus.operation_service.app.core.framework.task.task_factory.base_task impor
 class BatchExecutionTask(BaseTask):
 
     def _post_success(self):
-        TaskProxy().update_task(
-            task_id=self.task_id, 
-            status=TaskResultCode.SUCCESS.code, 
-            end_time=datetime.now(),
-            progress=1.0
-        )
+        dbproxy = TaskProxy()
+        task = dbproxy.get_task_by_id(self.task_id)
+        if task.status == TaskResultCode.RUNNING.code:
+            dbproxy.update_task(
+                task_id=self.task_id, 
+                status=TaskResultCode.SUCCESS.code, 
+                end_time=datetime.now(),
+                progress=1.0
+            )
 
     class TaskYaml(BaseTask.TaskYaml):
         def __init__(self, task_params: dict):
