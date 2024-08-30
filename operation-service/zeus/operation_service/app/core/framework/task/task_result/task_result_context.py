@@ -15,9 +15,6 @@ class TaskResultContext:
     def update_progress(self, request):
         return self.task_result_detail.update_progress(request)
 
-    def download_task_result(self, request):
-        return self.task_result_detail.download_task_result(request)
-
     def get_items_detail(self, data):
         return self.task_result_detail.get_items_detail(data)
 

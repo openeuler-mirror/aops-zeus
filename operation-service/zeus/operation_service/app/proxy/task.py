@@ -139,7 +139,11 @@ class TaskProxy(MysqlProxy):
                 scheduler_info = data.pop("scheduler_info")
             if data.get("remote_path"):
                 data.pop("remote_path")
-            self.session.add(Task(**data, task_id=task_id, task_detail=task_detail, task_total=task_total))
+            self.session.add(Task(task_name=data['task_name'], 
+                                  task_type=data['task_type'],
+                                  task_id=task_id, 
+                                  task_detail=task_detail, 
+                                  task_total=task_total))
             if scheduler_info:
                 self.add_task_sheduler(scheduler_info, task_id)
             self.session.commit()

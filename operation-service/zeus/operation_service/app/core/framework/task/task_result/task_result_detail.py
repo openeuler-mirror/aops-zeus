@@ -22,17 +22,6 @@ class TaskResultDetail(ABC):
     def get_items_detail(self, request):
         pass
 
-    def download_task_result(self, request):
-        file_path = self.get_task_result_file()
-        if not os.path.isfile(file_path):
-            LOGGER.error(f"[{self.task.task_type}] get result file {file_path} failed")
-            raise TaskException(TaskOperationResultCode.ERR_TASK_RESULT_FILE_NOT_FOUND)
-        LOGGER.info(f"{request.user.get_username()} download {self.task.task_type}:{self.task.name} result file")
-        return file_path
-
-    def get_task_result_file(self):
-        pass
-
     def generate_hosts_assets(self):
         '''
         生成主机组、主机对应资产包

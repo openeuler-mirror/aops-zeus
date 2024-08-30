@@ -211,7 +211,7 @@ class RemoteControl(object):
         """
         :return:
         """
-        promptset = ""
+        promptset = b""
         if shell.find("bash") != -1:
             if shell == "bash":
                 # 切换到bash

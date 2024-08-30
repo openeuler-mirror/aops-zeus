@@ -1,5 +1,6 @@
 import json
 import time
+from abc import abstractmethod
 
 from vulcanus.log.log import LOGGER
 from zeus.operation_service.app.proxy.host import HostProxy
@@ -51,9 +52,10 @@ class TaskDetail:
             node_list.append(host)
         return node_list
 
-    def generate_case_list(self):
+    @abstractmethod
+    def generate_case_list(self) -> list:
         pass
 
-
-    def generate_case_nodes(self):
+    @abstractmethod
+    def generate_case_nodes(self) -> list:
         pass

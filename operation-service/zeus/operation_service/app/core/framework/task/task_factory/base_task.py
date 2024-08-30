@@ -3,6 +3,7 @@ import os
 import queue
 import shutil
 import traceback
+from abc import abstractmethod
 from flask import render_template
 from zeus.operation_service.app.constant import WORK_DIR
 from zeus.operation_service.app.core.file_util import U_RW, G_READ, O_READ
@@ -103,9 +104,9 @@ class BaseTask:
             with os.fdopen(workflow_fd, "w", encoding="utf-8") as f:
                 f.write(workflow_yaml)
 
+        @abstractmethod
         def init_context_params(self):
-            context = dict()
-            return context
+            pass
 
         def generate_host_list(self):
             context_hosts = list()

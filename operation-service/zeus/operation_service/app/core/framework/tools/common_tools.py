@@ -4,11 +4,8 @@ import re
 
 
 class NotFileException(Exception):
-    def __init__(self):
-        pass
-
     def __str__(self):
-        print("Need a file, but a directory offered")
+        return "Need a file, but a directory offered"
 
 
 def sha256sum(path):

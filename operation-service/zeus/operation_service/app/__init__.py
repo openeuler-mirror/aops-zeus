@@ -14,8 +14,7 @@ from vulcanus.cache import RedisCacheManage
 from vulcanus.database.proxy import RedisProxy
 
 from zeus.operation_service.app.settings import configuration
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+
 
 def get_redis_cache():
     if RedisProxy.redis_connect is None:
