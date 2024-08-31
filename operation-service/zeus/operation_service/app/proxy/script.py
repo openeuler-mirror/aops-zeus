@@ -19,7 +19,7 @@ from vulcanus.restful.resp.state import (
     NO_DATA,
     PARAM_ERROR,
     SUCCEED,
-    Task_Dependency_Error
+    TASK_DEPENDENCY_ERROR
 )
 from zeus.operation_service.app.serialize.script import GetScriptPage_ResponseSchema
 from zeus.operation_service.database import Script, TaskOperate, OperateScript, Operate
@@ -148,7 +148,7 @@ class ScriptProxy(MysqlProxy):
     def modify_script_info(self, script_id, data):
         try:
             if self._check_script_task_dependency(script_id):
-                return Task_Dependency_Error, None
+                return TASK_DEPENDENCY_ERROR, None
             if "operate_id" in data.keys():
                 operate_id = data.pop("operate_id")
                 self.session.query(OperateScript).filter_by(script_id = script_id).update({"operate_id": operate_id})
