@@ -16,13 +16,13 @@ from zeus.user_access_service.database.table import (
     RolePermissionAssociation,
     Route,
     UserClusterAssociation,
+    UserInfo,
     UserMap,
     UserRoleAssociation,
+    UserToken,
 )
 
 __all__ = [
-    "User",
-    "Auth",
     "Permission",
     "Role",
     "RolePermissionAssociation",
@@ -30,4 +30,6 @@ __all__ = [
     "UserClusterAssociation",
     "UserMap",
     "UserRoleAssociation",
+    "UserToken",
+    "UserInfo",
 ]

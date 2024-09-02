@@ -19,28 +19,35 @@ from marshmallow import Schema, fields, validate
 from vulcanus.restful.serialize.validate import ValidateRules
 
 
-class LoginSchema(Schema):
+class Oauth2AuthorizeLoginSchema(Schema):
     """
-    validators for parameter of /user/account/login
+    validators for parameter of /accounts/login
+    """
+
+    code = fields.String(required=True, validate=validate.Length(min=1, max=200))
+
+
+class Oauth2AuthorizedLogoutSchema(Schema):
+    """
+    validators for parameter of /accounts/logout
     """
 
     username = fields.String(required=True, validate=validate.Length(min=5, max=20))
-    password = fields.String(required=True, validate=validate.Length(min=6, max=20))
+    encrypted_string = fields.String(required=True, validate=validate.Length(min=1, max=200))
 
 
-class AddUserSchema(Schema):
+class Oauth2AuthorizeAddUserSchema(Schema):
     """
-    validators for parameter of /user/account/add
+    validators for parameter of /accounts/register
     """
 
     username = fields.String(required=True, validate=ValidateRules.account_name_check)
-    password = fields.String(required=True, validate=ValidateRules.account_password_check)
     email = fields.Email(required=True)
 
 
 class ChangePasswordSchema(Schema):
     """
-    validators for parameter of /user/account/change
+    validators for parameter of /accounts/password
     """
 
     username = fields.String(required=True, validate=ValidateRules.account_name_check)
@@ -58,32 +65,6 @@ class CertificateSchema(Schema):
     """
 
     key = fields.String(required=True, validate=lambda s: len(s) > 0)
-
-
-class BindAuthAccountSchema(Schema):
-    """
-    validators for parameter of /user/account/bindaccount
-    """
-
-    username = fields.String(required=True, validate=lambda s: len(s) > 0)
-    auth_account = fields.String(required=True, validate=lambda s: len(s) > 0)
-    password = fields.String(required=True, validate=lambda s: len(s) > 0)
-
-
-class GiteeAuthLoginSchema(Schema):
-    """
-    validators for parameter of /user/account/gitee/login
-    """
-
-    code = fields.String(required=True, validate=lambda s: len(s) > 0)
-
-
-class RefreshTokenSchema(Schema):
-    """
-    validators for parameter of /user/account/refreshtoken
-    """
-
-    refresh_token = fields.String(required=True, validate=lambda s: len(s) > 0)
 
 
 class BindManagerUserSchema(Schema):
