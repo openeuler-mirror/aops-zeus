@@ -15,6 +15,7 @@ import re
 from functools import lru_cache
 
 from async_task.settings import configuration
+from vulcanus.log.log import LOGGER
 from vulcanus.registry.register_service.zookeeper import ZookeeperRegisterCenter
 from vulcanus.timed import TimedTask
 
@@ -97,10 +98,9 @@ class DynamicUpdateUpstreamTask(TimedTask):
         try:
             with open(self.nginx, "w") as file:
                 file.write(self.config)
-        except IOError:
-            return False
-
-        os.system("nginx -s reload")
+            os.system("nginx -s reload")
+        except IOError as error:
+            LOGGER.error(f"update nginx upstream fail with message {error}")
 
     def _update_upstream(self, service_name, instance_list):
         """

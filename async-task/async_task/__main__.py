@@ -28,8 +28,8 @@ def timed():
             continue
         if task_info["task"] not in timed_task_map:
             continue
-        task = timed_task_map[task_info["task"]]
-        timed_task.add_job(task(timed_config=task_info))
+        _task = timed_task_map[task_info["task"]]
+        timed_task.add_job(_task(timed_config=task_info))
     timed_task.start()
 
 

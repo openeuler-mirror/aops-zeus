@@ -14,6 +14,7 @@ from marshmallow import Schema, ValidationError, fields, validate, validates_sch
 from vulcanus.restful.serialize.validate import ValidateRules
 
 from zeus.host_information_service.database import Host
+from zeus.host_information_service.app.constant import HostTemplate
 
 
 class _AddHost(Schema):
@@ -212,3 +213,11 @@ class HostInfoSchema(Schema):
 
     basic = fields.Boolean(required=False, missing=True, validate=validate.OneOf([True, False]))
     refresh = fields.Boolean(required=False, missing=False, validate=validate.OneOf([True, False]))
+
+
+class TemplateLangSchema(Schema):
+    """
+    File template language
+    """
+
+    lang = fields.String(required=False, missing='en', validate=validate.OneOf(HostTemplate.support_lang()))

@@ -14,7 +14,7 @@ try:
     from gevent import monkey
 
     monkey.patch_all()
-except:
+except Exception:
     pass
 import socket
 

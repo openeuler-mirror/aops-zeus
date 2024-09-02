@@ -38,7 +38,7 @@ class SendNotificationTask(TimedTask):
             if not RedisProxy.redis_connect:
                 RedisProxy(host=configuration.redis.host, port=configuration.redis.port)
 
-            return RedisProxy.redis_connect.publish(
+            RedisProxy.redis_connect.publish(
                 "send_notification", json.dumps(dict(name=SendNotificationTask.name, time=str(datetime.datetime.now())))
             )
         except (DatabaseConnectionFailed, redis.RedisError) as error:

@@ -26,23 +26,23 @@ from zeus.cli.settings import ConfigHandle
 ADMINISTRATOR_USER = "admin"
 
 
-def database_cursor(config, database="mysql"):
+def database_cursor(config, db="mysql"):
     mysql_client = None
     try:
         connection_options = dict(host=config.host, port=config.port)
         if config.username and config.password:
             connection_options.update(user=config.username, password=config.password)
         mysql_client = pymysql.connect(
-            **connection_options, database=database, autocommit=True, client_flag=CLIENT.MULTI_STATEMENTS
+            **connection_options, database=db, autocommit=True, client_flag=CLIENT.MULTI_STATEMENTS
         )
     except pymysql.err.OperationalError:
-        click.echo(f"[ERROR] Database {database} connect failed")
+        click.echo(f"[ERROR] Database {db} connect failed")
     return mysql_client
 
 
 def init_database(sql_file, config):
-    database = database_cursor(config=config)
-    if not database:
+    db = database_cursor(config=config)
+    if not db:
         sys.exit(-1)
     try:
         with open(sql_file, 'r', encoding='utf-8') as file:
@@ -50,13 +50,13 @@ def init_database(sql_file, config):
         if not sql:
             click.echo(f"[ERROR] Sql file is empty: {sql_file}")
             sys.exit(-1)
-        cursor = database.cursor()
+        cursor = db.cursor()
         cursor.execute(sql)
         click.echo(f"[INFO] Sql {sql_file} initialization was successful")
     except (IOError, pymysql.err.OperationalError):
         click.echo(f"[ERROR] Sql file {sql_file} initialization failed")
     finally:
-        database.close()
+        db.close()
 
 
 def generate_rsa_key():
@@ -75,13 +75,13 @@ def generate_rsa_key():
 
 
 def fix_cluster_data(cluster_ip, config):
-    database = database_cursor(config=config, database=config.database)
-    if not database:
+    db = database_cursor(config=config, db=config.database)
+    if not db:
         sys.exit(-1)
     try:
         private_key, public_key = generate_rsa_key()
         cluster_id = str(uuid.uuid4())
-        cursor = database.cursor()
+        cursor = db.cursor()
         show_tables_sql = "show tables;"
         cursor.execute(show_tables_sql)
         if "user_cluster_association" in [table[0] for table in cursor.fetchall()]:
@@ -102,15 +102,15 @@ def fix_cluster_data(cluster_ip, config):
     except pymysql.err.OperationalError:
         click.echo("[ERROR] Table cluster data fix failed")
     finally:
-        database.close()
+        db.close()
 
 
 def fix_user_cluster_association_data(config):
-    database = database_cursor(config=config, database=config.database)
-    if not database:
+    db = database_cursor(config=config, db=config.database)
+    if not db:
         sys.exit(-1)
     try:
-        cursor = database.cursor()
+        cursor = db.cursor()
         cluster_id = str(uuid.uuid4())
         show_tables_sql = "show tables;"
         cursor.execute(show_tables_sql)
@@ -130,7 +130,7 @@ def fix_user_cluster_association_data(config):
     except pymysql.err.OperationalError:
         click.echo("[ERROR] Table user_cluster_association data fix failed")
     finally:
-        database.close()
+        db.close()
 
 
 @click.command("database", help="database initialization")

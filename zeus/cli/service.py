@@ -60,15 +60,15 @@ def create_uwsgi_config(service_name: str, config):
     if not os.path.exists(WSGI_FOLDER):
         os.makedirs(WSGI_FOLDER)
     if service_name in MODULES:
-        main, service = MODULES[service_name].split(".")
-        chdir = os.path.join(sys.path[-1], main, service)
+        main, _service = MODULES[service_name].split(".")
+        chdir = os.path.join(sys.path[-1], main, _service)
         module = MODULES[service_name] + ".manage"
     else:
-        service = service_name
+        _service = service_name
         if service_name.startswith("aops-"):
-            service = service_name[5:]
-        chdir = os.path.join(sys.path[-1], service)
-        module = service + ".manage"
+            _service = service_name[5:]
+        chdir = os.path.join(sys.path[-1], _service)
+        module = _service + ".manage"
 
     pidfile = os.path.join(WSGI_FOLDER, service_name + ".pid")
     ini = os.path.join(WSGI_FOLDER, service_name + ".ini")
