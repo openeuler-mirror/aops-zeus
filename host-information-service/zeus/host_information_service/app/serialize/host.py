@@ -144,6 +144,7 @@ class HostsInfo_ResponseSchema(Schema):
             "ssh_user",
             "cluster_id",
             "cluster_name",
+            "ext_props",
         )
 
 
@@ -189,12 +190,38 @@ class HostFilterSchema(Schema):
                     "ssh_user",
                     "ssh_port",
                     "cluster_id",
+                    "ext_props",
                 ]
             ),
         ),
         required=False,
         missing=None,
     )
+
+
+class HostIpsFilterSchema(Schema):
+    """
+    Filter host info by ip
+    """
+    host_ips = fields.List(fields.String(required=True), required=True, validate=lambda s: len(s) > 0)
+
+
+class HostByIpsResponseSchema(Schema):
+    """
+    Get host information by ips response schema
+    """
+
+    cluster_name = fields.String(required=False, missing=None, validate=lambda s: 50 >= len(s) > 0)
+
+    class Meta:
+        model = Host
+        fields = (
+            "host_id",
+            "host_name",
+            "host_group_name",
+            "host_ip",
+            "cluster_id",
+        )
 
 
 class UpdateHostStatusSchema(Schema):

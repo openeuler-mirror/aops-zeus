@@ -33,7 +33,11 @@ from vulcanus.restful.resp.state import (
 )
 
 from zeus.host_information_service.app import cache
-from zeus.host_information_service.app.serialize.host import GetHostsPage_ResponseSchema, HostsInfo_ResponseSchema
+from zeus.host_information_service.app.serialize.host import (
+    GetHostsPage_ResponseSchema,
+    HostsInfo_ResponseSchema,
+    HostByIps_ResponseSchema,
+)
 from zeus.host_information_service.database import Host, HostGroup
 from zeus.host_information_service.database.table import Cluster
 
@@ -517,6 +521,31 @@ class HostProxy(MysqlProxy):
             LOGGER.error(error)
             LOGGER.error("query host fail")
             return DATABASE_QUERY_ERROR, None
+
+    def get_ips_hosts(self, filter_param: dict):
+        """
+        Get the filtered hosts by ips
+
+        Args:
+            filter_param: e.g
+                {
+                    "host_ips":[]
+                }
+        """
+        groups = cache.get_user_group_hosts()
+        if not groups:
+            return SUCCEED, []
+        try:
+            filters = {Host.host_group_id.in_(list(groups.keys())), (Host.host_ip.in_(filter_param["host_ips"]))}
+            hosts = self.session.query(Host).filter(*filters).all()
+            found_ips = [host.host_ip for host in hosts]
+            not_found_ips = [host_ip for host_ip in filter_param["host_ips"] if host_ip not in found_ips]
+            result = {"hosts": HostByIps_ResponseSchema(many=True).dump(hosts), "not_found_ips": not_found_ips}
+            return SUCCEED, result
+        except sqlalchemy.exc.SQLAlchemyError as error:
+            LOGGER.error(error)
+            LOGGER.error("query host fail")
+            return DATABASE_QUERY_ERROR, []
 
     def update_host_association_information(self, host_id: int, update_info: Dict[str, Optional[Any]]) -> None:
         """
