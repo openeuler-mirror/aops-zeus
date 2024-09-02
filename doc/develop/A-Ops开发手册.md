@@ -139,7 +139,7 @@
 | scripts/container/run.sh         | 一键化部署启动脚本，分别提供基础服务、aops服务的启动/停止    |
 | vulcanus/conf/constant.py        | 工具包类的常量定义                                           |
 | vulcanus/conf/default_config.py  | 系统级公用的默认配置项                                       |
-| vulcanus/dataabse/helper.py      | 数据库服务中创建引擎链接、分页排序、创建表等                 |
+| vulcanus/database/helper.py      | 数据库服务中创建引擎链接、分页排序、创建表等                 |
 | vulcanus/database/proxy.py       | 数据库公共链接服务，提供统一的调用方式，包含mysql、elasticsearch、redis等 |
 | vulcanus/kafka                   | kafka类型消息通知的封装，包含生产和消费                      |
 | vulcanus/log                     | aops服务的日志封装，统一日志打印格式                         |
@@ -306,7 +306,7 @@ host_vars=/opt/aops/host_vars
 ip=127.0.0.1
 port=11111
 
-; herems info is used to send mail.
+; hermes info is used to send mail.
 [hermes]
 ip=127.0.0.1
 port=8000
@@ -466,7 +466,7 @@ class xxxApi(BaseResponse):
     │   ├── __init__.py
     │   ├── model.py
     │   └── verify
-    │       ├── acount.py
+    │       ├── account.py
     │       ├── agent.py
     │       ├── config.py
     │       ├── host.py
