@@ -983,17 +983,17 @@ class UserProxy(MysqlProxy):
                                                 "public_key": "public_key"
                                                  }
         """
-        cache = dict()
+        cache_dict = dict()
         for cluster_key_info in clusters_key_info:
-            cache[cluster_key_info["cluster_id"]] = json.dumps(
+            cache_dict[cluster_key_info["cluster_id"]] = json.dumps(
                 {
                     "cluster_username": cluster_key_info["cluster_username"],
                     "private_key": cluster_key_info["private_key"],
                     "public_key": cluster_key_info["public_key"],
                 }
             )
-        if cache:
-            RedisProxy.redis_connect.hmset(g.username + "_rsa_key", cache)
+        if cache_dict:
+            RedisProxy.redis_connect.hmset(g.username + "_rsa_key", cache_dict)
 
     def register_cluster(self, params) -> str:
         """Register cluster.

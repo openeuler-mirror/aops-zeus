@@ -123,13 +123,10 @@ class AsyncTask(celery.Task):
         Args:
             channel (str): The name of the channel to publish to.
             message (str): The message to publish.
-
-        Returns:
-            int: The number of clients that received the message.
         """
         try:
             if not RedisProxy.redis_connect:
                 RedisProxy(host=configuration.redis.host, port=configuration.redis.port)
-            return RedisProxy.redis_connect.publish(channel, message)
+            RedisProxy.redis_connect.publish(channel, message)
         except RedisError as e:
             LOGGER.error("Failed to publishes a message to a Redis channel, with msg{}".format(e))

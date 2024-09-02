@@ -44,7 +44,7 @@ class TimedDownloadSATask(TimedTask):
             if not RedisProxy.redis_connect:
                 RedisProxy(host=configuration.redis.host, port=configuration.redis.port)
 
-            return RedisProxy.redis_connect.publish(
+            RedisProxy.redis_connect.publish(
                 "download_sa",
                 json.dumps(dict(cvrf=cvrf_url, name=TimedDownloadSATask.name, time=str(datetime.datetime.now()))),
             )

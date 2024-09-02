@@ -125,11 +125,11 @@ class ClusterProxy(MysqlProxy):
 
         return SUCCEED
 
-    def update_cluster_synchronous_state(self, cluster_id: str, state: str):
+    def update_cluster_synchronous_state(self, cluster_id: str, synchronous_state: str):
         try:
             self.session.query(Cluster).filter(Cluster.cluster_id == cluster_id).update(
                 {
-                    "synchronous_state": state,
+                    "synchronous_state": synchronous_state,
                 },
                 synchronize_session=False,
             )

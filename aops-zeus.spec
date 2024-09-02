@@ -34,7 +34,7 @@ A user manager service which is the foundation of aops.
 
 %package -n async-task
 Summary: A async task of aops.
-Requires:   aops-vulcanus >= v2.0.0 python3-celery
+Requires:   aops-vulcanus >= v2.0.0 python3-celery python3-paramiko
 
 
 %description -n async-task
@@ -142,8 +142,9 @@ popd
 %{python3_sitelib}/zeus/distribute_service/*
 
 %changelog
-* Thu May 30 2024 wangguangge<wangguangge@huawei.com> - v2.0.0-1
-- update to v2.0.0
+* Thu Jul 16 2024 luxuexian<luxuexian@huawei.com> - v2.0.0-1
+- Update to v2.0.0
+- Add microservice split, cluster management and user management
 
 * Wed May 29 2024 wangguangge<wangguangge@huawei.com> - v1.4.0-2
 - add the user access service

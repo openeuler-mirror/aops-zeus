@@ -38,7 +38,7 @@ class TimedScanTask(TimedTask):
             if not RedisProxy.redis_connect:
                 RedisProxy(host=configuration.redis.host, port=configuration.redis.port)
 
-            return RedisProxy.redis_connect.publish(
+            RedisProxy.redis_connect.publish(
                 "cve_scan", json.dumps(dict(name=TimedScanTask.name, time=str(datetime.datetime.now())))
             )
         except (DatabaseConnectionFailed, redis.RedisError) as error:

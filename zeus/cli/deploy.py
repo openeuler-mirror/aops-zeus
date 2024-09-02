@@ -229,12 +229,12 @@ def set_config(env, service, ip):
         service: microservice package
         ip: ip address
     """
-    set_config = SetConfig(ip=ip, service=service)
+    _set_config = SetConfig(ip=ip, service=service)
     for base_service in env:
         if base_service == MYSQL:
             base_service = "mysql"
 
-        set_func = getattr(set_config, base_service)
+        set_func = getattr(_set_config, base_service)
         if set_func and callable(set_func):
             set_func()
 
