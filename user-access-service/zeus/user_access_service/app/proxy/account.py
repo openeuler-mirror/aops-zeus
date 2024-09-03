@@ -25,31 +25,62 @@ import celery.exceptions
 import sqlalchemy
 from flask import g
 from vulcanus.conf import constant
-from vulcanus.conf.constant import (GITEE_OAUTH, GITEE_TOKEN, GITEE_USERINFO, REFRESH_TOKEN_EXP,
-                                    TaskStatus)
+from vulcanus.conf.constant import GITEE_OAUTH, GITEE_TOKEN, GITEE_USERINFO, REFRESH_TOKEN_EXP, TaskStatus
 from vulcanus.database.proxy import MysqlProxy, RedisProxy
 from vulcanus.log.log import LOGGER
-from vulcanus.restful.resp.state import (AUTH_ERROR, AUTH_USERINFO_SYNC_ERROR, CLUSTER_MANAGE_ERROR,
-                                         CLUSTER_REPEAT_BIND_ERROR, DATA_EXIST,
-                                         DATABASE_INSERT_ERROR, DATABASE_QUERY_ERROR,
-                                         DATABASE_UPDATE_ERROR, GENERATION_TOKEN_ERROR,
-                                         IP_PING_FAILED, LOGIN_ERROR, NO_BOUND, NO_DATA,
-                                         NO_MANAGED_DATA, PASSWORD_ERROR, PERMESSION_ERROR,
-                                         REDIS_CACHEINFO_ERROR, REDIS_SYNCHRONIZE_TASK_FAILED,
-                                         REPEAT_BIND, REPEAT_DATA, REPEAT_PASSWORD, SUCCEED,
-                                         SYNCHRONIZE_ERROR, TARGET_CLUSTER_DELETE_ERROR,
-                                         TARGET_CLUSTER_MANAGE_ERROR, USER_ERROR)
+from vulcanus.restful.resp.state import (
+    AUTH_ERROR,
+    AUTH_USERINFO_SYNC_ERROR,
+    CLUSTER_MANAGE_ERROR,
+    CLUSTER_REPEAT_BIND_ERROR,
+    DATA_EXIST,
+    DATABASE_INSERT_ERROR,
+    DATABASE_QUERY_ERROR,
+    DATABASE_UPDATE_ERROR,
+    GENERATION_TOKEN_ERROR,
+    IP_PING_FAILED,
+    LOGIN_ERROR,
+    NO_BOUND,
+    NO_DATA,
+    NO_MANAGED_DATA,
+    PASSWORD_ERROR,
+    PERMESSION_ERROR,
+    REDIS_CACHEINFO_ERROR,
+    REDIS_SYNCHRONIZE_TASK_FAILED,
+    REPEAT_BIND,
+    REPEAT_DATA,
+    REPEAT_PASSWORD,
+    SUCCEED,
+    SYNCHRONIZE_ERROR,
+    TARGET_CLUSTER_DELETE_ERROR,
+    TARGET_CLUSTER_MANAGE_ERROR,
+    USER_ERROR,
+)
 from vulcanus.restful.response import BaseResponse
-from vulcanus.rsa import (generate_rsa_key_pair, get_private_key_pem_str, get_public_key_pem_str,
-                          load_private_key, load_public_key, sign_data, verify_signature)
+from vulcanus.rsa import (
+    generate_rsa_key_pair,
+    get_private_key_pem_str,
+    get_public_key_pem_str,
+    load_private_key,
+    load_public_key,
+    sign_data,
+    verify_signature,
+)
 from vulcanus.token import generate_token
 from werkzeug.security import check_password_hash, generate_password_hash
+
 from zeus.user_access_service.app import cache, celery_client
 from zeus.user_access_service.app.settings import configuration
-from zeus.user_access_service.database.table import (Auth, Permission, Role,
-                                                     RolePermissionAssociation, User,
-                                                     UserClusterAssociation, UserMap,
-                                                     UserRoleAssociation)
+from zeus.user_access_service.database.table import (
+    Auth,
+    Permission,
+    Role,
+    RolePermissionAssociation,
+    User,
+    UserClusterAssociation,
+    UserMap,
+    UserRoleAssociation,
+)
 
 
 class UserProxy(MysqlProxy):
@@ -610,7 +641,9 @@ class UserProxy(MysqlProxy):
                 LOGGER.error(f"cannot manage cluster that has managed other clusters.")
                 return TARGET_CLUSTER_MANAGE_ERROR, {}
 
-            query_res = [user_map.manager_cluster_id for user_map in self.session.query(UserMap.manager_cluster_id).all()]
+            query_res = [
+                user_map.manager_cluster_id for user_map in self.session.query(UserMap.manager_cluster_id).all()
+            ]
             if not query_res:
                 cluster_username = self._bind_local_cluster_with_manager(local_cluster_id, **data)
             elif set(query_res) - {manager_cluster_id}:

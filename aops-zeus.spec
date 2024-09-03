@@ -1,5 +1,5 @@
 Name:		aops-zeus
-Version:	v2.0.0
+Version:	v2.1.0
 Release:	1
 Summary:	A service which is the foundation of aops.
 License:	MulanPSL2
@@ -18,7 +18,7 @@ Provides:   aops-zeus
 
 %package -n zeus-host-information
 Summary: A host manager service which is the foundation of aops.
-Requires:  aops-vulcanus >= v2.0.0
+Requires:  aops-vulcanus >= v2.1.0
 Requires:  python3-gevent python3-uWSGI python3-paramiko
 
 %description -n zeus-host-information
@@ -26,7 +26,7 @@ A host manager service which is the foundation of aops.
 
 %package -n zeus-user-access
 Summary: A user manager service which is the foundation of aops.
-Requires:   aops-vulcanus >= v2.0.0
+Requires:   aops-vulcanus >= v2.1.0
 Requires:   python3-celery python3-uWSGI
 
 %description -n zeus-user-access
@@ -34,7 +34,7 @@ A user manager service which is the foundation of aops.
 
 %package -n async-task
 Summary: A async task of aops.
-Requires:   aops-vulcanus >= v2.0.0 python3-celery python3-paramiko
+Requires:   aops-vulcanus >= v2.1.0 python3-celery
 
 
 %description -n async-task
@@ -42,7 +42,7 @@ A async task of aops.
 
 %package -n zeus-distribute
 Summary: A distributed service of aops.
-Requires:   aops-vulcanus >= v2.0.0
+Requires:   aops-vulcanus >= v2.1.0
 Requires:   python3-uWSGI python3-gevent
 %description -n zeus-distribute
 A distributed service of aops.

@@ -12,7 +12,7 @@
 # ******************************************************************************/
 from marshmallow import Schema, fields, validate
 
-from zeus.user_access_service.database.table import User
+from zeus.user_access_service.database.table import UserInfo
 
 
 class GetAccountPage_RequestSchema(Schema):
@@ -35,7 +35,7 @@ class GetAccountPage_ResponseSchema(Schema):
     clusters_num = fields.Integer(required=False, missing=None)
 
     class Meta:
-        model = User
+        model = UserInfo
         fields = ('username', 'role_type', 'clusters_num', "email")
 
 
