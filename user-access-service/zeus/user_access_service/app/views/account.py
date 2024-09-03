@@ -24,6 +24,7 @@ from vulcanus.log.log import LOGGER
 from vulcanus.restful.resp import state
 from vulcanus.restful.response import BaseResponse
 from vulcanus.token import decode_token, generate_token
+
 from zeus.user_access_service.app.proxy.account import UserProxy
 from zeus.user_access_service.app.serialize.account import (
     AddUserSchema,
@@ -33,6 +34,7 @@ from zeus.user_access_service.app.serialize.account import (
     ClusterKeySchema,
     ClusterSyncSchema,
     DeleteClusterSchema,
+    GenerateTokenSchema,
     GiteeAuthLoginSchema,
     LoginSchema,
     RefreshTokenSchema,
@@ -40,6 +42,7 @@ from zeus.user_access_service.app.serialize.account import (
     ResetPasswordSchema,
     UnbindManagerUserSchema,
 )
+from zeus.user_access_service.app.settings import configuration
 
 
 class AddUser(BaseResponse):
@@ -480,3 +483,27 @@ class ClusterSync(BaseResponse):
         cluster_ip = params.get('cluster_ip')
         get_res = callback.cluster_synchronize(cluster_id, cluster_ip)
         return self.response(code=get_res)
+
+
+class AccessTokenAPI(BaseResponse):
+
+    @BaseResponse.handle(schema=GenerateTokenSchema, token=False)
+    def post(self, **parmas):
+        """
+        generate access token
+
+        Returns:
+            dict: response body
+        """
+
+        validate_token = BaseResponse.get_response(
+            method="post",
+            url=f"http://{configuration.domain}/oauth2/introspect",
+            data=dict(token=parmas.get("access_token"), client_id=parmas.get("client_id")),
+        )
+        if validate_token["label"] != state.SUCCEED:
+            return self.response(code=state.GENERATION_TOKEN_ERROR)
+        username = validate_token["data"]
+        token = generate_token(unique_iden=username, minutes=60 * 24, aud=parmas.get("client_id"))
+        RedisProxy.redis_connect.set("token-" + username + "-" + parmas.get("client_id"), token, 24 * 60 * 60)
+        return self.response(code=state.SUCCEED, data=dict(access_token=token))

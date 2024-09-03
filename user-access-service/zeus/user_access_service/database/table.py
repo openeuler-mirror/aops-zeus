@@ -12,8 +12,7 @@
 # ******************************************************************************/
 from sqlalchemy import Column
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.sql.sqltypes import Boolean, String
-from werkzeug.security import check_password_hash, generate_password_hash
+from sqlalchemy.sql.sqltypes import String
 
 Base = declarative_base()
 
@@ -28,27 +27,6 @@ class Route(Base):
     route_id = Column(String(36), primary_key=True)
     route = Column(String(40), nullable=False)
     description = Column(String(60))
-
-
-class User(Base):
-    """
-    User Table
-    """
-
-    __tablename__ = "user"
-
-    username = Column(String(36), primary_key=True)
-    password = Column(String(255), nullable=False)
-    email = Column(String(40))
-    managed = Column(Boolean, default=False)
-
-    @staticmethod
-    def hash_password(password):
-        return generate_password_hash(password)
-
-    @staticmethod
-    def check_hash_password(raw_password, password):
-        return check_password_hash(raw_password, password)
 
 
 class Role(Base):
@@ -99,21 +77,6 @@ class RolePermissionAssociation(Base):
     permission_id = Column(String(36), primary_key=True)
 
 
-class Auth(Base):
-    """
-    Auth table
-    """
-
-    __tablename__ = "auth"
-
-    auth_id = Column(String(36), primary_key=True)
-    auth_account = Column(String(20), nullable=False)
-    email = Column(String(50))
-    nick_name = Column(String(20))
-    auth_type = Column(String(20))
-    username = Column(String(36))
-
-
 class UserClusterAssociation(Base):
     """
     User cluster tables' association table, record user and cluster's matching relationship
@@ -135,3 +98,28 @@ class UserMap(Base):
     manager_cluster_id = Column(String(36))
     manager_username = Column(String(36), primary_key=True)
     public_key = Column(String(4096))
+
+
+class UserToken(Base):
+    """
+    User token from oauth2 and local.
+    """
+
+    __tablename__ = "user_token"
+
+    username = Column(String(36), primary_key=True)
+    generated_time = Column(String(20))
+    access_token = Column(String(255))
+    refresh_token = Column(String(255))
+    local_access_token = Column(String(255))
+
+
+class UserInfo(Base):
+    """
+    User info.
+    """
+
+    __tablename__ = "user_info"
+
+    username = Column(String(36), primary_key=True)
+    email = Column(String(40))

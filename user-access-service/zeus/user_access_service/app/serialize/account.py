@@ -153,3 +153,12 @@ class ClusterSyncSchema(Schema):
 
     cluster_id = fields.String(required=True, validate=validate.Length(min=1, max=36))
     cluster_ip = fields.String(required=True, validate=validate.Length(min=1, max=16))
+
+
+class GenerateTokenSchema(Schema):
+    """
+    Generate token.
+    """
+
+    client_id = fields.String(required=True, validate=validate.Length(min=1, max=48))
+    access_token = fields.String(required=True, validate=validate.Length(min=1, max=255))

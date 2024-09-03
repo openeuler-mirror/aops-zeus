@@ -11,12 +11,10 @@
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
 from zeus.user_access_service.database.table import (
-    Auth,
     Permission,
     Role,
     RolePermissionAssociation,
     Route,
-    User,
     UserClusterAssociation,
     UserMap,
     UserRoleAssociation,

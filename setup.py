@@ -12,19 +12,20 @@
 # ******************************************************************************/
 
 import os
-from setuptools import setup, find_packages
 from distutils.sysconfig import get_python_lib
 
+from setuptools import find_packages, setup
 
 CLI_DIR = os.path.join(get_python_lib(), "zeus", "cli")
 
+
 setup(
     name='aops-zeus',
-    version='2.0.0',
+    version='2.1.0',
     packages=find_packages(),
     install_requires=["click", "PyYAML", "pymysql", "kazoo"],
     data_files=[
-        (CLI_DIR, ["zeus/cli/deploy.sh", "zeus/cli/nginx.conf.template"]),
+        (CLI_DIR, ["zeus/cli/deploy.sh"]),
     ],
     entry_points={
         'console_scripts': [
