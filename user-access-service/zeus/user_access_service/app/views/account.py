@@ -18,6 +18,7 @@ Description: Restful APIs for user
 
 
 from flask import g, make_response, request
+from vulcanus.conf.constant import OAUTH2_LOGOUT
 from vulcanus.database.proxy import RedisProxy
 from vulcanus.log.log import LOGGER
 from vulcanus.restful.resp import state
@@ -196,11 +197,11 @@ class Logout(BaseResponse):
         """
         if not g.username:
             return self.response(code=state.LOGOUT_ERROR)
-        logout_res = callback.logout(g.username)
-        if logout_res != state.SUCCEED:
-            return self.response(code=logout_res)
-        response = make_response(self.response(code=state.SUCCEED))
-        response.set_cookie('Authorization', '', expires=0)
+        status_res = callback.login_status_check(g.username)
+        if status_res != state.SUCCEED:
+            return self.response(code=status_res, message="login status check error.")
+        url = f"http://{configuration.domain}{OAUTH2_LOGOUT}"
+        response = make_response(self.response(code=state.SUCCEED, data=url))
         return response
 
 
@@ -484,27 +485,3 @@ class ClusterSync(BaseResponse):
         cluster_ip = params.get('cluster_ip')
         get_res = callback.cluster_synchronize(cluster_id, cluster_ip)
         return self.response(code=get_res)
-
-
-class AccessTokenAPI(BaseResponse):
-
-    @BaseResponse.handle(schema=GenerateTokenSchema, token=False)
-    def post(self, **parmas):
-        """
-        generate access token
-
-        Returns:
-            dict: response body
-        """
-
-        validate_token = BaseResponse.get_response(
-            method="post",
-            url=f"http://{configuration.domain}/oauth2/introspect",
-            data=dict(token=parmas.get("access_token"), client_id=parmas.get("client_id")),
-        )
-        if validate_token["label"] != state.SUCCEED:
-            return self.response(code=state.GENERATION_TOKEN_ERROR)
-        username = validate_token["data"]
-        token = generate_token(unique_iden=username, minutes=60 * 24, aud=parmas.get("client_id"))
-        RedisProxy.redis_connect.set("token-" + username + "-" + parmas.get("client_id"), token, 24 * 60 * 60)
-        return self.response(code=state.SUCCEED, data=dict(access_token=token))

@@ -25,13 +25,12 @@ from typing import Tuple
 import celery
 import celery.exceptions
 import sqlalchemy
-from flask import g, request
+from flask import g
 from vulcanus.conf import constant
 from vulcanus.conf.constant import (
     OAUTH2_AUTHORIZE_TOKEN,
     OAUTH2_INTROSPECT,
     OAUTH2_LOGIN,
-    OAUTH2_LOGOUT,
     OAUTH2_REFRESH_TOKEN,
     TaskStatus,
 )
@@ -201,30 +200,24 @@ class UserProxy(MysqlProxy):
         oauth2_token: dict = response_data.get("data")
         return SUCCEED, oauth2_token
 
-    def logout(self, username: str):
+    def login_status_check(self, username: str) -> str:
         """
-        Logout.
+        Login status check.
 
         Args:
             username(str): username
 
         Returns:
-            int: status code
+            str: status code
         """
         try:
             user_token = self.session.query(UserToken).filter_by(username=username).one()
         except sqlalchemy.exc.SQLAlchemyError as error:
             LOGGER.error(error)
-            LOGGER.error(f"logout failed: {username}.")
+            LOGGER.error(f"login status check: {username}.")
             return DATABASE_QUERY_ERROR
 
-        # request logout to oauth2, process logout callback for all registered applications
-        data = {"token": user_token.access_token, "client_id": configuration.client_id}
-        query_url = f"http://{configuration.domain}{OAUTH2_LOGOUT}"
-        g.headers.update({"Authorization": request.cookies.get("Authorization")})
-        response_data = BaseResponse.get_response(method="Post", url=query_url, data=data, header=g.headers)
-        response_status = response_data.get("label")
-        return response_status
+        return SUCCEED
 
     def oauth2_authorize_logout(self, params: dict):
         """
