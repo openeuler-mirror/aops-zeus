@@ -26,6 +26,7 @@ from zeus.host_information_service.app.views.host import (
     HostStatusAPI,
     HostTemplateAPI,
     SingleHostStatusAPI,
+    HostIpFilterAPI,
 )
 from zeus.host_information_service.app.views.host_group import (
     AllHostGroupMapAPI,
@@ -48,4 +49,5 @@ URLS = [
     (HostGroupInfoManageAPI, constant.HOSTS_GROUP + "/<string:group_id>"),
     (ClusterGroupInfoCacheAPI, constant.CLUSTER_GROUP_CACHE),
     (AllHostGroupMapAPI, constant.ALL_HOST_GROUP_MAP),
+    (HostIpFilterAPI, constant.HOSTS_IP_FILTER),
 ]

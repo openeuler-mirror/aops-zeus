@@ -1,5 +1,5 @@
 Name:		aops-zeus
-Version:	v2.0.0
+Version:	v2.0.1
 Release:	1
 Summary:	A service which is the foundation of aops.
 License:	MulanPSL2
@@ -12,7 +12,7 @@ Requires:   python3-pyyaml python3-PyMySQL python3-kazoo python3-click
 
 
 %description
-Provide one-click aops deployment, service start and stop, hot loading of 
+Provide one-click aops deployment, service start and stop, hot loading of
 configuration files, and database initialization.
 Provides:   aops-zeus
 
@@ -40,6 +40,14 @@ Requires:   aops-vulcanus >= v2.0.0 python3-celery python3-paramiko
 %description -n async-task
 A async task of aops.
 
+%package -n zeus-operation
+Summary: A operation manager service which is the foundation of aops.
+Requires:  aops-vulcanus >= v2.0.0
+Requires:  python3-gevent python3-uWSGI python3-paramiko
+
+%description -n zeus-operation
+A operation manager of aops.
+
 %package -n zeus-distribute
 Summary: A distributed service of aops.
 Requires:   aops-vulcanus >= v2.0.0
@@ -56,6 +64,11 @@ A distributed service of aops.
 
 # build for zeus-host-information
 pushd host-information-service
+%py3_build
+popd
+
+# build for zeus-operation
+pushd operation-service
 %py3_build
 popd
 
@@ -82,6 +95,13 @@ pushd host-information-service
 %py3_install
 mkdir -p %{buildroot}/opt/aops/database/
 cp zeus/host_information_service/database/*.sql %{buildroot}/opt/aops/database/
+popd
+
+# install for zeus-operation
+pushd operation-service
+%py3_install
+mkdir -p %{buildroot}/opt/aops/database/
+cp zeus/operation_service/database/*.sql %{buildroot}/opt/aops/database/
 popd
 
 # install for zeus-user-access
@@ -118,6 +138,13 @@ popd
 %{python3_sitelib}/zeus/host_information_service/*
 %attr(0755, root, root) /opt/aops/database/*
 
+%files -n zeus-operation
+%attr(0644,root,root) %{_sysconfdir}/aops/conf.d/zeus-operation.yml
+%attr(0755,root,root) %{_unitdir}/zeus-operation.service
+%{python3_sitelib}/zeus_operation*.egg-info/*
+%{python3_sitelib}/zeus/operation_service/*
+%attr(0755, root, root) /opt/aops/database/*
+
 %files -n zeus-user-access
 %attr(0644,root,root) %{_sysconfdir}/aops/conf.d/zeus-user-access.yml
 %attr(0755,root,root) %{_unitdir}/zeus-user-access.service
@@ -142,6 +169,9 @@ popd
 %{python3_sitelib}/zeus/distribute_service/*
 
 %changelog
+* Thu Sep 5 2024 luxuexian<luxuexian@huawei.com> - v2.0.0-1
+- support osmind operation
+
 * Thu Jul 16 2024 luxuexian<luxuexian@huawei.com> - v2.0.0-1
 - Update to v2.0.0
 - Add microservice split, cluster management and user management

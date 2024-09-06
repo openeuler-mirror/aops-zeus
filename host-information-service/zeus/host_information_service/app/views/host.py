@@ -42,6 +42,7 @@ from zeus.host_information_service.app.serialize.host import (
     TemplateLangSchema,
     UpdateHostSchema,
     UpdateHostStatusSchema,
+    HostIpsFilterSchema,
 )
 from zeus.host_information_service.database import Host
 
@@ -626,4 +627,24 @@ class HostFilterAPI(BaseResponse):
                 }
         """
         status_code, host_list = callback.get_filter_hosts(param)
+        return self.response(code=status_code, data=host_list)
+
+
+class HostIpFilterAPI(BaseResponse):
+    """
+    Interface for host filter by ips
+    """
+
+    @BaseResponse.handle(schema=HostIpsFilterSchema, proxy=HostProxy)
+    def get(self, callback: HostProxy, **param):
+        """
+        Get the host that meets the filter
+
+        Args:
+            param: e.g
+                {
+                    "host_ips": []
+                }
+        """
+        status_code, host_list = callback.get_ips_hosts(param)
         return self.response(code=status_code, data=host_list)
