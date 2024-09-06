@@ -1,0 +1,7 @@
+{
+  "result_code": 0,
+  "work_node": "aaa",
+  "errors_info": {
+      "node_ip": "err_msg"
+  }
+}

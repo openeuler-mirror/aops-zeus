@@ -1,0 +1,29 @@
+---
+version: 1.0
+name: task
+
+hosts:
+  {% for host in hosts %}
+  - hostname: {{host.hostname}}
+    ip: {{host.ip}}
+    port: {{host.port}}
+    username: {{host.username}}
+    password: "{{host.password}}"
+  {% endfor %}
+
+
+jobs:
+  {% for job in jobs %}
+  - name: {{job.name}}
+    dependency: []
+    hosts: {{job.hosts}}
+    steps:
+      {% for step in job.steps %}
+      - name: {{step.name}}
+        module:
+          {% for item in step.step_items %}
+          {{item|safe}}
+          {% endfor %}
+        dependency: [ {{step.dependency}} ]
+      {% endfor %}
+  {% endfor %}

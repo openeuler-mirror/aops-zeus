@@ -1,0 +1,22 @@
+uwsgi:
+  port: 11118
+  daemonize: /var/log/aops/uwsgi/operation.log
+  http_timeout: 60
+  processes: 1
+  gevent: 100
+
+task:
+  max_running_tasks: 5
+  task_timeout: 900
+  batch_size_hosts: 5
+  task_pool_timeout: 300
+  task_result_keep_time: 7
+  max_task_number_in_task_pool: 50
+
+support:
+  os_name: 
+    - CentOS
+    - openEuler
+  os_arch:
+    - aarch64
+    - x86_64
