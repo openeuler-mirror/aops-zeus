@@ -15,6 +15,7 @@ import socket
 import uuid
 from dataclasses import dataclass
 from io import BytesIO, StringIO
+from typing import Tuple
 
 import gevent
 import paramiko
@@ -105,6 +106,46 @@ class SSH_Verify:
 
         return state.SUCCEED
 
+    @staticmethod
+    def _verify_ssh_identity_and_get_os_info(ssh_login_info) -> Tuple[str, str]:
+        """
+        Verify that the ssh login information is correct
+
+        Args:
+            ssh_login_info(ClientConnectArgs): e.g
+                ClientConnectArgs(host_ip='127.0.0.1', ssh_port=22, ssh_user='root', pkey=RSAKey string)
+
+        Returns:
+            status code, os_info
+        """
+        client, stdout = None, ","
+        try:
+            client = SSH(
+                ip=ssh_login_info.host_ip,
+                username=ssh_login_info.ssh_user,
+                port=ssh_login_info.ssh_port,
+                pkey=paramiko.RSAKey.from_private_key(StringIO(ssh_login_info.pkey)),
+            )
+            _, stdout, _ = client.execute_command("source /etc/os-release && echo -n $(arch),$NAME")
+        except socket.error as error:
+            LOGGER.error(f"Failed to connect to host %s: %s", ssh_login_info.host_ip, error)
+            return state.SSH_CONNECTION_ERROR, stdout
+        except SSHException as error:
+            LOGGER.error(f"Failed to connect to host %s: %s", ssh_login_info.host_ip, error)
+            return state.SSH_AUTHENTICATION_ERROR, stdout
+        except IndexError:
+            LOGGER.error(
+                f"Failed to connect to host %s because the pkey of the host are missing", ssh_login_info.host_ip
+            )
+            return state.SSH_AUTHENTICATION_ERROR, stdout
+        except Exception as error:
+            LOGGER.error(f"Failed to connect to host %s: %s", ssh_login_info.host_ip, error)
+            return state.SSH_CONNECTION_ERROR, stdout
+        finally:
+            if client:
+                client.close()
+        return state.SUCCEED, stdout
+
     def _create_ssh_public_key(self, ip: str, port: int, username: str, password: str) -> tuple:
         """
         generate RSA key pair,save public key to the target host machine
@@ -124,17 +165,19 @@ class SSH_Verify:
             f"mkdir -p -m 700 ~/.ssh "
             f"&& echo {public_key!r} >> ~/.ssh/authorized_keys"
             f"&& chmod 600 ~/.ssh/authorized_keys"
+            f"&& source /etc/os-release"
+            f"&& echo -n $(arch),$NAME"
         )
-        client = None
+        client, stdout = None, ","
         try:
             client = SSH(ip=ip, username=username, port=port, password=password)
-            status, _, stderr = client.execute_command(command)
+            status, stdout, stderr = client.execute_command(command)
         except socket.error as error:
             LOGGER.error(error)
-            return state.SSH_CONNECTION_ERROR, None
+            return state.SSH_CONNECTION_ERROR, None, stdout
         except paramiko.ssh_exception.SSHException as error:
             LOGGER.error(error)
-            return state.SSH_AUTHENTICATION_ERROR, None
+            return state.SSH_AUTHENTICATION_ERROR, None, stdout
         finally:
             if client:
                 client.close()
@@ -142,9 +185,9 @@ class SSH_Verify:
         if status:
             LOGGER.error(stderr)
             LOGGER.error(f"Save public key on host failed, host ip is {ip}!")
-            return state.EXECUTE_COMMAND_ERROR, None
+            return state.EXECUTE_COMMAND_ERROR, None, stdout
 
-        return state.SUCCEED, private_key
+        return state.SUCCEED, private_key, stdout
 
 
 class HostManageAPI(BaseResponse, SSH_Verify):
@@ -172,14 +215,18 @@ class HostManageAPI(BaseResponse, SSH_Verify):
 
         private_key = params.pop("ssh_pkey")
         if private_key:
-            status = self._verify_ssh_identity(
+            status, stdout = self._verify_ssh_identity_and_get_os_info(
                 ClientConnect(params["host_ip"], params["ssh_port"], params["ssh_user"], private_key)
             )
         else:
-            status, private_key = self._create_ssh_public_key(
+            status, private_key, stdout = self._create_ssh_public_key(
                 params["host_ip"], params["ssh_port"], params["ssh_user"], params.pop("password")
             )
         host_status = HostStatus.ONLINE if status == state.SUCCEED else HostStatus.UNESTABLISHED
+
+        os_arch, os_name = stdout.split(",")
+        params["ext_props"] = json.dumps({"os": {"os_arch": os_arch, "os_name": os_name}})
+
         add_host_status = callback.add_host(host_info=params, status=host_status, private_key=private_key)
 
         return self.response(code=add_host_status)
@@ -253,12 +300,19 @@ class BatchAddHostAPI(BaseResponse, SSH_Verify):
         password = host.pop("password", None)
         pkey = host.pop("ssh_pkey", None)
         if pkey:
-            status = self._verify_ssh_identity(ClientConnect(host["host_ip"], host["ssh_port"], host["ssh_user"], pkey))
+            status, stdout = self._verify_ssh_identity_and_get_os_info(
+                ClientConnect(host["host_ip"], host["ssh_port"], host["ssh_user"], pkey)
+            )
         else:
-            status, pkey = self._create_ssh_public_key(host["host_ip"], host["ssh_port"], host["ssh_user"], password)
+            status, pkey, stdout = self._create_ssh_public_key(
+                host["host_ip"], host["ssh_port"], host["ssh_user"], password
+            )
         _insert_host = Host(**host, status=HostStatus.OFFLINE, pkey=pkey, host_id=str(uuid.uuid4()))
         if status == state.SUCCEED:
             _insert_host.status = HostStatus.ONLINE
+
+        os_arch, os_name = stdout.split(",")
+        _insert_host.ext_props = json.dumps({"os": {"os_arch": os_arch, "os_name": os_name}})
         return _insert_host
 
     def _verify_request(self, request_param) -> tuple:
@@ -321,6 +375,18 @@ class BatchAddHostAPI(BaseResponse, SSH_Verify):
 
 class HostInfoManageAPI(BaseResponse, SSH_Verify):
 
+    @staticmethod
+    def _is_valid_detail_info(host_info: str):
+        try:
+            info = json.loads(host_info)
+        except ValueError:
+            LOGGER.warning("Failed to loads host detail info!")
+            info = {}
+
+        if len(info.keys()) < 2:
+            return False
+        return True
+
     def _update_host_external_info(self, host_id: str, update_info: dict) -> None:
         """Update host external info
 
@@ -381,7 +447,7 @@ class HostInfoManageAPI(BaseResponse, SSH_Verify):
         if host_info.ext_props:
             result.update(json.loads(host_info.ext_props))
 
-        if not host_info.ext_props or refresh:
+        if refresh or not self._is_valid_detail_info(host_info.ext_props):
             host_status, host_info = self._query_detail_info_from_client(host_info)
             if host_status == state.SUCCEED:
                 self._update_host_external_info(host_id, {"ext_props": host_info})
@@ -462,16 +528,22 @@ class HostInfoManageAPI(BaseResponse, SSH_Verify):
         status = None
 
         if params["password"]:
-            status, private_key = self._create_ssh_public_key(host_ip, ssh_port, ssh_user, params.pop("password"))
+            status, private_key, stdout = self._create_ssh_public_key(
+                host_ip, ssh_port, ssh_user, params.pop("password")
+            )
             params["pkey"] = private_key
 
         if params["ssh_pkey"]:
             params["pkey"] = params.pop("ssh_pkey")
-            status = self._verify_ssh_identity(ClientConnect(host_ip, ssh_port, ssh_user, params["pkey"]))
+            status, stdout = self._verify_ssh_identity_and_get_os_info(
+                ClientConnect(host_ip, ssh_port, ssh_user, params["pkey"])
+            )
 
         if status:
             params["status"] = HostStatus.ONLINE if status == state.SUCCEED else HostStatus.UNESTABLISHED
 
+        os_arch, os_name = stdout.split(",")
+        params["ext_props"] = json.dumps({"os": {"os_arch": os_arch, "os_name": os_name}})
         update_status = callback.update_host_info(host_id, params)
 
         return self.response(code=update_status)
