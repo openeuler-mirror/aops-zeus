@@ -148,8 +148,10 @@ class RefreshToken(BaseResponse):
         refresh_res, refresh_data = callback.refresh_token(invaild_token)
         if refresh_res != state.SUCCEED:
             return self.response(code=refresh_res)
-        if RedisProxy.redis_connect.keys("token-" + refresh_data["username"] + "-*"):
-            RedisProxy.redis_connect.delete(*RedisProxy.redis_connect.keys("token-" + refresh_data["username"] + "-*"))
+        if RedisProxy.redis_connect.keys("token-" + refresh_data["username"] + "-" + configuration.client_id):
+            RedisProxy.redis_connect.delete(
+                *RedisProxy.redis_connect.keys("token-" + refresh_data["username"] + "-" + configuration.client_id)
+            )
         # 20 minutes expire
         RedisProxy.redis_connect.set(
             "token-" + refresh_data["username"] + "-" + configuration.client_id, refresh_data["token"], 20 * 60
