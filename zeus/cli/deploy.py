@@ -276,7 +276,7 @@ class SetConfig:
             if any([upstream, proxys, statics]):
                 nginx_config = NGINX_CONFIG_TEMPLATE % ("\n".join(upstream), "\n".join(statics), "\n".join(proxys))
                 with os.fdopen(
-                    open(NGINX_CONFIG, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644), "w", encoding="utf-8"
+                    os.open(NGINX_CONFIG, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644), "w", encoding="utf-8"
                 ) as file:
                     file.write(nginx_config)
 
