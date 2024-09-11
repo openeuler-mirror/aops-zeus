@@ -541,9 +541,8 @@ class HostInfoManageAPI(BaseResponse, SSH_Verify):
 
         if status:
             params["status"] = HostStatus.ONLINE if status == state.SUCCEED else HostStatus.UNESTABLISHED
-
-        os_arch, os_name = stdout.split(",")
-        params["ext_props"] = json.dumps({"os": {"os_arch": os_arch, "os_name": os_name}})
+            os_arch, os_name = stdout.split(",")
+            params["ext_props"] = json.dumps({"os": {"os_arch": os_arch, "os_name": os_name}})
         update_status = callback.update_host_info(host_id, params)
 
         return self.response(code=update_status)
