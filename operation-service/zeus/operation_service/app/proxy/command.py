@@ -49,6 +49,9 @@ class CommandProxy(MysqlProxy):
     
     def add_command(self, data):
         try:
+            command = self.session.query(Command).filter(Command.command_name == data['command_name']).first()
+            if command:
+                return DATA_EXIST
             self.session.add(Command(**data, command_id=str(uuid.uuid1()), create_time=datetime.now()))
             self.session.commit()
             LOGGER.info("add command [%s] succeed", data['command_name'])

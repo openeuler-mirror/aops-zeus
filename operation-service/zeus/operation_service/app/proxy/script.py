@@ -91,12 +91,6 @@ class ScriptProxy(MysqlProxy):
             return PARAM_ERROR
         return self._save_file(script_id)
         
-    def _check_script_task_dependency(self, script_id):
-        operate_script_association = self.session.query(OperateScript).filter(OperateScript.script_id == script_id).first()
-        task_operate_nums = self.session.query(TaskOperate).filter(TaskOperate.operate_id == operate_script_association.operate_id).count()
-        if task_operate_nums>0:
-            return True
-        return False
 
     def batch_delete_script(self, script_ids):
         delete_success_script_ids = list()
@@ -107,10 +101,7 @@ class ScriptProxy(MysqlProxy):
                 if not script:
                     delete_success_script_ids.append(script_id)
                     continue
-                
-                if self._check_script_task_dependency(script_id):
-                    delete_failed_script_ids.append(script_id)
-                    continue
+
                 operate_script_associations = self.session.query(OperateScript).filter(OperateScript.script_id == script_id).all()
                 for osa in operate_script_associations:
                     self.session.delete(osa)
@@ -210,14 +201,14 @@ class ScriptProxy(MysqlProxy):
 
 
     def _save_file(self, script_id):
-        file_list = request.files
+        file_list = request.files.getlist('files')
 
         try:
             save_file_dir = os.path.join(SCRIPTS_DIR, script_id)
             if not os.path.exists(save_file_dir):
                 os.makedirs(save_file_dir, exist_ok=True)
             # 当前上传不包含目录结构
-            for _, file in file_list.items():
+            for file in file_list:
                 file_full = os.path.join(save_file_dir, str(file.filename))
                 file.save(file_full)
 
