@@ -12,7 +12,6 @@
 # ******************************************************************************/
 import os
 import re
-from functools import lru_cache
 
 from async_task.settings import configuration
 from vulcanus.log.log import LOGGER
@@ -71,7 +70,6 @@ class DynamicUpdateUpstreamTask(TimedTask):
         except IOError:
             return None
 
-    @lru_cache(maxsize=None, typed=True)
     def _replace_upstream(self, upstream_name, value):
         """
         Replace the upstream of the service

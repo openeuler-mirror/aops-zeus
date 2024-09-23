@@ -23,6 +23,7 @@ MODULES = {
     "zeus-host-information": "zeus.host_information_service",
     "zeus-user-access": "zeus.user_access_service",
     "zeus-distribute": "zeus.distribute_service",
+    "zeus-operation": "zeus.operation_service",
 }
 
 
