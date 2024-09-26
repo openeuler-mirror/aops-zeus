@@ -122,6 +122,11 @@ class TaskProxy(MysqlProxy):
     
     def add_task(self, data):
         try:
+            task = self.session.query(Task).filter(Task.task_name == data['task_name']).first()
+            if task:
+                return DATA_EXIST
+            if len(data['host_ids']) == 0:
+                return NO_DATA
             task_id = str(uuid.uuid1())
             if data['task_type'] == TaskType.SCRIPT_EXECUTION:
                 self.session.add(TaskOperate(task_id=task_id, operate_id=data['action_ids'][0]))

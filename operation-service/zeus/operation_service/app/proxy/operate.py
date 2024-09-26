@@ -54,6 +54,9 @@ class OperateProxy(MysqlProxy):
     
     def add_operate(self, data):
         try:
+            operate = self.session.query(Operate).filter(Operate.operate_name == data['operate_name']).first()
+            if operate:
+                return DATA_EXIST
             self.session.add(Operate(**data, operate_id=str(uuid.uuid1()), create_time=datetime.now()))
             self.session.commit()
             LOGGER.info("add operate [%s] succeed", data['operate_name'])
