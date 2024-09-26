@@ -36,7 +36,7 @@ from zeus.host_information_service.app import cache
 from zeus.host_information_service.app.serialize.host import (
     GetHostsPage_ResponseSchema,
     HostsInfo_ResponseSchema,
-    HostByIps_ResponseSchema,
+    HostByIpsResponseSchema,
 )
 from zeus.host_information_service.database import Host, HostGroup
 from zeus.host_information_service.database.table import Cluster
@@ -540,7 +540,7 @@ class HostProxy(MysqlProxy):
             hosts = self.session.query(Host).filter(*filters).all()
             found_ips = [host.host_ip for host in hosts]
             not_found_ips = [host_ip for host_ip in filter_param["host_ips"] if host_ip not in found_ips]
-            result = {"hosts": HostByIps_ResponseSchema(many=True).dump(hosts), "not_found_ips": not_found_ips}
+            result = {"hosts": HostByIpsResponseSchema(many=True).dump(hosts), "not_found_ips": not_found_ips}
             return SUCCEED, result
         except sqlalchemy.exc.SQLAlchemyError as error:
             LOGGER.error(error)
