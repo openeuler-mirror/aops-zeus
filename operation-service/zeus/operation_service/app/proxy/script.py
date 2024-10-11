@@ -138,8 +138,6 @@ class ScriptProxy(MysqlProxy):
 
     def modify_script_info(self, script_id, data):
         try:
-            if self._check_script_task_dependency(script_id):
-                return TASK_DEPENDENCY_ERROR, None
             if "operate_id" in data.keys():
                 operate_id = data.pop("operate_id")
                 self.session.query(OperateScript).filter_by(script_id = script_id).update({"operate_id": operate_id})
