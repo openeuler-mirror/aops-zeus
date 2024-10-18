@@ -218,7 +218,7 @@ class RemoteControl(object):
                 self.m_channel.send(b"PS1=\"" + self.waitstr.encode("utf-8") + b"\"\n")
                 ret, _ = self.read_until(">", self.timeout * 4, wait_list=["$", "#"])
                 LOGGER.info(f"[ssh]: {repr(ret)}")
-                # bash命令返回较慢 等待第二次返回，用于清空 chanel
+                # bash命令返回较慢 等待第二次返回，用于清空 channel
                 if ret.count("$".encode("utf-8")) != 2 and ret.count("#".encode("utf-8")) != 2 and ret.count(
                         ">".encode("utf-8")) != 2:
                     ret, _ = self.read_until(">", 1, wait_list=["$", "#"], ignore_log=True)
