@@ -92,6 +92,7 @@ callable=app
 http-timeout={config.http_timeout}
 processes={config.processes}
 daemonize={config.daemonize}
+buffer-size={config.buffer_size}
 vacuum=true
 need-app=true
 """

@@ -4,3 +4,4 @@ uwsgi:
   http_timeout: 60
   processes: 1
   gevent: 100
+  buffer_size: 32768
