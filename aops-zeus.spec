@@ -1,5 +1,6 @@
+%define vulcanus_version v2.1.0
 Name:		aops-zeus
-Version:	v2.0.1
+Version:	v2.1.0
 Release:	1
 Summary:	A service which is the foundation of aops.
 License:	MulanPSL2
@@ -18,7 +19,7 @@ Provides:   aops-zeus
 
 %package -n zeus-host-information
 Summary: A host manager service which is the foundation of aops.
-Requires:  aops-vulcanus >= v2.0.0
+Requires:  aops-vulcanus >= %{vulcanus_version} aops-zeus >= %{version}
 Requires:  python3-gevent python3-uWSGI python3-paramiko
 
 %description -n zeus-host-information
@@ -26,7 +27,7 @@ A host manager service which is the foundation of aops.
 
 %package -n zeus-user-access
 Summary: A user manager service which is the foundation of aops.
-Requires:   aops-vulcanus >= v2.0.0
+Requires:   aops-vulcanus >= %{vulcanus_version} aops-zeus >= %{version}
 Requires:   python3-celery python3-uWSGI
 
 %description -n zeus-user-access
@@ -34,7 +35,7 @@ A user manager service which is the foundation of aops.
 
 %package -n async-task
 Summary: A async task of aops.
-Requires:   aops-vulcanus >= v2.0.0 python3-celery python3-paramiko
+Requires:   aops-vulcanus >= %{vulcanus_version} python3-celery python3-paramiko
 
 
 %description -n async-task
@@ -42,7 +43,7 @@ A async task of aops.
 
 %package -n zeus-operation
 Summary: A operation manager service which is the foundation of aops.
-Requires:  aops-vulcanus >= v2.0.0
+Requires:  aops-vulcanus >= %{vulcanus_version} aops-zeus >= %{version}
 Requires:  python3-gevent python3-uWSGI python3-paramiko
 
 %description -n zeus-operation
@@ -50,7 +51,7 @@ A operation manager of aops.
 
 %package -n zeus-distribute
 Summary: A distributed service of aops.
-Requires:   aops-vulcanus >= v2.0.0
+Requires:   aops-vulcanus >= %{vulcanus_version} aops-zeus >= %{version}
 Requires:   python3-uWSGI python3-gevent
 %description -n zeus-distribute
 A distributed service of aops.
@@ -115,9 +116,6 @@ popd
 pushd async-task
 %py3_install
 mkdir -p %{buildroot}/opt/aops/celery
-mkdir -p %{_sysconfdir}/aops/sync-conf.d/rdb
-cp async_task/tasks/synchronize_conf/instance.properties %{_sysconfdir}/aops/sync-conf.d
-cp async_task/tasks/synchronize_conf/rdb_conf/* %{_sysconfdir}/aops/sync-conf.d/rdb
 popd
 
 # install for zeus-distribute
@@ -169,10 +167,13 @@ popd
 %{python3_sitelib}/zeus/distribute_service/*
 
 %changelog
+* Thu Oct 24 2024 luxuexian<luxuexian@huawei.com> - v2.1.0-1
+- Adapt user-access-service to authHub
+
 * Thu Sep 5 2024 luxuexian<luxuexian@huawei.com> - v2.0.0-1
 - support osmind operation
 
-* Thu Jul 16 2024 luxuexian<luxuexian@huawei.com> - v2.0.0-1
+* Tue Jul 16 2024 luxuexian<luxuexian@huawei.com> - v2.0.0-1
 - Update to v2.0.0
 - Add microservice split, cluster management and user management
 

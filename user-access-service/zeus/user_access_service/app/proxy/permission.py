@@ -32,8 +32,8 @@ from zeus.user_access_service.database.table import (
     Permission,
     Role,
     RolePermissionAssociation,
-    User,
     UserClusterAssociation,
+    UserInfo,
     UserMap,
     UserRoleAssociation,
 )
@@ -74,10 +74,9 @@ class PermissionProxy(MysqlProxy):
         result = {"total_count": 0, "total_page": 0, "result": []}
         if cache.user_role != UserRoleType.ADMINISTRATOR:
             return result
-        filters = {User.managed == False}
+        filters = set()
         if page_filter["username"]:
-            filters.add(User.username.like("%{}%".format(page_filter["username"])))
-
+            filters.add(UserInfo.username.like("%{}%".format(page_filter["username"])))
         cluster_subquery = (
             self.session.query(
                 UserClusterAssociation.username,
@@ -95,13 +94,13 @@ class PermissionProxy(MysqlProxy):
         filters.add(role_subquery.c.role_type != UserRoleType.ADMINISTRATOR)
         accounts_query = (
             self.session.query(
-                User.username,
-                User.email,
+                UserInfo.username,
+                UserInfo.email,
                 role_subquery.c.role_type,
                 func.coalesce(cluster_subquery.c.clusters_num, 0).label("clusters_num"),
             )
-            .outerjoin(cluster_subquery, cluster_subquery.c.username == User.username)
-            .outerjoin(role_subquery, role_subquery.c.username == User.username)
+            .outerjoin(cluster_subquery, cluster_subquery.c.username == UserInfo.username)
+            .outerjoin(role_subquery, role_subquery.c.username == UserInfo.username)
             .filter(*filters)
         )
         result["total_count"] = accounts_query.count()
@@ -445,9 +444,6 @@ class PermissionProxy(MysqlProxy):
                     public_key=permissions["public_key"],
                 )
             )
-            self.session.add(
-                User(username=cluster_username, password=User.hash_password(cluster_username), managed=True)
-            )
             role_id = str(uuid.uuid4())
             self.session.add(Role(role_id=role_id, role_type=UserRoleType.NORMAL))
             self.session.add(UserRoleAssociation(username=cluster_username, role_id=role_id))
@@ -513,7 +509,6 @@ class PermissionProxy(MysqlProxy):
             return SUCCEED
 
         cluster_user = user_map.username
-        self.session.query(User).filter(User.username == cluster_user).delete(synchronize_session=False)
         self.session.query(UserMap).filter(
             UserMap.username == cluster_user, UserMap.manager_cluster_id == cluster_id
         ).delete(synchronize_session=False)

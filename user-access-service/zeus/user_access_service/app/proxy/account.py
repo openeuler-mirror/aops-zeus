@@ -15,8 +15,10 @@ Time: 2024-6-5 10:37:56
 Author: 
 Description:
 """
+import base64
 import json
 import subprocess
+import time
 import uuid
 from typing import Tuple
 
@@ -25,31 +27,60 @@ import celery.exceptions
 import sqlalchemy
 from flask import g
 from vulcanus.conf import constant
-from vulcanus.conf.constant import (GITEE_OAUTH, GITEE_TOKEN, GITEE_USERINFO, REFRESH_TOKEN_EXP,
-                                    TaskStatus)
+from vulcanus.conf.constant import (
+    OAUTH2_AUTHORIZE_TOKEN,
+    OAUTH2_INTROSPECT,
+    OAUTH2_LOGIN,
+    OAUTH2_REFRESH_TOKEN,
+    TaskStatus,
+)
 from vulcanus.database.proxy import MysqlProxy, RedisProxy
 from vulcanus.log.log import LOGGER
-from vulcanus.restful.resp.state import (AUTH_ERROR, AUTH_USERINFO_SYNC_ERROR, CLUSTER_MANAGE_ERROR,
-                                         CLUSTER_REPEAT_BIND_ERROR, DATA_EXIST,
-                                         DATABASE_INSERT_ERROR, DATABASE_QUERY_ERROR,
-                                         DATABASE_UPDATE_ERROR, GENERATION_TOKEN_ERROR,
-                                         IP_PING_FAILED, LOGIN_ERROR, NO_BOUND, NO_DATA,
-                                         NO_MANAGED_DATA, PASSWORD_ERROR, PERMESSION_ERROR,
-                                         REDIS_CACHEINFO_ERROR, REDIS_SYNCHRONIZE_TASK_FAILED,
-                                         REPEAT_BIND, REPEAT_DATA, REPEAT_PASSWORD, SUCCEED,
-                                         SYNCHRONIZE_ERROR, TARGET_CLUSTER_DELETE_ERROR,
-                                         TARGET_CLUSTER_MANAGE_ERROR, USER_ERROR)
+from vulcanus.restful.resp.state import (
+    AUTH_ERROR,
+    CLUSTER_MANAGE_ERROR,
+    CLUSTER_REPEAT_BIND_ERROR,
+    DATA_EXIST,
+    DATABASE_DELETE_ERROR,
+    DATABASE_INSERT_ERROR,
+    DATABASE_QUERY_ERROR,
+    DATABASE_UPDATE_ERROR,
+    IP_PING_FAILED,
+    NO_DATA,
+    NO_MANAGED_DATA,
+    PERMESSION_ERROR,
+    REDIS_CACHEINFO_ERROR,
+    REDIS_SYNCHRONIZE_TASK_FAILED,
+    REPEAT_DATA,
+    SUCCEED,
+    SYNCHRONIZE_ERROR,
+    TARGET_CLUSTER_DELETE_ERROR,
+    TARGET_CLUSTER_MANAGE_ERROR,
+    TOKEN_EXPIRE,
+)
 from vulcanus.restful.response import BaseResponse
-from vulcanus.rsa import (generate_rsa_key_pair, get_private_key_pem_str, get_public_key_pem_str,
-                          load_private_key, load_public_key, sign_data, verify_signature)
+from vulcanus.rsa import (
+    generate_rsa_key_pair,
+    get_private_key_pem_str,
+    get_public_key_pem_str,
+    load_private_key,
+    load_public_key,
+    sign_data,
+    verify_signature,
+)
 from vulcanus.token import generate_token
-from werkzeug.security import check_password_hash, generate_password_hash
 from zeus.user_access_service.app import cache, celery_client
 from zeus.user_access_service.app.settings import configuration
-from zeus.user_access_service.database.table import (Auth, Permission, Role,
-                                                     RolePermissionAssociation, User,
-                                                     UserClusterAssociation, UserMap,
-                                                     UserRoleAssociation)
+from zeus.user_access_service.database.table import (
+    Permission,
+    Role,
+    RolePermissionAssociation,
+    UserClusterAssociation,
+    UserInfo,
+    UserMap,
+    UserRoleAssociation,
+    UserToken,
+)
 
 
 class UserProxy(MysqlProxy):
@@ -57,14 +88,13 @@ class UserProxy(MysqlProxy):
     User related table operation
     """
 
-    def register_user(self, data) -> str:
+    def oauth2_authorize_register_user(self, data) -> str:
         """Register user.
 
         Args:
             data (dict):
             {
                 username (str)
-                password (str)
                 email (str)
             }
 
@@ -72,9 +102,9 @@ class UserProxy(MysqlProxy):
             str: status_code
         """
         local_cluster_id = cache.location_cluster["cluster_id"]
-        return self._register_user(local_cluster_id, data)
+        return self._oauth2_authorize_register_user(local_cluster_id, data)
 
-    def _register_user(self, local_cluster_id, data) -> str:
+    def _oauth2_authorize_register_user(self, local_cluster_id, data) -> str:
         """Register user, bind the local cluster, and default is normal user.
 
         Args:
@@ -82,7 +112,6 @@ class UserProxy(MysqlProxy):
             data (dict):
             {
                 username (str)
-                password (str)
                 email (str)
             }
 
@@ -90,17 +119,13 @@ class UserProxy(MysqlProxy):
             str : status_code
         """
         username = data.get('username')
-        password = data.get('password')
-        email = data.get("email")
         try:
-            if not self._check_user_not_exist(username):
-                LOGGER.error(f"add user failed, username exists: {username}")
-                return DATA_EXIST
-            self._add_user(username, password, email)
             # bind current cluster for the user
             self._associate_cluster_with_user(username, local_cluster_id, username, "")
             # grant normal role for the user
             self._grant_user_role(username=username, role_type=constant.UserRoleType.NORMAL)
+            # save user info
+            self._save_user_info(data)
             self.session.commit()
             LOGGER.debug("add user succeed.")
         except sqlalchemy.exc.SQLAlchemyError as error:
@@ -110,27 +135,9 @@ class UserProxy(MysqlProxy):
             return DATABASE_INSERT_ERROR
         return SUCCEED
 
-    def _check_user_not_exist(self, username: str):
-        query_res = self.session.query(User).filter_by(username=username).count()
-        if query_res != 0:
-            return False
-        return True
-
-    def _add_user(self, username: str, password: str, email: str, managed=False):
-        """
-        Setup user
-
-        Args:
-            data(dict): parameter, e.g.
-                {
-                    "username": "xxx",
-                    "password": "xxx",
-                    "email": "xxx@xxx.com"
-                }
-        """
-        password_hash = User.hash_password(password)
-        user = User(username=username, password=password_hash, email=email, managed=managed)
-        self.session.add(user)
+    def _save_user_info(self, data: dict):
+        user_info = UserInfo(username=data["username"], email=data["email"])
+        self.session.add(user_info)
 
     def _grant_user_role(self, username: str, role_type: str):
         """Grant user role.
@@ -145,15 +152,113 @@ class UserProxy(MysqlProxy):
         self.session.add(user_role_assoc)
         self.session.add(role)
 
-    def login(self, data):
+    def refresh_token(self, invalid_token: str) -> Tuple[str, dict]:
         """
-        Check user login
+        Get new access token by refresh token.
+
+        Args:
+            invalid_token(str): expired access token
+
+        Returns:
+            Tuple[str, dict]
+        """
+        try:
+            user_token = self.session.query(UserToken).filter_by(local_access_token=invalid_token).one_or_none()
+            if not user_token:
+                return TOKEN_EXPIRE, {}
+            username = user_token.username
+            refresh_res, oauth2_token = self._refresh_token(user_token.refresh_token)
+            if refresh_res != SUCCEED:
+                return refresh_res, {}
+            local_access_token = generate_token(unique_iden=username, minutes=60 * 24, aud=configuration.client_id)
+            self.session.query(UserToken).filter_by(username=username).update(
+                {"access_token": oauth2_token.get("access_token"), "local_access_token": local_access_token}
+            )
+            self.session.commit()
+        except sqlalchemy.orm.exc.MultipleResultsFound as error:
+            LOGGER.error(error)
+            LOGGER.error(f"user should be unique: {username}")
+            return REPEAT_DATA, {}
+        except sqlalchemy.exc.SQLAlchemyError as error:
+            LOGGER.error(error)
+            LOGGER.error("user login failed.")
+            return DATABASE_UPDATE_ERROR, {}
+
+        return SUCCEED, dict(token=local_access_token, username=username)
+
+    def _refresh_token(self, refresh_token: str) -> Tuple[str, dict]:
+        data = {
+            "refresh_token": refresh_token,
+            "client_id": configuration.client_id,
+        }
+        query_url = f"http://{configuration.domain}{OAUTH2_REFRESH_TOKEN}"
+        response_data = BaseResponse.get_response(method="Post", url=query_url, data=data, header=g.headers)
+        response_status = response_data.get("label")
+        if response_status != SUCCEED:
+            return response_status, {}
+
+        oauth2_token: dict = response_data.get("data")
+        return SUCCEED, oauth2_token
+
+    def login_status_check(self, username: str) -> str:
+        """
+        Login status check.
+
+        Args:
+            username(str): username
+
+        Returns:
+            str: status code
+        """
+        try:
+            user_token = self.session.query(UserToken).filter_by(username=username).one()
+        except sqlalchemy.exc.SQLAlchemyError as error:
+            LOGGER.error(error)
+            LOGGER.error(f"login status check: {username}.")
+            return DATABASE_QUERY_ERROR
+
+        return SUCCEED
+
+    def oauth2_authorize_logout(self, params: dict):
+        """
+        Oauth2 authorize logout.
+
+        Args:
+            {
+                "username":"admin",
+                "encrypted_string":"encrypted_string",
+            }
+
+        Returns:
+            int: status code
+        """
+        # decrypt data
+        encrypted_data = params.get("encrypted_string")
+        decrypt_data = base64.b64decode(encrypted_data.encode('utf-8'))
+        decrypt_data = decrypt_data.decode('utf-8')
+        username = params.get("username")
+        # check the info of encrypted_string, it should be: {client_id: client_secret}
+        if {configuration.client_id: configuration.client_secret} != eval(decrypt_data):
+            LOGGER.error(f"decrypt encrypted string for logout user error: {username}.")
+            return AUTH_ERROR
+        try:
+            self.session.query(UserToken).filter_by(username=username).delete(synchronize_session=False)
+            self.session.commit()
+        except sqlalchemy.exc.SQLAlchemyError as error:
+            LOGGER.error(error)
+            LOGGER.error(f"oauth2 authorize logout failed: {username}.")
+            self.session.rollback()
+            return DATABASE_DELETE_ERROR
+        return SUCCEED
+
+    def oauth2_authorize_login(self, data):
+        """
+        Oauth2 authorize login.
 
         Args:
             data(dict): parameter, e.g.
                 {
-                    "username": "xxx",
-                    "password": "xxxxx
+                    "code": "xxxxx
                 }
 
         Returns:
@@ -161,38 +266,120 @@ class UserProxy(MysqlProxy):
             auth_result: token generated after authentication e.g
                 {
                     "token": "xxxxx",
-                    "refresh_token": "xxxxx",
                     "username": "xxxxx",
                     "role_type": "administrator/normal",
                 }
         """
-        username = data.get('username')
-        password = data.get('password')
-        auth_result = dict(token=None, refresh_token=None)
+        authorization_code = data.get('code')
+        auth_result = dict(token=None)
         try:
-            user = self.session.query(User).filter_by(username=username).one_or_none()
-            if not user:
-                LOGGER.error("login with unknown username.")
-                return LOGIN_ERROR, auth_result
-
-            res = User.check_hash_password(user.password, password)
-            if not res:
-                LOGGER.error("login with wrong password")
-                return LOGIN_ERROR, auth_result
+            get_res, oauth2_tokens = self._oauth2_authorize(authorization_code)
+            if get_res != SUCCEED:
+                LOGGER.error(f"get oauth2 token failed.")
+                return get_res, auth_result
+            username = oauth2_tokens["username"]
             role_type = self._get_user_role_type(username)
-            gen_res, tokens = self._generate_token(username=username)
-            if not gen_res:
-                return gen_res, auth_result
-
-            return SUCCEED, {"type": role_type, **tokens}
+            local_access_token = generate_token(unique_iden=username, minutes=20, aud=configuration.client_id)
+            self._record_user_token(username, oauth2_tokens, local_access_token)
+            self.session.commit()
         except sqlalchemy.orm.exc.MultipleResultsFound as error:
             LOGGER.error(error)
             LOGGER.error(f"user should be unique: {username}")
+            self.session.rollback()
             return REPEAT_DATA, auth_result
         except sqlalchemy.exc.SQLAlchemyError as error:
             LOGGER.error(error)
-            LOGGER.error("user login failed.")
+            LOGGER.error(f"oauth2 authorize login failed: {username}.")
+            self.session.rollback()
             return DATABASE_QUERY_ERROR, auth_result
+        return SUCCEED, {"type": role_type, "token": local_access_token, "username": username}
+
+    def _record_user_token(self, username: str, oauth2_tokens: dict, local_access_token: str):
+        user_token = self.session.query(UserToken).filter_by(username=username).first()
+        oauth2_access_token = oauth2_tokens.get("access_token")
+        oauth2_refresh_token = oauth2_tokens.get("refresh_token")
+        generated_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        if user_token:
+            user_token.access_token = oauth2_access_token
+            user_token.local_access_token = local_access_token
+            user_token.refresh_token = oauth2_refresh_token
+            user_token.generated_time = generated_time
+        else:
+            user_token = UserToken(
+                username=username,
+                access_token=oauth2_access_token,
+                local_access_token=local_access_token,
+                refresh_token=oauth2_refresh_token,
+                generated_time=generated_time,
+            )
+        self.session.add(user_token)
+
+    def _oauth2_authorize(self, authorization_code: str) -> Tuple[str, dict]:
+        """
+        Oauth2 authorize:
+        1. get oauth2 tokens(include access_token, refresh_token and id_token)
+           by 'authorization code' type.
+        2. verify the oauth2 access_token.
+
+        Args:
+            authorization_code(str): authorization code
+
+        Returns:
+            [status_code, oauth2_tokens]
+        """
+        auth_res, oauth2_tokens = self._get_oauth2_authorized_token(authorization_code)
+        if auth_res != SUCCEED:
+            return auth_res, {}
+
+        verified_res, username = self._verify_oauth2_access_token(oauth2_tokens.get("access_token"))
+        if verified_res != SUCCEED:
+            return verified_res, {}
+
+        oauth2_tokens["username"] = username
+        return SUCCEED, oauth2_tokens
+
+    def _verify_oauth2_access_token(self, oauth2_access_token: str) -> Tuple[str, dict]:
+        """Verify oauth2 token.
+
+        Args:
+            oauth2_access_token (str): oauth2 access token
+
+        Returns:
+            _type_: _description_
+        """
+        data = {"token": oauth2_access_token, "client_id": configuration.client_id}
+        query_url = f"http://{configuration.domain}{OAUTH2_INTROSPECT}"
+        response_data = BaseResponse.get_response(method="Post", url=query_url, data=data, header=g.headers)
+        response_status = response_data.get("label")
+        if response_status != SUCCEED:
+            return response_status, {}
+
+        verified_data: dict = response_data.get("data")
+        return SUCCEED, verified_data
+
+    def _get_oauth2_authorized_token(self, authorization_code: str) -> Tuple[str, dict]:
+        """Get jwt authorized token by 'authorization_code' grant type.
+
+        Args:
+            code (str): authorization code
+
+        Returns:
+            Tuple[str, str]: status_code, oauth2_token
+        """
+        data = {
+            "grant_type": "authorization_code",
+            "code": authorization_code,
+            "redirect_uri": configuration.redirect_uri,
+            "client_id": configuration.client_id,
+        }
+        query_url = f"http://{configuration.domain}{OAUTH2_AUTHORIZE_TOKEN}"
+        response_data = BaseResponse.get_response(method="Post", url=query_url, data=data, header=g.headers)
+        response_status = response_data.get("label")
+        if response_status != SUCCEED:
+            return response_status, {}
+
+        oauth2_tokens: dict = response_data.get("data")
+        return SUCCEED, oauth2_tokens
 
     def _get_user_role_type(self, username: str) -> str:
         """Get user role type
@@ -331,256 +518,6 @@ class UserProxy(MysqlProxy):
 
         return SUCCEED, (user_clusters, user_group_hosts)
 
-    def change_password(self, data) -> str:
-        """
-        Change user password
-
-        Args:
-            data(dict): parameter, e.g.
-                {
-                    "username": "xxx",
-                }
-
-        Returns:
-            str: status code
-        """
-        username = data.get('username')
-        password = data.get('password')
-        old_password = data.get("old_password")
-
-        try:
-            if g.username != username:
-                return PERMESSION_ERROR
-            change_user = self.session.query(User).filter_by(username=username).one_or_none()
-            if not change_user:
-                LOGGER.error("unknown username")
-                return USER_ERROR
-
-            if not check_password_hash(change_user.password, old_password):
-                return PASSWORD_ERROR
-
-            if check_password_hash(change_user.password, password):
-                return REPEAT_PASSWORD
-
-            change_user.password = generate_password_hash(password)
-            self.session.commit()
-            LOGGER.debug("change password succeed")
-            return SUCCEED
-
-        except sqlalchemy.exc.SQLAlchemyError as error:
-            LOGGER.error(error)
-            LOGGER.error("change password fail")
-            return DATABASE_UPDATE_ERROR
-
-    def reset_password(self, data) -> str:
-        username = data.get('username')
-        try:
-            current_role = cache.user_role
-            if not current_role or current_role != constant.UserRoleType.ADMINISTRATOR:
-                return PERMESSION_ERROR
-            change_user = self.session.query(User).filter_by(username=username).one_or_none()
-            if not change_user:
-                return NO_DATA
-            change_user.password = generate_password_hash(constant.DEFAULT_PASSWORD)
-            self.session.commit()
-            LOGGER.debug("reset password succeed")
-            return SUCCEED
-        except sqlalchemy.orm.exc.MultipleResultsFound as error:
-            LOGGER.error(error)
-            return REPEAT_DATA
-        except sqlalchemy.exc.SQLAlchemyError as error:
-            LOGGER.error(error)
-            LOGGER.error("reset password fail")
-            self.session.rollback()
-            return DATABASE_UPDATE_ERROR
-
-    def auth_redirect_url(self):
-        """
-        Go to the authentication address
-
-        Args:
-            host: https://openeuler.org
-
-        Returns:
-            dict: e.g
-                {
-                    "gitee": "http://gitee.com"
-                }
-        """
-        redirect_url = dict()
-        redirect_url["gitee"] = self._gitee_auth_redirect_url
-        return redirect_url
-
-    @property
-    def _gitee_auth_redirect_url(self):
-        client_id = configuration.individuation.gitee_client_id
-        redirect_url = configuration.individuation.redirect_url
-        if not all([client_id, redirect_url]):
-            LOGGER.error("The 'gitee_client_id' 'redirect_url' configuration is missing.")
-
-        return f"{GITEE_OAUTH}?client_id={client_id}&scope=user_info&response_type=code&redirect_uri={redirect_url}"
-
-    def gitee_auth_login(self, code: str):
-        """
-        Gitee auth login
-
-        Args:
-            code: Specifies the code used to exchange tokens for login authentication
-            host: Host domain name
-        Returns:
-            status_code: Login status code
-            dict: e.g
-                {
-                    "token": "",
-                    "refresh_token": ""
-                }
-        """
-        token = self._get_gitee_auth_token(code)
-        auth_result = dict(token=None, refresh_token=None)
-        if not token:
-            return AUTH_ERROR, auth_result
-        userinfo = self._get_gitee_userinfo(token)
-        if not userinfo:
-            return LOGIN_ERROR, auth_result
-        status_code, save_auth_result = self._gitee_account_info_update(userinfo)
-        if status_code != SUCCEED:
-            LOGGER.error("Gitee authentication user information fails to be saved.")
-            return AUTH_USERINFO_SYNC_ERROR, auth_result
-        # authentication account is bound to the local account
-        if not save_auth_result["bind_local_user"]:
-            LOGGER.error("Please bind a local account.")
-            auth_result["username"] = save_auth_result["userinfo"].auth_account
-            return NO_BOUND, auth_result
-        # The token of jwt is generated
-        return self._generate_auth_result(username=save_auth_result["userinfo"].username)
-
-    def _generate_auth_result(self, username):
-        gen_res, auth_result = self._generate_token(username)
-        if gen_res != SUCCEED:
-            return gen_res, auth_result
-        get_res, role_type = self.get_user_role_type(username)
-        if get_res != SUCCEED:
-            return get_res, auth_result
-        auth_result["type"] = role_type
-        return SUCCEED, auth_result
-
-    def _generate_token(self, username):
-        auth_result = dict(token=None, refresh_token=None, username=username)
-        try:
-            auth_result["token"] = generate_token(unique_iden=username)
-            auth_result["refresh_token"] = generate_token(unique_iden=username, minutes=REFRESH_TOKEN_EXP)
-            return SUCCEED, auth_result
-
-        except ValueError:
-            LOGGER.error("Token generation failed.")
-            return GENERATION_TOKEN_ERROR, auth_result
-
-    def _gitee_account_info_update(self, userinfo: dict):
-        """
-        Deposit to gitee account or update information
-
-        Args:
-            userinfo: gitee user information e.g
-                {
-                    "login":"",
-                    "name":"",
-                }
-        """
-        try:
-            bind_local_user = False
-            auth_userinfo = Auth(auth_account=userinfo.get("login"), auth_type="gitee")
-            gitee_auth_user = (
-                self.session.query(Auth).filter_by(auth_account=userinfo.get("login"), auth_type="gitee").one_or_none()
-            )
-            if gitee_auth_user:
-                gitee_auth_user.auth_account = userinfo.get("login")
-                gitee_auth_user.nick_name = userinfo.get("name")
-                if gitee_auth_user.username:
-                    bind_local_user = True
-                auth_userinfo = gitee_auth_user
-            else:
-                auth = Auth(
-                    auth_id=str(uuid.uuid1()).replace('-', ''),
-                    auth_account=userinfo.get("login"),
-                    nick_name=userinfo.get("name"),
-                    auth_type="gitee",
-                )
-                self.session.add(auth)
-            self.session.commit()
-            LOGGER.debug("Gitee user authentication information has been saved or updated.")
-
-            return SUCCEED, dict(bind_local_user=bind_local_user, userinfo=auth_userinfo)
-        except sqlalchemy.exc.SQLAlchemyError as error:
-            LOGGER.error(error)
-            return DATABASE_QUERY_ERROR, dict(bind_local_user=bind_local_user, userinfo=auth_userinfo)
-
-    def _get_gitee_auth_token(self, code: str):
-        client_id = configuration.individuation.gitee_client_id
-        redirect_url = configuration.individuation.redirect_url
-        if not all([client_id, redirect_url]):
-            LOGGER.error("The 'gitee_client_id' 'redirect_url' configuration is missing.")
-            return None
-
-        auth_url = f"{GITEE_TOKEN}&client_id={client_id}&code={code}&redirect_uri={redirect_url}"
-        request_body = dict(client_secret=configuration.individuation.gitee_client_secret)
-        response = BaseResponse.get_response('POST', auth_url, request_body)
-        if "access_token" not in response:
-            LOGGER.error("Gitee authentication failed to get token.")
-            return None
-
-        return response.get("access_token")
-
-    def _get_gitee_userinfo(self, token: str):
-        userinfo_url = f"{GITEE_USERINFO}?access_token={token}"
-        response = BaseResponse.get_response('GET', userinfo_url, {})
-        if "login" not in response:
-            LOGGER.error("Description Failed to get gitee user information.")
-            response = None
-
-        return response
-
-    def bind_auth_account(self, auth_account: str, username: str, password: str, auth_type="gitee"):
-        """
-        Local users and authorized users are bound to each
-
-        Args:
-            auth_account: Authenticated users, including gitee、github
-            username: Local user name
-
-        Returns:
-            status_code: Status code
-            auth_result: e.g
-                {
-                    "token":
-                    "refresh_token"
-                }
-        """
-        auth_result = dict(token=None, refresh_token=None, username=username)
-        local_user = self.session.query(User).filter(User.username == username).one_or_none()
-        if not local_user:
-            return NO_DATA, auth_result
-
-        if not check_password_hash(local_user.password, password):
-            return LOGIN_ERROR, auth_result
-        try:
-            exists_bind_relation_auth = (
-                self.session.query(Auth)
-                .filter(Auth.username == username, Auth.auth_type == auth_type, Auth.auth_account != auth_account)
-                .count()
-            )
-            if exists_bind_relation_auth:
-                return REPEAT_BIND, auth_result
-            bind_account = self.session.query(Auth).filter(Auth.auth_account == auth_account).one_or_none()
-            if not bind_account:
-                return NO_DATA, auth_result
-            bind_account.username = username
-            self.session.commit()
-        except sqlalchemy.exc.SQLAlchemyError as error:
-            LOGGER.error(error)
-            return DATABASE_UPDATE_ERROR, auth_result
-
-        return self._generate_auth_result(username=username)
-
     def get_user_role_type(self, username: str) -> Tuple[str, str]:
         try:
             role_type = self._get_user_role_type(username)
@@ -610,7 +547,9 @@ class UserProxy(MysqlProxy):
                 LOGGER.error(f"cannot manage cluster that has managed other clusters.")
                 return TARGET_CLUSTER_MANAGE_ERROR, {}
 
-            query_res = [user_map.manager_cluster_id for user_map in self.session.query(UserMap.manager_cluster_id).all()]
+            query_res = [
+                user_map.manager_cluster_id for user_map in self.session.query(UserMap.manager_cluster_id).all()
+            ]
             if not query_res:
                 cluster_username = self._bind_local_cluster_with_manager(local_cluster_id, **data)
             elif set(query_res) - {manager_cluster_id}:
@@ -641,8 +580,10 @@ class UserProxy(MysqlProxy):
             return DATABASE_INSERT_ERROR, {}
 
         g.username = cluster_username
-        g.headers["Access-Token"] = generate_token(unique_iden=g.username)
-        RedisProxy.redis_connect.set("token_" + g.username, g.headers["Access-Token"], 20 * 60)
+        g.headers["Access-Token"] = generate_token(unique_iden=g.username, minutes=60 * 24, aud=configuration.client_id)
+        RedisProxy.redis_connect.set(
+            "token-" + g.username + "-" + configuration.client_id, g.headers["Access-Token"], 20 * 60
+        )
         cache_res = self.cache_user_permissions(cluster_username)
         if cache_res != SUCCEED:
             return cache_res, {}
@@ -661,13 +602,12 @@ class UserProxy(MysqlProxy):
         return True
 
     def _bind_local_cluster_with_manager(self, local_cluster_id, **data):
-        password = data.get('password')
         manager_username = data.get("manager_username")
         manager_cluster_id = data.get('manager_cluster_id')
         public_key = data.get('public_key')
         # create new admin user for current cluster corresponding to the manager user
         cluster_username = str(uuid.uuid1()).replace('-', '')
-        self._add_user(cluster_username, password, "", True)
+
         # bind current cluster with the user
         self._associate_cluster_with_user(cluster_username, local_cluster_id, cluster_username, "")
         # grant admin role for the user
@@ -693,9 +633,6 @@ class UserProxy(MysqlProxy):
                 return validate_res
 
             user_map_subquery = self.session.query(UserMap).filter(UserMap.manager_cluster_id == cluster_id).subquery()
-            self.session.query(User).filter(User.username == user_map_subquery.c.username).delete(
-                synchronize_session=False
-            )
             self.session.query(UserClusterAssociation).filter(
                 UserClusterAssociation.username == user_map_subquery.c.username
             ).delete(synchronize_session=False)
@@ -776,14 +713,15 @@ class UserProxy(MysqlProxy):
         )
         self.session.add(user_map)
 
-    def _validate_user(self, username: str, password: str):
+    def _validate_user(self, username: str, password: str) -> str:
         try:
-            user = self.session.query(User).filter_by(username=username).one_or_none()
-            if not user:
-                return USER_ERROR
-            res = User.check_hash_password(user.password, password)
-            if not res:
-                return PASSWORD_ERROR
+            data = {"username": username, "password": password, "for_validate": True}
+            query_url = f"http://{configuration.domain}{OAUTH2_LOGIN}"
+            response_data = BaseResponse.get_response(method="Post", url=query_url, data=data, header=g.headers)
+            response_status = response_data.get("label")
+            if response_status != SUCCEED:
+                return response_status
+
             user_role_assoc = self.session.query(UserRoleAssociation).filter_by(username=username).one_or_none()
             if not user_role_assoc:
                 return NO_DATA
@@ -890,9 +828,8 @@ class UserProxy(MysqlProxy):
             Tuple[str, list]: status_code, users_info
         """
         try:
-            users = self.session.query(User).filter(User.managed != True).all()
             users_info = []
-            for user in users:
+            for user in self.session.query(UserInfo).all():
                 users_info.append(dict(username=user.username, email=user.email))
         except sqlalchemy.exc.SQLAlchemyError as error:
             LOGGER.error(error)

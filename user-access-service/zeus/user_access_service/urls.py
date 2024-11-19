@@ -12,19 +12,19 @@
 # ******************************************************************************/
 from vulcanus.conf import constant
 from zeus.user_access_service.app.views.account import (
+    AccessTokenAPI,
     AccountsAllAPI,
-    AddUser,
-    AuthRedirectUrl,
-    BindAuthAccount,
     BindManagerUser,
     CacheClusterPermissionAPI,
     ChangePassword,
     ClusterKeyAPI,
     ClusterSync,
-    GiteeAuthLogin,
-    Login,
     Logout,
     ManagedClusterAPI,
+    Oauth2AuthorizeAddUser,
+    Oauth2AuthorizeLogin,
+    Oauth2AuthorizeLogout,
+    Oauth2AuthorizeUri,
     RefreshToken,
     RegisterClusterAPI,
     UnbindManagerUserAPI,
@@ -32,14 +32,13 @@ from zeus.user_access_service.app.views.account import (
 from zeus.user_access_service.app.views.permission import AccountPageAPI, PermissionAccountBindAPI, PermissionAPI
 
 URLS = [
-    (Login, constant.USER_LOGIN),
-    (ChangePassword, constant.CHANGE_PASSWORD),
-    (AddUser, constant.ADD_USER),
-    (GiteeAuthLogin, constant.GITEE_AUTH_LOGIN),
-    (AuthRedirectUrl, constant.AUTH_REDIRECT_URL),
-    (BindAuthAccount, constant.BIND_AUTH_ACCOUNT),
-    (RefreshToken, constant.REFRESH_TOKEN),
+    (Oauth2AuthorizeUri, constant.OAUTH2_AUTHORIZE_URI),
     (Logout, constant.LOGOUT),
+    (Oauth2AuthorizeLogin, constant.USER_LOGIN),
+    (ChangePassword, constant.CHANGE_PASSWORD),
+    (Oauth2AuthorizeAddUser, constant.ADD_USER),
+    (RefreshToken, constant.REFRESH_TOKEN),
+    (Oauth2AuthorizeLogout, constant.LOGOUT_REDIRECT),
     (BindManagerUser, constant.CLUSTER_USER_BIND),
     (RegisterClusterAPI, constant.REGISTER_CLUSTER),
     (CacheClusterPermissionAPI, constant.CLUSTER_PERMISSION_CACHE),
@@ -51,4 +50,5 @@ URLS = [
     (PermissionAccountBindAPI, constant.PERMISSION_BIND),
     (AccountsAllAPI, constant.USERS_ALL),
     (ClusterSync, constant.CLUSTER_SYNC),
+    (AccessTokenAPI, constant.ACCESS_TOKEN),
 ]

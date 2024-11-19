@@ -11,20 +11,18 @@
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
 from zeus.user_access_service.database.table import (
-    Auth,
     Permission,
     Role,
     RolePermissionAssociation,
     Route,
-    User,
     UserClusterAssociation,
+    UserInfo,
     UserMap,
     UserRoleAssociation,
+    UserToken,
 )
 
 __all__ = [
-    "User",
-    "Auth",
     "Permission",
     "Role",
     "RolePermissionAssociation",
@@ -32,4 +30,6 @@ __all__ = [
     "UserClusterAssociation",
     "UserMap",
     "UserRoleAssociation",
+    "UserToken",
+    "UserInfo",
 ]

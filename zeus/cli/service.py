@@ -23,6 +23,7 @@ MODULES = {
     "zeus-host-information": "zeus.host_information_service",
     "zeus-user-access": "zeus.user_access_service",
     "zeus-distribute": "zeus.distribute_service",
+    "authhub": "oauth2_provider",
     "zeus-operation": "zeus.operation_service",
 }
 
@@ -61,8 +62,11 @@ def create_uwsgi_config(service_name: str, config):
     if not os.path.exists(WSGI_FOLDER):
         os.makedirs(WSGI_FOLDER)
     if service_name in MODULES:
-        main, _service = MODULES[service_name].split(".")
-        chdir = os.path.join(sys.path[-1], main, _service)
+        try:
+            main, _service = MODULES[service_name].split(".")
+            chdir = os.path.join(sys.path[-1], main, _service)
+        except ValueError:
+            chdir = os.path.join(sys.path[-1], MODULES[service_name])
         module = MODULES[service_name] + ".manage"
     else:
         _service = service_name
@@ -88,6 +92,7 @@ callable=app
 http-timeout={config.http_timeout}
 processes={config.processes}
 daemonize={config.daemonize}
+buffer-size={config.buffer_size}
 vacuum=true
 need-app=true
 """

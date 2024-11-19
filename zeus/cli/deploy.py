@@ -14,7 +14,6 @@ import os
 import random
 import subprocess
 import sys
-from dataclasses import dataclass
 
 import click
 import pymysql
@@ -22,15 +21,6 @@ import yaml
 from pymysql.constants import CLIENT
 
 from zeus.cli.settings import AOPS_GOLBAL_CONFIG, MICROSERVICE_CONFIG_DIR, ConfigHandle
-
-
-@dataclass
-class UpstreamService:
-    hosts: str = "@hosts"
-    apollo: str = "@apollo"
-    accounts: str = "@accounts"
-    distribute: str = "@distribute"
-
 
 MYSQL = "mysql-server"
 # base environment dependency package
@@ -43,6 +33,8 @@ MICROSERVICES_RPMS = [
     "zeus-distribute",
     "async-task",
     "aops-hermes",
+    "authhub",
+    "authhub-web",
 ]
 # method mapping for shell scripts
 SHELL_FUNC = {
@@ -53,14 +45,6 @@ SHELL_FUNC = {
     "nginx": "install_nginx",
     "service": "install_microservice",
 }
-# placeholder for the upstream block of the nginx configuration file
-NGINX_UPSTREAM_SERVICE = {
-    "zeus-host-information": UpstreamService.hosts,
-    "aops-apollo": UpstreamService.apollo,
-    "zeus-user-access": UpstreamService.accounts,
-    "zeus-distribute": UpstreamService.distribute,
-}
-
 ELASTICSEARCH_CONFIG = "/etc/elasticsearch/elasticsearch.yml"
 MYSQL_CONFIG = "/etc/my.cnf"
 MYSQL_CONFIG_CONTENT = """
@@ -74,6 +58,111 @@ collation-server=utf8mb4_unicode_ci
 """
 REDIS_CONFIG = "/etc/redis.conf"
 NGINX_CONFIG = "/etc/nginx/nginx.conf"
+# placeholder for the upstream block of the nginx configuration file
+NGINX_PROXY_SERVER_CONFIG = {
+    "zeus-host-information": {
+        "type": "dynamic",
+        "upstream": "host",
+        "location": "/hosts",
+        "proxy_pass": "http://host;",
+    },
+    "aops-apollo": {
+        "type": "dynamic",
+        "upstream": "apollo",
+        "location": "/vulnerabilities",
+        "proxy_pass": "http://apollo;",
+    },
+    "zeus-user-access": {
+        "type": "dynamic",
+        "upstream": "accounts",
+        "location": "/accounts",
+        "proxy_pass": "http://accounts;",
+    },
+    "zeus-distribute": {
+        "type": "dynamic",
+        "upstream": "distribute",
+        "location": "/distribute",
+        "proxy_pass": "http://distribute;",
+        "rewrite": "^/distribute(.*)$ /distribute break;",
+    },
+    "authhub": {
+        "type": "dynamic",
+        "upstream": "oauth2server",
+        "location": "/oauth2",
+        "proxy_pass": "http://oauth2server;",
+    },
+    "aops-hermes": {"type": "static", "dir": "root /opt/aops/web/dist;", "location": "/"},
+    "authhub-web": {"type": "static", "dir": "alias /opt/authhub/web/dist;", "location": "/authhub"},
+}
+NGINX_HTTP_SERVER = """
+location %s {
+      %s
+      proxy_pass %s
+      proxy_set_header Host $host;
+      proxy_set_header X-Real-URL $request_uri;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header Request-Header $http_request_header;
+}
+"""
+
+NGINX_HTTP_UPSTREAM = """
+upstream %s { 
+server %s;
+}
+"""
+
+
+NGINX_HTTP_SERVER_STATIC = """
+location %s {
+        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Allow-Methods 'GET, POST, DELETE, PUT, OPTIONS';
+        %s
+        index index.html;
+        try_files $uri $uri/ /index.html last;
+    }
+"""
+
+NGINX_CONFIG_TEMPLATE = """
+user root;
+worker_processes auto;
+error_log /var/log/nginx/error.log;
+pid /var/run/nginx.pid;
+# Load dynamic modules. See /usr/share/doc/nginx/README.dynamic.
+include /usr/share/nginx/modules/*.conf;
+events {
+    worker_connections 1024;
+}
+http {
+  log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+    access_log  /var/log/nginx/access.log  main;
+    sendfile            on;
+    tcp_nopush          on;
+    tcp_nodelay         on;
+    keepalive_timeout   65;
+    types_hash_max_size 2048;
+    include             /etc/nginx/mime.types;
+    default_type        application/octet-stream;
+    client_max_body_size 25M;
+    include /etc/nginx/conf.d/*.conf;
+    %s
+    underscores_in_headers on;
+    server {
+    listen       80;
+    listen       [::]:80 default_server;
+    server_name  localhost;
+    gzip on;
+    gzip_min_length 1k;
+    gzip_comp_level 6;
+    gzip_types text/plain text/css text/javascript application/json application/javascript application/x-javascript application/xml;
+    gzip_vary on;
+    gzip_disable "MSIE [1-6]\.";
+    %s
+    %s
+  }
+}
+"""
 
 
 class SetConfig:
@@ -154,24 +243,44 @@ class SetConfig:
     def nginx(self):
         click.echo("[INFO] Start doing to set nginx config")
         try:
-            with open(os.path.join(os.path.dirname(__file__), "nginx.conf.template"), "r") as file:
-                nginx_config_template = file.read()
-            nginx_config = nginx_config_template
+            upstream, proxys, statics = list(), list(), list()
             for service in self._service:
-                if service not in NGINX_UPSTREAM_SERVICE:
+                if service not in NGINX_PROXY_SERVER_CONFIG:
+                    continue
+                if NGINX_PROXY_SERVER_CONFIG[service]["type"] == "static":
+                    statics.append(
+                        NGINX_HTTP_SERVER_STATIC
+                        % (NGINX_PROXY_SERVER_CONFIG[service]['location'], NGINX_PROXY_SERVER_CONFIG[service]['dir'])
+                    )
                     continue
                 port = self._read_service_port(service)
                 if not port:
                     click.echo(f"[WARNING] The {service} service port is not exists, please check the config file")
                     continue
-                nginx_config = nginx_config.replace(NGINX_UPSTREAM_SERVICE[service], f"{self.ip}:{port}")
 
-            if nginx_config != nginx_config_template:
-                with open(NGINX_CONFIG, "w") as file:
+                upstream.append(
+                    NGINX_HTTP_UPSTREAM % (NGINX_PROXY_SERVER_CONFIG[service]['upstream'], f"{self.ip}:{port}")
+                )
+                rewrite = ""
+                if "rewrite" in NGINX_PROXY_SERVER_CONFIG[service]:
+                    rewrite = "rewrite " + NGINX_PROXY_SERVER_CONFIG[service]["rewrite"]
+
+                proxys.append(
+                    NGINX_HTTP_SERVER
+                    % (
+                        NGINX_PROXY_SERVER_CONFIG[service]['location'],
+                        rewrite,
+                        NGINX_PROXY_SERVER_CONFIG[service]['proxy_pass'],
+                    )
+                )
+            if any([upstream, proxys, statics]):
+                nginx_config = NGINX_CONFIG_TEMPLATE % ("\n".join(upstream), "\n".join(statics), "\n".join(proxys))
+                with os.fdopen(
+                    os.open(NGINX_CONFIG, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644), "w", encoding="utf-8"
+                ) as file:
                     file.write(nginx_config)
 
             click.echo("[INFO] The nginx config is set successful")
-
         except (IOError, RuntimeError):
             click.echo("[ERROR] The nginx config is set failed")
             sys.exit(-1)
@@ -274,7 +383,7 @@ def init_serivce_database(services):
         services: microservice package
     """
     for service in services:
-        if service not in ("zeus-host-information", "aops-apollo", "zeus-user-access"):
+        if service not in ("zeus-host-information", "aops-apollo", "zeus-user-access", "authhub"):
             continue
         call_shell_scripts(func="init_service_database", param=service)
 

@@ -16,146 +16,83 @@ Author:
 Description: Restful APIs for user
 """
 
-from flask import g
-from jwt.exceptions import ExpiredSignatureError
-from vulcanus.conf.constant import REFRESH_TOKEN_EXP
+
+from flask import g, make_response, request
+from vulcanus.conf.constant import OAUTH2_LOGOUT
 from vulcanus.database.proxy import RedisProxy
 from vulcanus.log.log import LOGGER
 from vulcanus.restful.resp import state
 from vulcanus.restful.response import BaseResponse
-from vulcanus.token import decode_token, generate_token
+from vulcanus.token import generate_token
 from zeus.user_access_service.app.proxy.account import UserProxy
 from zeus.user_access_service.app.serialize.account import (
-    AddUserSchema,
-    BindAuthAccountSchema,
     BindManagerUserSchema,
     ChangePasswordSchema,
     ClusterKeySchema,
     ClusterSyncSchema,
     DeleteClusterSchema,
-    GiteeAuthLoginSchema,
-    LoginSchema,
-    RefreshTokenSchema,
+    GenerateTokenSchema,
+    Oauth2AuthorizeAddUserSchema,
+    Oauth2AuthorizedLogoutSchema,
+    Oauth2AuthorizeLoginSchema,
     RegisterClusterSchema,
     ResetPasswordSchema,
     UnbindManagerUserSchema,
 )
+from zeus.user_access_service.app.settings import configuration
 
 
-class AddUser(BaseResponse):
+class Oauth2AuthorizeAddUser(BaseResponse):
     """
-    Interface for register user.
+    Interface for oauth2 authorize register user.
     Restful API: post
     """
 
-    @BaseResponse.handle(schema=AddUserSchema, token=False, proxy=UserProxy)
+    @BaseResponse.handle(schema=Oauth2AuthorizeAddUserSchema, token=False, proxy=UserProxy)
     def post(self, callback: UserProxy, **params):
         """
         Add user
 
         Args:
             username (str)
-            password (str)
             email (str)
 
         Returns:
             dict: response body
         """
-        register_res = callback.register_user(params)
+        register_res = callback.oauth2_authorize_register_user(params)
         if register_res != state.SUCCEED:
             return self.response(code=register_res, message="register user failed.")
         return self.response(code=state.SUCCEED)
 
 
-class Login(BaseResponse):
+class Oauth2AuthorizeLogin(BaseResponse):
     """
-    Interface for user login.
+    Interface for oauth2 authorized user login.
     Restful API: post
     """
 
-    @BaseResponse.handle(schema=LoginSchema, token=False, proxy=UserProxy)
+    @BaseResponse.handle(schema=Oauth2AuthorizeLoginSchema, token=False, proxy=UserProxy)
     def post(self, callback: UserProxy, **params):
         """
         User login
 
         Args:
-            username (str)
-            password (str)
+            code (str): authorization code
 
         Returns:
             dict: response body
         """
-        g.username = params.get('username')
-        status_code, auth_result = callback.login(params)
+        status_code, auth_result = callback.oauth2_authorize_login(params)
         if status_code == state.SUCCEED:
+            g.username = auth_result["username"]
             # token 20min expire
-            RedisProxy.redis_connect.set("token_" + g.username, auth_result["token"], 20 * 60)
-            # refresh_token 24h expire
-            RedisProxy.redis_connect.set("refresh_token_" + g.username, auth_result["refresh_token"], 24 * 60 * 60)
+            RedisProxy.redis_connect.set(
+                "token-" + auth_result["username"] + "-" + configuration.client_id, auth_result["token"], 20 * 60
+            )
             g.headers.update({"Access-Token": auth_result["token"]})
-            cache_res = callback.cache_user_permissions(g.username)
+            cache_res = callback.cache_user_permissions(auth_result["username"])
 
-        return self.response(code=status_code, data=auth_result)
-
-
-class AuthRedirectUrl(BaseResponse):
-    """
-    Forward address of third-party authentication login
-    """
-
-    @BaseResponse.handle(proxy=UserProxy, token=False)
-    def get(self, callback: UserProxy):
-        """
-        Auth redirect url
-
-        Args:
-            host: http://openeuler.org
-
-        Returns:
-            dict: eg.
-            {
-                "gitee": "https://gitee.com"
-            }
-
-        """
-        redirect_url = callback.auth_redirect_url()
-        return self.response(code=state.SUCCEED, data=redirect_url)
-
-
-class GiteeAuthLogin(BaseResponse):
-    """
-    Gitee authentication is used to login
-    Restful API: post
-    """
-
-    @BaseResponse.handle(schema=GiteeAuthLoginSchema, token=False, proxy=UserProxy)
-    def get(self, callback: UserProxy, **params: dict):
-        status_code, auth_result = callback.gitee_auth_login(code=params["code"])
-        if status_code == state.SUCCEED:
-            token_info = decode_token(auth_result["token"])
-            RedisProxy.redis_connect.set("token_" + token_info["key"], auth_result["token"], 20 * 60)
-            RedisProxy.redis_connect.set(
-                "refresh_token_" + token_info["key"], auth_result["refresh_token"], 24 * 60 * 60
-            )
-        return self.response(code=status_code, data=auth_result)
-
-
-class BindAuthAccount(BaseResponse):
-    """
-    Local users and authorized users are bound to each other
-    Restful API: post
-    """
-
-    @BaseResponse.handle(schema=BindAuthAccountSchema, token=False, proxy=UserProxy)
-    def post(self, callback: UserProxy, **params: dict):
-        status_code, auth_result = callback.bind_auth_account(
-            auth_account=params["auth_account"], username=params["username"], password=params["password"]
-        )
-        if status_code == state.SUCCEED:
-            RedisProxy.redis_connect.set("token_" + params["username"], auth_result["token"], 20 * 60)
-            RedisProxy.redis_connect.set(
-                "refresh_token_" + params["username"], auth_result["refresh_token"], 24 * 60 * 60
-            )
         return self.response(code=status_code, data=auth_result)
 
 
@@ -192,40 +129,58 @@ class RefreshToken(BaseResponse):
     Restful API: post
     """
 
-    @BaseResponse.handle(schema=RefreshTokenSchema, token=False)
-    def post(self, **params):
+    @BaseResponse.handle(token=False, proxy=UserProxy)
+    def get(self, callback: UserProxy):
         """
-        Refresh token
+        Refresh token.
 
         Returns:
             dict: response body
         """
-        try:
-            refresh_token_info = decode_token(params.get("refresh_token"))
-        except ExpiredSignatureError:
-            return self.response(code=state.TOKEN_EXPIRE, message="token expired.")
-        except ValueError:
-            self.response(code=state.TOKEN_ERROR, message="token refreshing failure.")
+        invaild_token = request.headers.get("Access-Token")
+        if not invaild_token:
+            return self.response(code=state.GENERATION_TOKEN_ERROR, message='Not found token')
 
-        username = refresh_token_info["key"]
-        old_refresh_token = RedisProxy.redis_connect.get("refresh_token_" + username)
-        if not old_refresh_token or old_refresh_token != params.get("refresh_token"):
-            return self.response(code=state.TOKEN_ERROR, message="Invalid token.")
+        if not RedisProxy.redis_connect.set(invaild_token + "-invaild-token", 'locked', nx=True, ex=30):
+            LOGGER.warning("The RefreshToken call has been made and repeated execution is not allowed.")
+            return self.response(code=state.GENERATION_TOKEN_ERROR, message='Token generated')
 
-        try:
-            token = generate_token(unique_iden=username)
-            refresh_token = generate_token(unique_iden=username, minutes=REFRESH_TOKEN_EXP)
-        except ValueError:
-            LOGGER.error("Token generation failed,token refreshing failure.")
+        refresh_res, refresh_data = callback.refresh_token(invaild_token)
+        if refresh_res != state.SUCCEED:
+            return self.response(code=refresh_res)
+        if RedisProxy.redis_connect.keys("token-" + refresh_data["username"] + "-" + configuration.client_id):
+            RedisProxy.redis_connect.delete(
+                *RedisProxy.redis_connect.keys("token-" + refresh_data["username"] + "-" + configuration.client_id)
+            )
+        # 20 minutes expire
+        RedisProxy.redis_connect.set(
+            "token-" + refresh_data["username"] + "-" + configuration.client_id, refresh_data["token"], 20 * 60
+        )
+        return self.response(code=state.SUCCEED, data=dict(token=refresh_data["token"]))
+
+
+class AccessTokenAPI(BaseResponse):
+
+    @BaseResponse.handle(schema=GenerateTokenSchema, token=False)
+    def post(self, **parmas):
+        """
+        generate access token
+
+        Returns:
+            dict: response body
+        """
+
+        validate_token = BaseResponse.get_response(
+            method="post",
+            url=f"http://{configuration.domain}/oauth2/introspect",
+            data=dict(token=parmas.get("access_token"), client_id=parmas.get("client_id")),
+        )
+        if validate_token["label"] != state.SUCCEED:
             return self.response(code=state.GENERATION_TOKEN_ERROR)
-        # Remove an expired token
-        RedisProxy.redis_connect.delete("token_" + username)
-        RedisProxy.redis_connect.delete("refresh_token_" + username)
-        # Set a new token value
-        RedisProxy.redis_connect.set("token_" + username, token, 20 * 60)
-        RedisProxy.redis_connect.set("refresh_token_" + username, refresh_token, 24 * 60 * 60)
-
-        return self.response(code=state.SUCCEED, data=dict(token=token, refresh_token=refresh_token))
+        username = validate_token["data"]
+        token = generate_token(unique_iden=username, minutes=60 * 24, aud=parmas.get("client_id"))
+        RedisProxy.redis_connect.set("token-" + username + "-" + parmas.get("client_id"), token, 24 * 60 * 60)
+        return self.response(code=state.SUCCEED, data=dict(access_token=token))
 
 
 class Logout(BaseResponse):
@@ -234,8 +189,8 @@ class Logout(BaseResponse):
     Restful API: post
     """
 
-    @BaseResponse.handle()
-    def get(self):
+    @BaseResponse.handle(proxy=UserProxy)
+    def get(self, callback: UserProxy):
         """
         Refresh token
 
@@ -244,13 +199,65 @@ class Logout(BaseResponse):
         """
         if not g.username:
             return self.response(code=state.LOGOUT_ERROR)
-        RedisProxy.redis_connect.delete("token_" + g.username)
-        RedisProxy.redis_connect.delete("refresh_token_" + g.username)
-        RedisProxy.redis_connect.delete(g.username + "_role")
-        RedisProxy.redis_connect.delete(g.username + "_clusters")
-        RedisProxy.redis_connect.delete(g.username + "_group_hosts")
-        RedisProxy.redis_connect.delete(g.username + "_rsa_key")
+        status_res = callback.login_status_check(g.username)
+        if status_res != state.SUCCEED:
+            return self.response(code=status_res, message="login status check error.")
+        url = f"http://{configuration.domain}{OAUTH2_LOGOUT}"
+        response = make_response(self.response(code=state.SUCCEED, data=url))
+        return response
+
+
+class Oauth2AuthorizeLogout(BaseResponse):
+    """
+    Interface for logout.
+    Restful API: post
+    """
+
+    @BaseResponse.handle(schema=Oauth2AuthorizedLogoutSchema, proxy=UserProxy, token=False)
+    def post(self, callback: UserProxy, **params):
+        """
+        Oauth2 authorize logout.
+
+        Args:
+            {
+                "username":"admin",
+                "encrypted_string":"encrypted_string",
+            }
+
+        Returns:
+            dict: response body
+
+        """
+        username = params.get("username")
+        delete_res = callback.oauth2_authorize_logout(params)
+        if delete_res != state.SUCCEED:
+            return self.response(code=state.LOGOUT_ERROR)
+        RedisProxy.redis_connect.delete(*RedisProxy.redis_connect.keys("token-" + username + "*"))
+        RedisProxy.redis_connect.delete(username + "_role")
+        RedisProxy.redis_connect.delete(username + "_clusters")
+        RedisProxy.redis_connect.delete(username + "_group_hosts")
+        RedisProxy.redis_connect.delete(username + "_rsa_key")
         return self.response(code=state.SUCCEED)
+
+
+class Oauth2AuthorizeUri(BaseResponse):
+    @BaseResponse.handle(token=False)
+    def get(self):
+        """
+        Oauth2AuthorizeUri.
+        """
+        uri = (
+            f"http://{configuration.domain}/oauth2/authorize?"
+            f"client_id={configuration.client_id}&"
+            f"redirect_uri={configuration.redirect_uri}&"
+            f"scope=openid offline_access&"
+            f"response_type=code&"
+            f"prompt=consent&"
+            f"state=235345&"
+            f"nonce=loser"
+        )
+
+        return self.response(code=state.SUCCEED, data=uri)
 
 
 class BindManagerUser(BaseResponse):
