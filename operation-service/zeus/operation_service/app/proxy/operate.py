@@ -107,6 +107,9 @@ class OperateProxy(MysqlProxy):
 
     def modify_operate_info(self, operate_id, data):
         try:
+            operate = self.session.query(Operate).filter(Operate.operate_name == data['operate_name']).first()
+            if operate:
+                return DATA_EXIST, None
             modified_rows = self.session.query(Operate).filter_by(operate_id = operate_id).update(data)
             self.session.commit()
             if modified_rows != 1:
