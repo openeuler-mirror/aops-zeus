@@ -11,16 +11,16 @@
 # See the Mulan PSL v2 for more details.
 # ******************************************************************************/
 
-from celery import Celery
-
 from async_task.base import CeleryConfig
 from async_task.tasks.cluster_synchronize_cancel_task import ClusterSynchronizeCancelTask
 from async_task.tasks.cluster_synchronize_task import ClusterSynchronizeTask
+from async_task.tasks.cve_fix_execute_task import CveFixExecuteTask
 from async_task.tasks.cve_fix_task import CveFixTask
 from async_task.tasks.cve_rollback_task import CveRollbackTask
 from async_task.tasks.cve_scan_task import CveScanTask
 from async_task.tasks.hotpatch_remove_task import HotpatchRemoveTask
 from async_task.tasks.repo_set_task import RepoSetTask
+from celery import Celery
 
 async_task = Celery(main="async_task")
 async_task.config_from_object(CeleryConfig)
@@ -35,6 +35,7 @@ class Task:
     repo_set_task = async_task.register_task(RepoSetTask)
     cluster_synchronize_task = async_task.register_task(ClusterSynchronizeTask)
     cluster_synchronize_cancel_task = async_task.register_task(ClusterSynchronizeCancelTask)
+    cve_fix_and_execute_task = async_task.register_task(CveFixExecuteTask)
 
 
 __all__ = ('Task', "async_task")
