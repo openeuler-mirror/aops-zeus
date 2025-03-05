@@ -217,7 +217,8 @@ class SetConfig:
             if not config:
                 config = ""
             with open(REDIS_CONFIG, "w") as file:
-                config = config.replace("bind 127.0.0.1", f"bind {self.ip}")
+                config = config.replace("bind 127.0.0.1", f"bind {self.ip}").replace(
+                    "protected-mode yes", "protected-mode no")
                 file.write(config)
             click.echo("[INFO] The redis config is set successful")
         except IOError:
