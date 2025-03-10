@@ -9,6 +9,13 @@ dbMapping:
   targetTable: domain
   targetPk:
     domain_id: domain_id
-  mapAll: true
+  mapAll: false
+  targetColumns:
+    # 字段映射, 格式: 目标表字段: 源表字段, 如果字段名一样源表字段名可不填
+    # 注意数据源的 to: from 前面是数据要同步到的地方，后面是数据来源的
+    domain_id: domain_id
+    domain_name: domain_name
+    cluster_id: cluster_id
+    priority: priority
   etlCondition: "where c_time>={}"
   commitBatch: 3000 # 批量提交的大小
