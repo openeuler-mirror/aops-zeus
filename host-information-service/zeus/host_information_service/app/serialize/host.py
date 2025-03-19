@@ -162,7 +162,7 @@ class HostFilterSchema(Schema):
     Filter host info
     """
 
-    status = fields.List(fields.String(required=True), required=False, missing=None)
+    status = fields.List(fields.Integer(required=True), required=False, missing=None)
     host_ids = fields.List(fields.String(required=True), required=False, missing=None, validate=lambda s: len(s) > 0)
     host_group_ids = fields.List(
         fields.String(required=True, validate=lambda s: 36 >= len(s) > 0), required=False, missing=None
