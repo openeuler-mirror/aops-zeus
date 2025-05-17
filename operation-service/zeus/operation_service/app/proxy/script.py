@@ -223,7 +223,7 @@ class ScriptProxy(MysqlProxy):
             arch = configuration.support.os_arch
             name = configuration.support.os_name
         except AttributeError:
-            LOGGER.error("config file not find supprot.os_arch or support.os_name")
+            LOGGER.error("config file not find support.os_arch or support.os_name")
             return OPERATION_WRONG_SUPPORT_CONFIG, info
         info = {'os_aarch': arch, 'os_name': name}
         return SUCCEED, info

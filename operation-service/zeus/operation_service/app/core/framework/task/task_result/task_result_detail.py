@@ -38,7 +38,7 @@ class TaskResultDetail(ABC):
                 "0": {
                   "zh": "巡检包0",
                   "en": "healthcheck0",
-                  "verson": "1.0.0"
+                  "version": "1.0.0"
                 },
               }
             }
