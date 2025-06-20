@@ -1,0 +1,20 @@
+label: A-Ops用户指南
+isManual: true
+description: 使用 A-Ops 智能运维框架进行故障快速定位、配置项统筹管理等
+sections:
+  - label: 部署A-Ops
+    href: ./deploying_aops.md
+  - label: 使用A-Ops智能定位框架
+    href: ./aops_intelligent_positioning_framework_user_manual.md
+  - label: A-Ops漏洞管理模块使用手册
+    href: ./aops_vulnerability_management_module_user_manual.md
+  - label: 使用热补丁dnf插件
+    href: ./dnf_command_usage.md
+  - label: 配置溯源服务
+    href: ./configuration_tracing_service_user_manual.md
+  - label: 社区热补丁制作发布流程
+    href: ./community_hotpatch_creation_and_release_process.md
+  - label: A-Ops资产管理使用手册
+    href: ./aops_asset_management_user_manual.md
+  - label: 一键化部署介绍
+    href: ./quick_deployment_of_aops.md
