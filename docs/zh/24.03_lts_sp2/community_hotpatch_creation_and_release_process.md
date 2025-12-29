@@ -2,7 +2,7 @@
 
 ## 制作内核态/用户态热补丁
 
-> 热补丁仓库：<https://gitee.com/openeuler/hotpatch_meta>
+> 热补丁仓库：<https://atomgit.com/openeuler/hotpatch_meta>
 
 ### 场景1. 在src-openEuler/openEuler仓下评论pr制作新版本热补丁
 
@@ -84,7 +84,7 @@ pr评论区提示启动热补丁制作流程。
 
 ### 场景2、从hotpatch_meta仓提pr制作新版本热补丁
 
-> hotpatch_meta仓地址：<https://gitee.com/openeuler/hotpatch_meta>
+> hotpatch_meta仓地址：<https://atomgit.com/openeuler/hotpatch_meta>
 
 #### 1. 提pr
 
@@ -105,7 +105,7 @@ pr内容：
 
 ### 场景3、从hotpatch_metadata仓提pr修改热补丁
 
-> hotpatch_meta仓地址：<https://gitee.com/openeuler/hotpatch_meta>
+> hotpatch_meta仓地址：<https://atomgit.com/openeuler/hotpatch_meta>
 >
 > 从hotpatch_meta仓提pr只能修改还未正式发布的热补丁。
 
@@ -153,7 +153,7 @@ hotmetadata_ACC.xml格式示例：
 
 ```xml
 <?xml version="1.0" ?>
-<ns0:hotpatchdoc xmlns:ns0="https://gitee.com/openeuler/HotPatch_metadata">
+<ns0:hotpatchdoc xmlns:ns0="https://atomgit.com/openeuler/HotPatch_metadata">
     <DocumentTitle xml:lang="en">Managing Hot Patch Metadata</DocumentTitle>
     <HotPatchList>
         <Package name="源码仓库-版本号">
@@ -178,7 +178,7 @@ hotmetadata_SGL.xml格式示例：
 
 ```xml
 <?xml version="1.0" ?>
-<ns0:hotpatchdoc xmlns:ns0="https://gitee.com/openeuler/HotPatch_metadata">
+<ns0:hotpatchdoc xmlns:ns0="https://atomgit.com/openeuler/HotPatch_metadata">
     <DocumentTitle xml:lang="en">Managing Hot Patch Metadata</DocumentTitle>
     <HotPatchList>
         <Package name="源码仓库-版本号">

@@ -1,0 +1,22 @@
+label: A-Ops User Guide
+isManual: true
+description: A-Ops enables quick fault identification and centralized configuration management.
+sections:
+  - label: A-Ops Deployment
+    href: ./deploying_aops.md
+  - label: A-Ops Intelligent Location Framework User Guide
+    href: ./aops_intelligent_positioning_framework_user_manual.md
+  - label: A-Ops Vulnerability Management Module User Guide
+    href: ./aops_vulnerability_management_module_user_manual.md
+  - label: Hot Patch DNF Plugin Command Usage
+    href: ./dnf_command_usage.md
+  - label: Configuration Tracing User Guide
+    href: ./configuration_tracing_service_user_manual.md
+  - label: Community Hot Patch Creation and Release Process
+    href: ./community_hotpatch_creation_and_release_process.md
+  - label: A-Ops Asset Management User Guide
+    href: ./aops_asset_management_user_manual.md
+  - label: Quick Deployment of A-Ops
+    href: ./quick_deployment_of_aops.md
+  - label: gala-ragdoll User Guide
+    href: ./configuration_tracing_service_user_manual.md

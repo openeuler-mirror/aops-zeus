@@ -17,7 +17,7 @@ A-Ops是用于提升主机整体安全性的服务，通过资产管理、漏洞
 
 # 二、部署环境要求
 
-建议采用4台 openEuler 24.03-LTS 机器部署，其中3台用于配置服务端，1台用于纳管（aops服务纳管的主机），**且repo中需要配置update源**（[FAQ：配置update源](#Q6、配置update源)），具体用途以及部署方案如下：
+建议采用4台 openEuler 24.03-LTS 机器部署，其中3台用于配置服务端，1台用于纳管（aops服务纳管的主机），**且repo中需要配置update源**（[FAQ：配置update源](#q6配置update源)），具体用途以及部署方案如下：
 
 + 机器A：部署mysql、redis、elasticsearch等，主要提供数据服务支持，建议内存8G+。
 + 机器B：部署A-Ops的资产管理zeus服务+前端展示服务，提供完整的业务功能支持，建议内存6G+。
@@ -257,7 +257,7 @@ ip=192.168.1.3  // 此处ip修改为部署apollo服务的真实ip（建议apollo
 port=11116
 ```
 
-> **mysql数据库设置为密码模式**，请参阅[FAQ：密码模式下mysql服务配置链接字符串](#Q5、mysql设置为密码模式)
+> **mysql数据库设置为密码模式**，请参阅[FAQ：密码模式下mysql服务配置链接字符串](#q5mysql设置为密码模式)
 
 - 启动aops-zeus服务
 
@@ -267,7 +267,7 @@ systemctl start aops-zeus
 
 **注意：服务启动前请确保已 [初始化aops-zeus数据库](#3125-初始化aops-zeus数据库)**
 
-> zeus服务启动失败，且报错内容包含mysql数据库连接失败，请排查是否设置mysql密码，如果是请参阅[FAQ：密码模式下mysql服务启动失败](#Q5、mysql设置为密码模式)
+> zeus服务启动失败，且报错内容包含mysql数据库连接失败，请排查是否设置mysql密码，如果是请参阅[FAQ：密码模式下mysql服务启动失败](#q5mysql设置为密码模式)
 
 #### 3.1.2.5、 初始化aops-zeus数据库
 
@@ -280,9 +280,9 @@ bash aops-basedatabase.sh init zeus
 
 **注意：在未安装aops-tools工具包时，也可获取sql脚本通过mysql加载的方式初始化（sql脚本路径：/opt/aops/database/zeus.sql）**
 
-[FAQ：密码模式下mysql数据库初始化](#Q5、mysql设置为密码模式)
+[FAQ：密码模式下mysql数据库初始化](#q5mysql设置为密码模式)
 
-[FAQ：/opt/aops/scripts/deploy目录不存在](#Q7、/opt/aops/scripts/deploy目录不存在)
+[FAQ：/opt/aops/scripts/deploy目录不存在](#q7optaopsscriptsdeploy目录不存在)
 
 #### 3.1.2.6、 部署aops-hermes
 
@@ -488,7 +488,7 @@ gevent=100
 
 ```
 
-> **mysql数据库设置为密码模式**，请参阅[密码模式下mysql服务配置链接字符串](#Q5、mysql设置为密码模式)
+> **mysql数据库设置为密码模式**，请参阅[密码模式下mysql服务配置链接字符串](#q5mysql设置为密码模式)
 
 - 启动aops-apollo服务
 
@@ -498,7 +498,7 @@ systemctl start aops-apollo
 
 **注意：服务启动前请确保已 [初始化aops-apollo数据库](#3223初始化aops-apollo数据库)**
 
-> apollo服务启动失败，且报错内容包含mysql数据库连接失败，请排查是否设置mysql密码，如果是请参阅[密码模式下mysql服务启动失败](#Q5、mysql设置为密码模式)
+> apollo服务启动失败，且报错内容包含mysql数据库连接失败，请排查是否设置mysql密码，如果是请参阅[密码模式下mysql服务启动失败](#q5mysql设置为密码模式)
 
 #### 3.2.2.3、初始化aops-apollo数据库
 
@@ -511,9 +511,9 @@ bash aops-basedatabase.sh init apollo
 
 **注意：在未安装aops-tools工具包时，也可获取sql脚本通过mysql加载的方式初始化（sql脚本路径：/opt/aops/database/apollo.sql）**
 
-[FAQ：密码模式下mysql数据库初始化](#Q5、mysql设置为密码模式)
+[FAQ：密码模式下mysql数据库初始化](#q5mysql设置为密码模式)
 
-[FAQ：/opt/aops/scripts/deploy目录不存在](#Q7、/opt/aops/scripts/deploy目录不存在)
+[FAQ：/opt/aops/scripts/deploy目录不存在](#q7optaopsscriptsdeploy目录不存在)
 
 ## 3.3、 配置溯源
 
@@ -736,7 +736,7 @@ processes=2
 threads=2
 ```
 
-> **mysql数据库设置为密码模式**，请参阅[FAQ：密码模式下mysql服务配置链接字符串](#Q5、mysql设置为密码模式)
+> **mysql数据库设置为密码模式**，请参阅[FAQ：密码模式下mysql服务配置链接字符串](#q5mysql设置为密码模式)
 
 （2）机器B中diana以**configurable**模式启动，**扮演kafka消息队列中的生产者角色**，aops-hermes中关于aops-diana的端口配置以该机器ip与端口为准，配置文件需修改部分如下所示
 
@@ -808,7 +808,7 @@ processes=2
 threads=2
 ```
 
-> **mysql数据库设置为密码模式**，请参阅[FAQ：密码模式下mysql服务配置链接字符串](#Q5、mysql设置为密码模式)
+> **mysql数据库设置为密码模式**，请参阅[FAQ：密码模式下mysql服务配置链接字符串](#q5mysql设置为密码模式)
 
 - 启动aops-diana服务
 
@@ -818,7 +818,7 @@ systemctl start aops-diana
 
 **注意：服务启动前请确保已 [初始化aops-diana数据库](#3423初始化aops-diana数据库)**
 
-> diana服务启动失败，且报错内容包含mysql数据库连接失败，请排查是否设置mysql密码，如果是请参阅[FAQ：密码模式下mysql服务启动失败](#Q5、mysql设置为密码模式)
+> diana服务启动失败，且报错内容包含mysql数据库连接失败，请排查是否设置mysql密码，如果是请参阅[FAQ：密码模式下mysql服务启动失败](#q5mysql设置为密码模式)
 
 #### 3.4.2.3、初始化aops-diana数据库
 
@@ -831,9 +831,9 @@ bash aops-basedatabase.sh init diana
 
 **注意：在未安装aops-tools工具包时，也可获取sql脚本通过mysql加载的方式初始化（sql脚本路径：/opt/aops/database/diana.sql）**
 
-[FAQ：密码模式下mysql数据库初始化](#Q5、mysql设置为密码模式)
+[FAQ：密码模式下mysql数据库初始化](#q5mysql设置为密码模式)
 
-[FAQ：/opt/aops/scripts/deploy目录不存在](#Q7、/opt/aops/scripts/deploy目录不存在)
+[FAQ：/opt/aops/scripts/deploy目录不存在](#q7optaopsscriptsdeploy目录不存在)
 
 ## 3.5、客户端安装
 
