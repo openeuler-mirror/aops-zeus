@@ -158,9 +158,9 @@ hotmetadata_ACC.xml格式示例：
     <HotPatchList>
         <Package name="源码仓库-版本号">
             <hotpatch version="1" release="1" type="修复问题类型[cve/bugfix/feature]" inherit="0" status="unconfirmed">
-                <SRC_RPM>源码包下载路径（需要reealse正式路径）</SRC_RPM>
-                <Debug_RPM_X86_64>x86_64架构debuginfo包下载路径（需要reealse正式路径）</Debug_RPM_X86_64>
-                <Debug_RPM_Aarch64>aarch64架构debuginfo包下载路径（需要reealse正式路径）</Debug_RPM_Aarch64>
+                <SRC_RPM>源码包下载路径（需要release正式路径）</SRC_RPM>
+                <Debug_RPM_X86_64>x86_64架构debuginfo包下载路径（需要release正式路径）</Debug_RPM_X86_64>
+                <Debug_RPM_Aarch64>aarch64架构debuginfo包下载路径（需要release正式路径）</Debug_RPM_Aarch64>
                 <patch>本次需要制作热补丁的patch包名1</patch>
                 <patch>本次需要制作热补丁的patch包名2</patch>
                 <patch>...</patch>
@@ -183,9 +183,9 @@ hotmetadata_SGL.xml格式示例：
     <HotPatchList>
         <Package name="源码仓库-版本号">
             <hotpatch name="SGL-issue1-issue2" version="1" release="1" type="修复问题类型[cve/bugfix/feature]" inherit="0" status="unconfirmed">
-                <SRC_RPM>源码包下载路径（需要realse正式路径）</SRC_RPM>
-                <Debug_RPM_X86_64>x86_64架构debuginfo包下载路径（需要reealse正式路径）</Debug_RPM_X86_64>
-                <Debug_RPM_Aarch64>aarch64架构debuginfo包下载路径（需要reealse正式路径）</Debug_RPM_Aarch64>
+                <SRC_RPM>源码包下载路径（需要release正式路径）</SRC_RPM>
+                <Debug_RPM_X86_64>x86_64架构debuginfo包下载路径（需要release正式路径）</Debug_RPM_X86_64>
+                <Debug_RPM_Aarch64>aarch64架构debuginfo包下载路径（需要release正式路径）</Debug_RPM_Aarch64>
                 <patch>本次需要制作热补丁的patch包名1</patch>
                 <patch>本次需要制作热补丁的patch包名2</patch>
                 <patch>...</patch>
