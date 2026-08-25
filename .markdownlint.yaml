@@ -1,0 +1,14 @@
+# markdownlint 配置：先放宽适配存量文档，后续按需收紧
+default: true
+MD001: false   # heading-increment（存量 1 处；清理 PR 后收紧）
+MD013: false   # 行长度（存量长行多；清理 PR 折行后按 120 收紧）
+MD024: false   # 重复标题
+MD025: false   # 多个一级标题（存量 4 处）
+MD033: false   # inline HTML
+MD036: false   # 强调代替标题（存量 13 处；清理 PR 改标题后收紧）
+MD041: false   # 首行必须是一级标题
+MD045: false   # 图片缺 alt 文本（存量 17 处；清理 PR 补 alt 后收紧，可达性规则）
+MD046: false   # 代码块风格不一致（存量 4 处）
+MD060: false   # 表格列风格（存量 20 处；清理 PR 对齐表格后收紧）
+MD040: false   # 代码块缺语言标签（存量文档常见且不可自动修复；清理 PR 补语言后再收紧）
+# 按基线预检结果补充豁免；真实格式问题进清理 PR
