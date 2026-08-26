@@ -15,8 +15,8 @@ Core service of the A-Ops platform, providing host and user management while orc
 1. Clone this repository and development kits. openEuler 22.03 LTS SP1 is used as an example.
 
    ```shell
-   git clone https://gitee.com/openeuler/aops-zeus.git
-   git clone https://gitee.com/openeuler/aops-vulcanus.git
+   git clone https://atomgit.com/openeuler/aops-zeus.git
+   git clone https://atomgit.com/openeuler/aops-vulcanus.git
    ```
 
 2. Go to the project directory.

@@ -4,7 +4,7 @@ Version:	v2.1.0
 Release:	1
 Summary:	A service which is the foundation of aops.
 License:	MulanPSL2
-URL:		https://gitee.com/openeuler/%{name}
+URL:		https://atomgit.com/openeuler/%{name}
 Source0:	%{name}-%{version}.tar.gz
 
 

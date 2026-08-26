@@ -14,8 +14,8 @@
 1. 克隆此仓库与开发工具包，**以openeuler22.03-LTS-SP1为例**
 
    ```shell
-   git clone https://gitee.com/openeuler/aops-zeus.git
-   git clone https://gitee.com/openeuler/aops-vulcanus.git
+   git clone https://atomgit.com/openeuler/aops-zeus.git
+   git clone https://atomgit.com/openeuler/aops-vulcanus.git
    ```
 
 2. 进入项目目录
@@ -146,8 +146,8 @@
 
 ### 使用说明
 
-1. [api接口文档](https://gitee.com/openeuler/aops-zeus/blob/master/doc/design/aops-zeus%E6%8E%A5%E5%8F%A3%E6%96%87%E6%A1%A3.yaml)
-2. 使用手册可参考[aops使用手册](https://gitee.com/openeuler/docs/blob/stable2-22.03_LTS_SP2/docs/zh/docs/A-Ops/AOps%E6%99%BA%E8%83%BD%E5%AE%9A%E4%BD%8D%E6%A1%86%E6%9E%B6%E4%BD%BF%E7%94%A8%E6%89%8B%E5%86%8C.md)资产管理部分
+1. [api接口文档](https://atomgit.com/openeuler/aops-zeus/blob/master/docs/design/aops-zeus%E6%8E%A5%E5%8F%A3%E6%96%87%E6%A1%A3.yaml)
+2. 使用手册可参考[aops使用手册](https://atomgit.com/openeuler/docs-centralized/blob/stable2-22.03_LTS_SP2/docs/zh/docs/A-Ops/AOps%E6%99%BA%E8%83%BD%E5%AE%9A%E4%BD%8D%E6%A1%86%E6%9E%B6%E4%BD%BF%E7%94%A8%E6%89%8B%E5%86%8C.md)资产管理部分
 
 ### 参与贡献
 
