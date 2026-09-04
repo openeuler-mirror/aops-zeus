@@ -841,7 +841,7 @@ paths:
         - name: host_id
           in: query
           required: false
-          type: integer
+          type: string
       responses:
         '200':
           description: 查询主机场景响应
@@ -1129,7 +1129,7 @@ paths:
           in: query
           required: false
           description: 主机id
-          type: integer
+          type: string
       responses:
         '200':
           description: 获取插件运行信息响应
@@ -1511,7 +1511,7 @@ definitions:
                 items:
                   properties:
                     host_id:
-                      type: integer
+                      type: string
                       description: 主机ID
                     host_name:
                       type: string
@@ -1616,7 +1616,7 @@ definitions:
         items:
           properties:
             host_id:
-              type: integer
+              type: string
               description: 主机id
             config_list:
               type: array
@@ -1644,7 +1644,7 @@ definitions:
                 items:
                   properties:
                     host_id:
-                      type: integer
+                      type: string
                       description: 主机ID
                     success_files:
                       type: array
@@ -1697,7 +1697,7 @@ definitions:
   SetAgentServiceStatusReq:
     properties:
       host_id:
-        type: integer
+        type: string
         description: 主机ID
       plugins:
         type: object
@@ -1710,7 +1710,7 @@ definitions:
   SetAgentServiceMetricStatus:
     properties:
       host_id:
-        type: integer
+        type: string
         description: 主机ID
       plugins:
         description: 服务列表
@@ -2053,7 +2053,7 @@ definitions:
                 items:
                   properties:
                     host_id:
-                      type: integer
+                      type: string
                       description: 主机ID
                     infos:
                       description: 信息列表
@@ -2158,7 +2158,7 @@ definitions:
     description: 设置agent服务资源消耗
     properties:
       host_id:
-        type: integer
+        type: string
         description: 主机ID
       agent_source:
         description: agent资源设置
@@ -2394,8 +2394,8 @@ definitions:
     description: 需要修复的CVE信息
     properties:
       host_id: 
-        type: integer
-        example: 1
+        type: string
+        example: "1"
       rpms:
         type: array
         items:
@@ -2425,8 +2425,8 @@ definitions:
     type: object
     properties:
       host_id: 
-        type: integer
-        example: 0
+        type: string
+        example: "0"
       installed_rpm:
         type: string
       target_rpm:
@@ -2617,7 +2617,7 @@ definitions:
     type: object
     properties:
       host_id:
-        type: integer
+        type: string
         description: 主机ID
       host_name:
         type: string
@@ -2643,9 +2643,9 @@ definitions:
     type: object
     properties: 
       host_id:
-        type: integer
+        type: string
         description: 主机ID
-        example: 1
+        example: "1"
       file_path:
         type: string
         description: 需要同步的文件路径
@@ -2726,7 +2726,7 @@ definitions:
             items:
               properties:
                 host_id:
-                  type: integer
+                  type: string
                 cves:
                   type: array
                   items:
@@ -2749,7 +2749,7 @@ definitions:
             items:
               properties:
                 host_id:
-                  type: integer
+                  type: string
                 status:
                   type: integer
               
