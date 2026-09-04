@@ -841,7 +841,7 @@ paths:
         - name: host_id
           in: query
           required: false
-          type: integer
+          type: string
       responses:
         '200':
           description: 查询主机场景响应
@@ -1129,7 +1129,7 @@ paths:
           in: query
           required: false
           description: 主机id
-          type: integer
+          type: string
       responses:
         '200':
           description: 获取插件运行信息响应
@@ -1615,7 +1615,8 @@ definitions:
         type: array
         items:
           properties:
-            host_id:\n              type: string
+            host_id:
+              type: string
               description: 主机id
             config_list:
               type: array
@@ -1695,7 +1696,8 @@ definitions:
                 description: 响应体
   SetAgentServiceStatusReq:
     properties:
-      host_id:\n        type: string
+      host_id:
+        type: string
         description: 主机ID
       plugins:
         type: object
@@ -1707,7 +1709,8 @@ definitions:
       - plugins
   SetAgentServiceMetricStatus:
     properties:
-      host_id:\n        type: string
+      host_id:
+        type: string
         description: 主机ID
       plugins:
         description: 服务列表
@@ -2154,7 +2157,8 @@ definitions:
   SetAgentServiceResourceReq:
     description: 设置agent服务资源消耗
     properties:
-      host_id:\n        type: string
+      host_id:
+        type: string
         description: 主机ID
       agent_source:
         description: agent资源设置
@@ -2612,7 +2616,8 @@ definitions:
   UpdateHostReq:
     type: object
     properties:
-      host_id:\n        type: string
+      host_id:
+        type: string
         description: 主机ID
       host_name:
         type: string
@@ -2637,9 +2642,10 @@ definitions:
   SyncConfigReq:
     type: object
     properties: 
-      host_id:\n        type: string
+      host_id:
+        type: string
         description: 主机ID
-        example: 1
+        example: "1"
       file_path:
         type: string
         description: 需要同步的文件路径
@@ -2719,7 +2725,8 @@ definitions:
             type: array
             items:
               properties:
-                host_id:\n                  type: string
+                host_id:
+                  type: string
                 cves:
                   type: array
                   items:
@@ -2741,7 +2748,8 @@ definitions:
             type: array
             items:
               properties:
-                host_id:\n                  type: string
+                host_id:
+                  type: string
                 status:
                   type: integer
               
