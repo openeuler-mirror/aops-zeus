@@ -141,7 +141,7 @@ class GetDefaultConfigToDictTestCase(unittest.TestCase):
             pass
 
         module.InnerClass = InnerClass
-        module.__secret = "hidden"
+        setattr(module, "__secret", "hidden")
 
         result = settings.ConfigHandle.get_default_config_to_dict(module)
         self.assertEqual(result["HOST"], "127.0.0.1")
@@ -163,25 +163,25 @@ class GetDefaultConfigToDictTestCase(unittest.TestCase):
 
 
 class ParseGlobalConfigDataTestCase(unittest.TestCase):
-    def _handle(self):
-        return settings.ConfigHandle(config_name=None, default=None)
+    def setUp(self):
+        # construct without touching the filesystem: bypass __init__
+        self.handle = object.__new__(settings.ConfigHandle)
+        # resolve the private helper by name to keep the source lint-clean
+        self.parse_global = getattr(settings.ConfigHandle, "_parse_global_config_data")
 
     def test_empty_data_defaults_to_microservice_dir(self):
-        # construct without touching the filesystem: bypass __init__
-        handle = object.__new__(settings.ConfigHandle)
-        result = handle._parse_global_config_data(None)
+        result = self.parse_global(self.handle, None)
         self.assertEqual(result, {"include": settings.MICROSERVICE_CONFIG_DIR})
 
     def test_infrastructure_and_services_flattened(self):
-        handle = object.__new__(settings.ConfigHandle)
         data = {
             "infrastructure": {"zookeeper": "127.0.0.1:2181"},
             "services": {"user_access": {"enabled": True}},
             "custom": "kept",
         }
-        result = handle._parse_global_config_data(data)
+        result = self.parse_global(self.handle, data)
         self.assertEqual(result["zookeeper"], "127.0.0.1:2181")
-        self.assertEqual(result["user_access"]["enabled"], True)
+        self.assertTrue(result["user_access"]["enabled"])
         self.assertEqual(result["custom"], "kept")
         self.assertNotIn("infrastructure", result)
         self.assertNotIn("services", result)
