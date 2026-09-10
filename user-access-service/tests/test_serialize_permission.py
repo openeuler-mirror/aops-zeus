@@ -205,7 +205,8 @@ class SetPermissionRequestSchemaTestCase(unittest.TestCase):
         _assert_load_errors(self.schema, {"username": "user00001", "permission": []}, "permission")
 
     def test_invalid_nested_permission_rejected(self):
-        _assert_load_errors(self.schema, {"username": "user00001", "permission": [{"host_group": ["hg-1"]}]}, "permission")
+        payload = {"username": "user00001", "permission": [{"host_group": ["hg-1"]}]}
+        _assert_load_errors(self.schema, payload, "permission")
 
 
 class BindPermissionRequestSchemaTestCase(unittest.TestCase):
