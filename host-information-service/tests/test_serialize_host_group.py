@@ -178,7 +178,11 @@ class GetHostGroupPageRequestSchemaTestCase(unittest.TestCase):
         data = self.schema.load(
             {"cluster_ids": ["c1"], "sort": "host_count", "direction": "asc", "page": 1, "per_page": 10}
         )
-        self.assertEqual(data, {"cluster_ids": ["c1"], "sort": "host_count", "direction": "asc", "page": 1, "per_page": 10})
+        expected = {
+            "cluster_ids": ["c1"], "sort": "host_count",
+            "direction": "asc", "page": 1, "per_page": 10,
+        }
+        self.assertEqual(data, expected)
 
     def test_sort_valid_values_accepted(self):
         for value in ("host_count", "host_group_name", ""):
