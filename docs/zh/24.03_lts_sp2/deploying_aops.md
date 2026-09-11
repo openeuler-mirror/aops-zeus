@@ -865,7 +865,7 @@ yum install aops-ceres dnf-hotpatch-plugin -y
 
 若防火墙不方便关闭，请设置放行服务部署过程涉及的所有接口，否则会造成服务不可访问，影响A-Ops的正常使用。
 
-### Q4、elasticasearch访问拒绝
+### Q4、elasticsearch访问拒绝
 
 elasticsearch分布式部署多节点时，需调整配置跨域部分，允许各节点访问。
 
@@ -877,7 +877,7 @@ mysql数据库链接设置密码模式（例如用户名为**root**，密码为*
 
 ```ini
 [mysql]
-egine_format=mysql+pymysql://root:123456@%s:%s/%s
+engine_format=mysql+pymysql://root:123456@%s:%s/%s
 ```
 
 - **初始化脚本aops-basedatabase.sh修改**
@@ -887,7 +887,7 @@ aops-basedatabase.sh脚本需要调整145行代码实现
 > aops-basedatabase.sh调整前内容如下：
 
 ```shell
-database = pymysql.connect(host='$mysql_ip', port=$port, database='mysql', autocommit=True,client_flag=CLIENT.MULTI_STAT    EMENTS)
+database = pymysql.connect(host='$mysql_ip', port=$port, database='mysql', autocommit=True,client_flag=CLIENT.MULTI_STATEMENTS)
 ```
 
 > aops-basedatabase.sh调整后内容如下：
