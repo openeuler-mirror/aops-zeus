@@ -16,6 +16,7 @@ Author:
 Description:
 """
 import base64
+import ast
 import json
 import subprocess
 import time
@@ -238,7 +239,12 @@ class UserProxy(MysqlProxy):
         decrypt_data = decrypt_data.decode('utf-8')
         username = params.get("username")
         # check the info of encrypted_string, it should be: {client_id: client_secret}
-        if {configuration.client_id: configuration.client_secret} != eval(decrypt_data):
+        try:
+            client_credential = ast.literal_eval(decrypt_data)
+        except (ValueError, SyntaxError):
+            LOGGER.error(f"decrypt encrypted string for logout user error: {username}.")
+            return AUTH_ERROR
+        if {configuration.client_id: configuration.client_secret} != client_credential:
             LOGGER.error(f"decrypt encrypted string for logout user error: {username}.")
             return AUTH_ERROR
         try:
