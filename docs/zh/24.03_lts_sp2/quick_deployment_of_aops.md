@@ -38,7 +38,7 @@ systemctl enable docker
 dnf install aops-vulcanus aops-tools
 ```
 
-> **说明：安装aops相关组件需要配置[EPOL源](https://dl-cdn.openeuler.openatom.cn/openEuler-24.03-LTS-SP1/EPOL/)。**
+> **说明：安装aops相关组件需要配置[EPOL源](https://dl-cdn.openeuler.openatom.cn/openEuler-24.03-LTS-SP2/EPOL/)。**
 
 ## 4. 执行一键化部署
 
