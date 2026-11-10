@@ -1,5 +1,7 @@
 # 社区热补丁制作发布流程
 
+> 本文介绍 openEuler 社区热补丁制作、审阅到发布的完整流程。openEuler 社区 update 版本以冷补丁形式进行常规发布流程，特殊情况需要发布热补丁时，则按照本文流程发布至 openEuler update 目录。
+
 ## 制作内核态/用户态热补丁
 
 > 热补丁仓库：<https://atomgit.com/openeuler/hotpatch_meta>
